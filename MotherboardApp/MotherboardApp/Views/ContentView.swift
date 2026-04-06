@@ -11,12 +11,10 @@ struct ContentView: View {
                     Label("層架", systemImage: "server.rack")
                 }
 
-            NavigationStack {
-                BrandListView()
-            }
-            .tabItem {
-                Label("目錄", systemImage: "cpu")
-            }
+            CatalogView()
+                .tabItem {
+                    Label("目錄", systemImage: "cpu")
+                }
         }
     }
 }

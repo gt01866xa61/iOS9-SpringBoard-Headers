@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Assign a motherboard to a rack slot.
+/// Uses the same scraped data as CatalogView via shared CatalogViewModel.
 struct SlotAssignView: View {
     let rackID: UUID
     let slotPosition: Int
@@ -7,69 +9,62 @@ struct SlotAssignView: View {
     @EnvironmentObject var rackVM: RackViewModel
     @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedBrand: Brand?
-    @State private var selectedChipset: Chipset?
+    @StateObject private var catalogVM = CatalogViewModel()
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("品牌") {
-                    ForEach(MotherboardCatalog.brands) { brand in
-                        HStack {
-                            Text(brand.displayName)
-                            Spacer()
-                            if selectedBrand?.id == brand.id {
-                                Image(systemName: "checkmark").foregroundStyle(.blue)
+            VStack(spacing: 0) {
+                // Brand picker
+                VStack(spacing: 12) {
+                    Picker("品牌", selection: $catalogVM.selectedBrand) {
+                        Text("選擇品牌").tag("")
+                        ForEach(catalogVM.brands, id: \.self) { brand in
+                            Text(brand).tag(brand)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if !catalogVM.chipsets.isEmpty {
+                        Picker("Chipset", selection: $catalogVM.selectedChipset) {
+                            Text("全部").tag("")
+                            ForEach(catalogVM.chipsets, id: \.self) { chipset in
+                                Text(chipset).tag(chipset)
                             }
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedBrand = brand
-                            selectedChipset = nil
-                        }
+                        .pickerStyle(.menu)
                     }
                 }
-
-                if let brand = selectedBrand {
-                    Section("Chipset") {
-                        let chipsets = MotherboardCatalog.chipsets(for: brand)
-                        ForEach(chipsets) { chipset in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(chipset.displayName)
-                                    Text(chipset.platform.rawValue)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if selectedChipset?.id == chipset.id {
-                                    Image(systemName: "checkmark").foregroundStyle(.blue)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture { selectedChipset = chipset }
-                        }
-                    }
+                .padding()
+                .onChange(of: catalogVM.selectedBrand) { _, _ in
+                    catalogVM.selectedChipset = ""
                 }
 
-                if let brand = selectedBrand, let chipset = selectedChipset {
-                    Section("型號") {
-                        let models = MotherboardCatalog.models(for: brand, chipset: chipset)
-                        ForEach(models) { model in
-                            Button {
-                                rackVM.assignModel(model.id, to: slotPosition, in: rackID)
-                                dismiss()
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(model.name)
-                                        .foregroundStyle(.primary)
-                                    Text(model.series)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                Divider()
+
+                if catalogVM.isLoading {
+                    ProgressView("載入中...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if catalogVM.filteredModels.isEmpty {
+                    Text("請先選擇品牌")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List(catalogVM.filteredModels) { board in
+                        Button {
+                            rackVM.assignModel(board.id, to: slotPosition, in: rackID)
+                            dismiss()
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(board.fullModelName)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                Text(board.chipset)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("指定主機板 \(rackIndex)-\(slotPosition)")
@@ -79,6 +74,7 @@ struct SlotAssignView: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .task { await catalogVM.loadData() }
         }
     }
 }

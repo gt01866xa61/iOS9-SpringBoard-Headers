@@ -8,6 +8,7 @@ struct RackGridView: View {
     @State private var assignSlotPosition: Int?
     @State private var actionSlot: RackSlot?
     @State private var showActionSheet = false
+    @State private var isResolvingURL = false
 
     var body: some View {
         ScrollView {
@@ -49,8 +50,17 @@ struct RackGridView: View {
             isPresented: $showActionSheet,
             titleVisibility: .visible
         ) {
-            if let slot = actionSlot, let model = rackVM.resolveModel(for: slot) {
-                Link("查看官網規格", destination: model.productURL)
+            if let slot = actionSlot, let board = rackVM.resolveModel(for: slot) {
+                Button("查看官網規格") {
+                    Task {
+                        isResolvingURL = true
+                        let url = await URLResolverService.resolve(for: board)
+                        isResolvingURL = false
+                        await MainActor.run {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
                 Button("更換主機板") {
                     showActionSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -64,7 +74,20 @@ struct RackGridView: View {
             Button("取消", role: .cancel) {}
         } message: {
             if let slot = actionSlot, let model = rackVM.resolveModel(for: slot) {
-                Text(model.name)
+                Text(model.displayName)
+            }
+        }
+        .overlay {
+            if isResolvingURL {
+                ZStack {
+                    Color.black.opacity(0.3).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView().tint(.white)
+                        Text("查詢官網...").foregroundStyle(.white).font(.subheadline)
+                    }
+                    .padding(24)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
             }
         }
     }

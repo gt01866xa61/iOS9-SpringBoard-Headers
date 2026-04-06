@@ -46,9 +46,10 @@ final class RackViewModel: ObservableObject {
         save()
     }
 
-    func resolveModel(for slot: RackSlot) -> MotherboardModel? {
+    /// Resolves a slot's modelID to a full Motherboard from the cache.
+    func resolveModel(for slot: RackSlot) -> Motherboard? {
         guard let modelID = slot.modelID else { return nil }
-        return MotherboardCatalog.model(for: modelID)
+        return CacheService.shared.motherboard(for: modelID)
     }
 
     // MARK: - Persistence

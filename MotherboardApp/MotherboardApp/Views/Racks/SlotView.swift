@@ -3,7 +3,7 @@ import SwiftUI
 struct SlotView: View {
     let slot: RackSlot
     let rackIndex: Int
-    let model: MotherboardModel?
+    let model: Motherboard?
     let onTap: () -> Void
 
     private var label: String { "\(rackIndex)-\(slot.position)" }
@@ -36,29 +36,29 @@ struct SlotView: View {
             }
     }
 
-    private func filledSlot(model: MotherboardModel) -> some View {
+    private func filledSlot(model: Motherboard) -> some View {
         RoundedRectangle(cornerRadius: 8)
-            .fill(brandColor(for: model.brandID).opacity(0.12))
+            .fill(brandColor(for: model.brand).opacity(0.12))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(brandColor(for: model.brandID).opacity(0.5), lineWidth: 1)
+                    .strokeBorder(brandColor(for: model.brand).opacity(0.5), lineWidth: 1)
             )
             .frame(height: 72)
             .overlay {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
-                        Text(MotherboardCatalog.brand(for: model.brandID)?.shortName ?? "")
+                        Text(model.brand)
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(brandColor(for: model.brandID))
+                            .foregroundStyle(brandColor(for: model.brand))
                         Spacer()
-                        Text(MotherboardCatalog.chipset(for: model.chipsetID)?.displayName ?? "")
+                        Text(model.chipset)
                             .font(.system(size: 9, weight: .medium))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
-                            .background(brandColor(for: model.brandID).opacity(0.2))
+                            .background(brandColor(for: model.brand).opacity(0.2))
                             .clipShape(Capsule())
                     }
-                    Text(model.name)
+                    Text(model.fullModelName)
                         .font(.system(size: 10))
                         .lineLimit(2)
                         .foregroundStyle(.primary)
@@ -68,12 +68,12 @@ struct SlotView: View {
             }
     }
 
-    private func brandColor(for brandID: String) -> Color {
-        switch brandID {
-        case "asus":     return .blue
-        case "gigabyte": return .red
-        case "msi":      return .orange
-        case "asrock":   return .purple
+    private func brandColor(for brand: String) -> Color {
+        switch brand.uppercased() {
+        case "ASUS":     return .blue
+        case "GIGABYTE": return .red
+        case "MSI":      return .orange
+        case "ASROCK":   return .purple
         default:         return .gray
         }
     }

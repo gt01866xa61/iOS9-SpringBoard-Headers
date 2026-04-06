@@ -7,189 +7,188 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA000001 /* MotherboardAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* MotherboardAppApp.swift */; };
-		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* ContentView.swift */; };
-		AA000003 /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003 /* Brand.swift */; };
-		AA000004 /* Chipset.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100004 /* Chipset.swift */; };
-		AA000005 /* MotherboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100005 /* MotherboardModel.swift */; };
-		AA000006 /* Rack.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100006 /* Rack.swift */; };
-		AA000007 /* RackSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100007 /* RackSlot.swift */; };
-		AA000008 /* MotherboardCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100008 /* MotherboardCatalog.swift */; };
-		AA000009 /* RackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100009 /* RackViewModel.swift */; };
-		AA000010 /* CatalogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010 /* CatalogViewModel.swift */; };
-		AA000011 /* SlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* SlotView.swift */; };
-		AA000012 /* SlotAssignView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* SlotAssignView.swift */; };
-		AA000013 /* RackGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* RackGridView.swift */; };
-		AA000014 /* AddRackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100014 /* AddRackView.swift */; };
-		AA000015 /* RackCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100015 /* RackCarouselView.swift */; };
-		AA000016 /* BrandListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100016 /* BrandListView.swift */; };
-		AA000017 /* ChipsetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017 /* ChipsetListView.swift */; };
-		AA000018 /* ModelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018 /* ModelListView.swift */; };
-		AA000019 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100019 /* Assets.xcassets */; };
+		BB000001 /* MotherboardAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100001 /* MotherboardAppApp.swift */; };
+		BB000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100002 /* ContentView.swift */; };
+		BB000003 /* Motherboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100003 /* Motherboard.swift */; };
+		BB000004 /* Rack.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100004 /* Rack.swift */; };
+		BB000005 /* RackSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100005 /* RackSlot.swift */; };
+		BB000006 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100006 /* CacheService.swift */; };
+		BB000007 /* ScrapingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100007 /* ScrapingEngine.swift */; };
+		BB000008 /* URLResolverService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100008 /* URLResolverService.swift */; };
+		BB000009 /* CatalogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100009 /* CatalogViewModel.swift */; };
+		BB000010 /* RackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100010 /* RackViewModel.swift */; };
+		BB000011 /* CatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100011 /* CatalogView.swift */; };
+		BB000012 /* SlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100012 /* SlotView.swift */; };
+		BB000013 /* SlotAssignView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100013 /* SlotAssignView.swift */; };
+		BB000014 /* RackGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100014 /* RackGridView.swift */; };
+		BB000015 /* AddRackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100015 /* AddRackView.swift */; };
+		BB000016 /* RackCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB100016 /* RackCarouselView.swift */; };
+		BB000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB100017 /* Assets.xcassets */; };
+		BB000018 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = BB800001 /* SwiftSoup */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AA100001 /* MotherboardAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardAppApp.swift; sourceTree = "<group>"; };
-		AA100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		AA100003 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
-		AA100004 /* Chipset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chipset.swift; sourceTree = "<group>"; };
-		AA100005 /* MotherboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardModel.swift; sourceTree = "<group>"; };
-		AA100006 /* Rack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rack.swift; sourceTree = "<group>"; };
-		AA100007 /* RackSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackSlot.swift; sourceTree = "<group>"; };
-		AA100008 /* MotherboardCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardCatalog.swift; sourceTree = "<group>"; };
-		AA100009 /* RackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackViewModel.swift; sourceTree = "<group>"; };
-		AA100010 /* CatalogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogViewModel.swift; sourceTree = "<group>"; };
-		AA100011 /* SlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotView.swift; sourceTree = "<group>"; };
-		AA100012 /* SlotAssignView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotAssignView.swift; sourceTree = "<group>"; };
-		AA100013 /* RackGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackGridView.swift; sourceTree = "<group>"; };
-		AA100014 /* AddRackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRackView.swift; sourceTree = "<group>"; };
-		AA100015 /* RackCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackCarouselView.swift; sourceTree = "<group>"; };
-		AA100016 /* BrandListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandListView.swift; sourceTree = "<group>"; };
-		AA100017 /* ChipsetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipsetListView.swift; sourceTree = "<group>"; };
-		AA100018 /* ModelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelListView.swift; sourceTree = "<group>"; };
-		AA100019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AA100020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AA200001 /* MotherboardApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MotherboardApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB100001 /* MotherboardAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardAppApp.swift; sourceTree = "<group>"; };
+		BB100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		BB100003 /* Motherboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motherboard.swift; sourceTree = "<group>"; };
+		BB100004 /* Rack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rack.swift; sourceTree = "<group>"; };
+		BB100005 /* RackSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackSlot.swift; sourceTree = "<group>"; };
+		BB100006 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
+		BB100007 /* ScrapingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrapingEngine.swift; sourceTree = "<group>"; };
+		BB100008 /* URLResolverService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLResolverService.swift; sourceTree = "<group>"; };
+		BB100009 /* CatalogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogViewModel.swift; sourceTree = "<group>"; };
+		BB100010 /* RackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackViewModel.swift; sourceTree = "<group>"; };
+		BB100011 /* CatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
+		BB100012 /* SlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotView.swift; sourceTree = "<group>"; };
+		BB100013 /* SlotAssignView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotAssignView.swift; sourceTree = "<group>"; };
+		BB100014 /* RackGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackGridView.swift; sourceTree = "<group>"; };
+		BB100015 /* AddRackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRackView.swift; sourceTree = "<group>"; };
+		BB100016 /* RackCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RackCarouselView.swift; sourceTree = "<group>"; };
+		BB100017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BB100018 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BB200001 /* MotherboardApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MotherboardApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AA300001 /* Frameworks */ = {
+		BB300001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB000018 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AA400001 /* Products */ = {
+		BB400001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA200001 /* MotherboardApp.app */,
+				BB200001 /* MotherboardApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AA400002 /* MotherboardApp */ = {
+		BB400002 /* MotherboardApp */ = {
 			isa = PBXGroup;
 			children = (
-				AA100001 /* MotherboardAppApp.swift */,
-				AA100020 /* Info.plist */,
-				AA100019 /* Assets.xcassets */,
-				AA400003 /* Models */,
-				AA400004 /* Data */,
-				AA400005 /* ViewModels */,
-				AA400006 /* Views */,
+				BB100001 /* MotherboardAppApp.swift */,
+				BB100018 /* Info.plist */,
+				BB100017 /* Assets.xcassets */,
+				BB400003 /* Models */,
+				BB400004 /* Services */,
+				BB400005 /* ViewModels */,
+				BB400006 /* Views */,
 			);
 			path = MotherboardApp;
 			sourceTree = "<group>";
 		};
-		AA400003 /* Models */ = {
+		BB400003 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				AA100003 /* Brand.swift */,
-				AA100004 /* Chipset.swift */,
-				AA100005 /* MotherboardModel.swift */,
-				AA100006 /* Rack.swift */,
-				AA100007 /* RackSlot.swift */,
+				BB100003 /* Motherboard.swift */,
+				BB100004 /* Rack.swift */,
+				BB100005 /* RackSlot.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		AA400004 /* Data */ = {
+		BB400004 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				AA100008 /* MotherboardCatalog.swift */,
+				BB100006 /* CacheService.swift */,
+				BB100007 /* ScrapingEngine.swift */,
+				BB100008 /* URLResolverService.swift */,
 			);
-			path = Data;
+			path = Services;
 			sourceTree = "<group>";
 		};
-		AA400005 /* ViewModels */ = {
+		BB400005 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				AA100009 /* RackViewModel.swift */,
-				AA100010 /* CatalogViewModel.swift */,
+				BB100009 /* CatalogViewModel.swift */,
+				BB100010 /* RackViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		AA400006 /* Views */ = {
+		BB400006 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				AA100002 /* ContentView.swift */,
-				AA400007 /* Racks */,
-				AA400008 /* Catalog */,
+				BB100002 /* ContentView.swift */,
+				BB400007 /* Racks */,
+				BB400008 /* Catalog */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		AA400007 /* Racks */ = {
+		BB400007 /* Racks */ = {
 			isa = PBXGroup;
 			children = (
-				AA100011 /* SlotView.swift */,
-				AA100012 /* SlotAssignView.swift */,
-				AA100013 /* RackGridView.swift */,
-				AA100014 /* AddRackView.swift */,
-				AA100015 /* RackCarouselView.swift */,
+				BB100012 /* SlotView.swift */,
+				BB100013 /* SlotAssignView.swift */,
+				BB100014 /* RackGridView.swift */,
+				BB100015 /* AddRackView.swift */,
+				BB100016 /* RackCarouselView.swift */,
 			);
 			path = Racks;
 			sourceTree = "<group>";
 		};
-		AA400008 /* Catalog */ = {
+		BB400008 /* Catalog */ = {
 			isa = PBXGroup;
 			children = (
-				AA100016 /* BrandListView.swift */,
-				AA100017 /* ChipsetListView.swift */,
-				AA100018 /* ModelListView.swift */,
+				BB100011 /* CatalogView.swift */,
 			);
 			path = Catalog;
 			sourceTree = "<group>";
 		};
-		AA500001 /* root */ = {
+		BB500001 /* root */ = {
 			isa = PBXGroup;
 			children = (
-				AA400002 /* MotherboardApp */,
-				AA400001 /* Products */,
+				BB400002 /* MotherboardApp */,
+				BB400001 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA600001 /* MotherboardApp */ = {
+		BB600001 /* MotherboardApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA700002 /* Build configuration list for PBXNativeTarget "MotherboardApp" */;
+			buildConfigurationList = BB700002 /* Build configuration list for PBXNativeTarget "MotherboardApp" */;
 			buildPhases = (
-				AA800001 /* Sources */,
-				AA300001 /* Frameworks */,
-				AA800002 /* Resources */,
+				BB900001 /* Sources */,
+				BB300001 /* Frameworks */,
+				BB900002 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = MotherboardApp;
+			packageProductDependencies = (
+				BB800001 /* SwiftSoup */,
+			);
 			productName = MotherboardApp;
-			productReference = AA200001 /* MotherboardApp.app */;
+			productReference = BB200001 /* MotherboardApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		AA900001 /* Project object */ = {
+		BB600002 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					AA600001 = {
+					BB600001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = AA700001 /* Build configuration list for PBXProject "MotherboardApp" */;
+			buildConfigurationList = BB700001 /* Build configuration list for PBXProject "MotherboardApp" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -197,57 +196,58 @@
 				en,
 				Base,
 			);
-			mainGroup = AA500001;
-			productRefGroup = AA400001 /* Products */;
+			mainGroup = BB500001;
+			packageReferences = (
+				BB800002 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+			);
+			productRefGroup = BB400001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA600001 /* MotherboardApp */,
+				BB600001 /* MotherboardApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		AA800002 /* Resources */ = {
+		BB900002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA000019 /* Assets.xcassets in Resources */,
+				BB000017 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AA800001 /* Sources */ = {
+		BB900001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA000001 /* MotherboardAppApp.swift in Sources */,
-				AA000002 /* ContentView.swift in Sources */,
-				AA000003 /* Brand.swift in Sources */,
-				AA000004 /* Chipset.swift in Sources */,
-				AA000005 /* MotherboardModel.swift in Sources */,
-				AA000006 /* Rack.swift in Sources */,
-				AA000007 /* RackSlot.swift in Sources */,
-				AA000008 /* MotherboardCatalog.swift in Sources */,
-				AA000009 /* RackViewModel.swift in Sources */,
-				AA000010 /* CatalogViewModel.swift in Sources */,
-				AA000011 /* SlotView.swift in Sources */,
-				AA000012 /* SlotAssignView.swift in Sources */,
-				AA000013 /* RackGridView.swift in Sources */,
-				AA000014 /* AddRackView.swift in Sources */,
-				AA000015 /* RackCarouselView.swift in Sources */,
-				AA000016 /* BrandListView.swift in Sources */,
-				AA000017 /* ChipsetListView.swift in Sources */,
-				AA000018 /* ModelListView.swift in Sources */,
+				BB000001 /* MotherboardAppApp.swift in Sources */,
+				BB000002 /* ContentView.swift in Sources */,
+				BB000003 /* Motherboard.swift in Sources */,
+				BB000004 /* Rack.swift in Sources */,
+				BB000005 /* RackSlot.swift in Sources */,
+				BB000006 /* CacheService.swift in Sources */,
+				BB000007 /* ScrapingEngine.swift in Sources */,
+				BB000008 /* URLResolverService.swift in Sources */,
+				BB000009 /* CatalogViewModel.swift in Sources */,
+				BB000010 /* RackViewModel.swift in Sources */,
+				BB000011 /* CatalogView.swift in Sources */,
+				BB000012 /* SlotView.swift in Sources */,
+				BB000013 /* SlotAssignView.swift in Sources */,
+				BB000014 /* RackGridView.swift in Sources */,
+				BB000015 /* AddRackView.swift in Sources */,
+				BB000016 /* RackCarouselView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		AA700003 /* Debug */ = {
+		BB700003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -309,7 +309,7 @@
 			};
 			name = Debug;
 		};
-		AA700004 /* Release */ = {
+		BB700004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -363,7 +363,7 @@
 			};
 			name = Release;
 		};
-		AA700005 /* Debug */ = {
+		BB700005 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -386,7 +386,7 @@
 			};
 			name = Debug;
 		};
-		AA700006 /* Release */ = {
+		BB700006 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -412,25 +412,44 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AA700001 /* Build configuration list for PBXProject "MotherboardApp" */ = {
+		BB700001 /* Build configuration list for PBXProject "MotherboardApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AA700003 /* Debug */,
-				AA700004 /* Release */,
+				BB700003 /* Debug */,
+				BB700004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA700002 /* Build configuration list for PBXNativeTarget "MotherboardApp" */ = {
+		BB700002 /* Build configuration list for PBXNativeTarget "MotherboardApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AA700005 /* Debug */,
-				AA700006 /* Release */,
+				BB700005 /* Debug */,
+				BB700006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BB800002 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BB800001 /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BB800002 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = AA900001 /* Project object */;
+	rootObject = BB600002 /* Project object */;
 }
