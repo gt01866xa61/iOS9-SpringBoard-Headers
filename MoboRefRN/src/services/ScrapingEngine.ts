@@ -46,33 +46,45 @@ function buildId(brand: string, model: string): string {
 
 async function fetchBrandPage(brand: string): Promise<Motherboard[]> {
   const url = `${SCRAPING_CONFIG.baseUrl}${SCRAPING_CONFIG.indexPath}${encodeURIComponent(brand)}`;
-  const response = await axios.get<string>(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MoboRefApp/1.0)' },
-    timeout: 15000,
-  });
-  const root = parse(response.data);
-  const rows = root.querySelectorAll(SCRAPING_CONFIG.indexRowSelector);
-  const results: Motherboard[] = [];
-
-  for (const row of rows) {
-    const link = row.querySelector(SCRAPING_CONFIG.indexLinkSelector);
-    if (!link) continue;
-    const fullModelName = link.text.trim();
-    if (!fullModelName) continue;
-    const href = link.getAttribute('href') ?? '';
-    const tpuDetailUrl = href.startsWith('http')
-      ? href
-      : `${SCRAPING_CONFIG.baseUrl}${href}`;
-
-    results.push({
-      id: buildId(brand, fullModelName),
-      brand,
-      chipset: detectChipset(fullModelName),
-      fullModelName,
-      tpuDetailUrl,
+  console.log(`[Scraper] Fetching ${brand}: ${url}`);
+  try {
+    const response = await axios.get<string>(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+      },
+      timeout: 20000,
     });
+    console.log(`[Scraper] ${brand} HTTP ${response.status}, HTML ${response.data.length} bytes`);
+    const root = parse(response.data);
+    const rows = root.querySelectorAll(SCRAPING_CONFIG.indexRowSelector);
+    console.log(`[Scraper] ${brand} rows found: ${rows.length}`);
+    const results: Motherboard[] = [];
+
+    for (const row of rows) {
+      const link = row.querySelector(SCRAPING_CONFIG.indexLinkSelector);
+      if (!link) continue;
+      const fullModelName = link.text.trim();
+      if (!fullModelName) continue;
+      const href = link.getAttribute('href') ?? '';
+      const tpuDetailUrl = href.startsWith('http')
+        ? href
+        : `${SCRAPING_CONFIG.baseUrl}${href}`;
+
+      results.push({
+        id: buildId(brand, fullModelName),
+        brand,
+        chipset: detectChipset(fullModelName),
+        fullModelName,
+        tpuDetailUrl,
+      });
+    }
+    console.log(`[Scraper] ${brand} parsed ${results.length} boards`);
+    return results;
+  } catch (err) {
+    console.error(`[Scraper] ${brand} failed:`, err instanceof Error ? err.message : err);
+    throw err;
   }
-  return results;
 }
 
 export async function fetchFullIndex(forceRefresh = false): Promise<Motherboard[]> {
