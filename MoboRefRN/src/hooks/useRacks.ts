@@ -96,5 +96,19 @@ export function useRacks() {
     [racks, persist]
   );
 
-  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack };
+  const removeRow = useCallback(
+    (rackId: string, rowIndex: number) => {
+      const updated = racks.map((r) => {
+        if (r.id !== rackId) return r;
+        const start = rowIndex * 3;
+        const remaining = r.slots.filter((_, i) => i < start || i >= start + 3);
+        const reindexed = remaining.map((s, i) => ({ ...s, position: i }));
+        return { ...r, slots: reindexed };
+      });
+      persist(updated);
+    },
+    [racks, persist]
+  );
+
+  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow };
 }

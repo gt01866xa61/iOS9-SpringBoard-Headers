@@ -23,7 +23,8 @@ import { Motherboard } from '../models/Motherboard';
 const COLS = 3;
 const GAP = 8;
 const PADDING = 12;
-const SLOT_SIZE = (Dimensions.get('window').width - PADDING * 2 - GAP * (COLS - 1)) / COLS;
+const ROW_DEL_W = 28;
+const SLOT_SIZE = (Dimensions.get('window').width - PADDING * 2 - GAP * COLS - ROW_DEL_W) / COLS;
 
 function GridSlot({
   slot,
@@ -63,7 +64,7 @@ function GridSlot({
 }
 
 export function RackScreen() {
-  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack } = useRacks();
+  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
@@ -167,6 +168,22 @@ export function RackScreen() {
                   onOpenUrl={handleOpenUrl}
                 />
               ))}
+              <TouchableOpacity
+                style={styles.rowDelBtn}
+                onPress={() => {
+                  const hasBoards = slots.slice(row * COLS, row * COLS + COLS).some(s => s.motherboard);
+                  if (hasBoards) {
+                    Alert.alert('Delete Row', 'This row has boards assigned. Delete anyway?', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => removeRow(selectedRack.id, row) },
+                    ]);
+                  } else {
+                    removeRow(selectedRack.id, row);
+                  }
+                }}
+              >
+                <Text style={styles.rowDelTxt}>−</Text>
+              </TouchableOpacity>
             </View>
           ))}
           {/* Add Row button */}
@@ -219,7 +236,7 @@ export function RackScreen() {
 
       {/* Assign modal */}
       <Modal visible={assignModalVisible} animationType="slide">
-        <SafeAreaView style={styles.assignModal}>
+        <SafeAreaView style={styles.assignModal} edges={['top', 'left', 'right']}>
           <View style={styles.assignHeader}>
             <Text style={styles.assignTitle}>Select Motherboard</Text>
             <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
@@ -235,6 +252,7 @@ export function RackScreen() {
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
               autoCorrect={false}
+              autoFocus={false}
             />
           </View>
           <FlatList
@@ -293,6 +311,13 @@ const styles = StyleSheet.create({
   assignBtn: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   assignTxt: { fontSize: 28, color: '#007AFF', fontWeight: '300' },
 
+  rowDelBtn: {
+    width: ROW_DEL_W,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  rowDelTxt: { fontSize: 22, color: '#DC2626', fontWeight: '300' },
   addRowBtn: {
     marginTop: 4,
     paddingVertical: 12,
