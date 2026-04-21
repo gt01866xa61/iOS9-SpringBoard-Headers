@@ -110,5 +110,26 @@ export function useRacks() {
     [racks, persist]
   );
 
-  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow };
+  const swapSlots = useCallback(
+    (rackId: string, slotIdA: string, slotIdB: string) => {
+      const updated = racks.map((r) => {
+        if (r.id !== rackId) return r;
+        const a = r.slots.find((s) => s.id === slotIdA);
+        const b = r.slots.find((s) => s.id === slotIdB);
+        if (!a || !b) return r;
+        return {
+          ...r,
+          slots: r.slots.map((s) => {
+            if (s.id === slotIdA) return { ...s, motherboard: b.motherboard };
+            if (s.id === slotIdB) return { ...s, motherboard: a.motherboard };
+            return s;
+          }),
+        };
+      });
+      persist(updated);
+    },
+    [racks, persist]
+  );
+
+  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots };
 }

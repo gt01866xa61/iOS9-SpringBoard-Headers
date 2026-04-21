@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
@@ -23,21 +24,56 @@ import { Motherboard } from '../models/Motherboard';
 const COLS = 3;
 const GAP = 8;
 const PADDING = 12;
-const ROW_DEL_W = 28;
+const ROW_DEL_W = 36;
 const SLOT_SIZE = (Dimensions.get('window').width - PADDING * 2 - GAP * COLS - ROW_DEL_W) / COLS;
 
 function GridSlot({
   slot,
+  isEditing,
+  isSelected,
   onAssign,
   onClear,
   onOpenUrl,
+  onTap,
 }: {
   slot: RackSlot;
+  isEditing: boolean;
+  isSelected: boolean;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
+  onTap: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard;
+  const selectedStyle = isSelected ? styles.slotSelected : null;
+
+  if (isEditing) {
+    return (
+      <TouchableOpacity
+        style={[styles.slot, { width: SLOT_SIZE, height: SLOT_SIZE }, selectedStyle]}
+        activeOpacity={0.7}
+        onPress={() => onTap(slot)}
+      >
+        <Text style={styles.slotNum}>{slot.position + 1}</Text>
+        {board ? (
+          <>
+            <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+            <Text style={styles.slotChipset}>{board.chipset}</Text>
+            {isSelected && (
+              <View style={styles.selectedBadge}>
+                <Text style={styles.selectedBadgeTxt}>✓</Text>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.emptySlotHint}>
+            <Text style={styles.emptySlotTxt}>{isSelected ? '✓' : '—'}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <View style={[styles.slot, { width: SLOT_SIZE, height: SLOT_SIZE }]}>
       <Text style={styles.slotNum}>{slot.position + 1}</Text>
@@ -64,7 +100,8 @@ function GridSlot({
 }
 
 export function RackScreen() {
-  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow } = useRacks();
+  const navigation = useNavigation();
+  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
@@ -74,6 +111,9 @@ export function RackScreen() {
   const [pendingSlot, setPendingSlot] = useState<{ rackId: string; slot: RackSlot } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
 
   const searchedModels = filteredModels.filter((b) =>
@@ -81,6 +121,23 @@ export function RackScreen() {
     b.fullModelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     b.chipset.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        selectedRack ? (
+          <TouchableOpacity
+            onPress={() => {
+              setIsEditing((v) => !v);
+              setSelectedSlotId(null);
+            }}
+            style={styles.editBtn}
+          >
+            <Text style={styles.editBtnTxt}>{isEditing ? 'Done' : 'Edit'}</Text>
+          </TouchableOpacity>
+        ) : null,
+    });
+  }, [navigation, isEditing, selectedRack]);
 
   const handleAddRack = () => {
     const name = rackName.trim();
@@ -124,6 +181,33 @@ export function RackScreen() {
     [openOfficialPage]
   );
 
+  const handleSlotTap = useCallback(
+    (slot: RackSlot) => {
+      if (!selectedRack) return;
+      if (!selectedSlotId) {
+        setSelectedSlotId(slot.id);
+        return;
+      }
+      if (selectedSlotId === slot.id) {
+        setSelectedSlotId(null);
+        return;
+      }
+      swapSlots(selectedRack.id, selectedSlotId, slot.id);
+      setSelectedSlotId(null);
+    },
+    [selectedRack, selectedSlotId, swapSlots]
+  );
+
+  const handleRemoveRow = useCallback(
+    (rackId: string, row: number) => {
+      Alert.alert('Delete Row', 'Delete this row?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => removeRow(rackId, row) },
+      ]);
+    },
+    [removeRow]
+  );
+
   const slots = selectedRack?.slots ?? [];
 
   return (
@@ -154,6 +238,16 @@ export function RackScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {isEditing && (
+        <View style={styles.editHint}>
+          <Text style={styles.editHintTxt}>
+            {selectedSlotId
+              ? 'Now tap another slot to swap'
+              : 'Tap a slot to select it, then tap another to swap'}
+          </Text>
+        </View>
+      )}
+
       {/* Grid */}
       {selectedRack ? (
         <ScrollView contentContainerStyle={styles.grid}>
@@ -163,30 +257,24 @@ export function RackScreen() {
                 <GridSlot
                   key={slot.id}
                   slot={slot}
+                  isEditing={isEditing}
+                  isSelected={slot.id === selectedSlotId}
                   onAssign={(s) => handleAssign(selectedRack.id, s)}
                   onClear={(s) => clearSlot(selectedRack.id, s.id)}
                   onOpenUrl={handleOpenUrl}
+                  onTap={handleSlotTap}
                 />
               ))}
-              <TouchableOpacity
-                style={styles.rowDelBtn}
-                onPress={() => {
-                  const hasBoards = slots.slice(row * COLS, row * COLS + COLS).some(s => s.motherboard);
-                  if (hasBoards) {
-                    Alert.alert('Delete Row', 'This row has boards assigned. Delete anyway?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => removeRow(selectedRack.id, row) },
-                    ]);
-                  } else {
-                    removeRow(selectedRack.id, row);
-                  }
-                }}
-              >
-                <Text style={styles.rowDelTxt}>−</Text>
-              </TouchableOpacity>
+              {isEditing && (
+                <TouchableOpacity
+                  style={styles.rowDelBtn}
+                  onPress={() => handleRemoveRow(selectedRack.id, row)}
+                >
+                  <Text style={styles.rowDelTxt}>−</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ))}
-          {/* Add Row button */}
           <TouchableOpacity
             style={styles.addRowBtn}
             onPress={() => expandRack(selectedRack.id)}
@@ -243,7 +331,6 @@ export function RackScreen() {
               <Text style={styles.cancelLink}>Cancel</Text>
             </TouchableOpacity>
           </View>
-          {/* Search bar */}
           <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
@@ -284,6 +371,18 @@ const styles = StyleSheet.create({
   newBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#007AFF' },
   newBtnTxt: { color: '#007AFF', fontSize: 14, fontWeight: '500' },
 
+  editBtn: { marginRight: 12 },
+  editBtnTxt: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
+
+  editHint: {
+    backgroundColor: '#FFF9E6',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#F0C040',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  editHintTxt: { fontSize: 13, color: '#7A5F00', textAlign: 'center' },
+
   grid: { padding: PADDING, gap: GAP },
   gridRow: { flexDirection: 'row', gap: GAP },
 
@@ -294,6 +393,11 @@ const styles = StyleSheet.create({
     borderColor: '#e0e4f0',
     padding: 8,
     justifyContent: 'space-between',
+  },
+  slotSelected: {
+    borderColor: '#007AFF',
+    borderWidth: 2,
+    backgroundColor: '#EEF5FF',
   },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
@@ -310,6 +414,16 @@ const styles = StyleSheet.create({
 
   assignBtn: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   assignTxt: { fontSize: 28, color: '#007AFF', fontWeight: '300' },
+
+  emptySlotHint: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptySlotTxt: { fontSize: 20, color: '#ccc' },
+
+  selectedBadge: {
+    position: 'absolute', top: 4, right: 4,
+    backgroundColor: '#007AFF', borderRadius: 10,
+    width: 18, height: 18, justifyContent: 'center', alignItems: 'center',
+  },
+  selectedBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
   rowDelBtn: {
     width: ROW_DEL_W,
