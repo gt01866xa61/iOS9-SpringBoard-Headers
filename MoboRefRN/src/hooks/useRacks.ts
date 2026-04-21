@@ -30,7 +30,7 @@ export function useRacks() {
   }, []);
 
   const addRack = useCallback(
-    (name: string, slotCount = 4) => {
+    (name: string, slotCount = 9) => {
       const slots: RackSlot[] = Array.from({ length: slotCount }, (_, i) => ({
         id: uuid(),
         position: i,

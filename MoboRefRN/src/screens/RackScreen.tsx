@@ -9,29 +9,59 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
-import { SlotItem } from '../components/SlotItem';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 
+const COLS = 3;
+const GAP = 8;
+const PADDING = 12;
+const SLOT_SIZE = (Dimensions.get('window').width - PADDING * 2 - GAP * (COLS - 1)) / COLS;
+
+function GridSlot({
+  slot,
+  onAssign,
+  onClear,
+  onOpenUrl,
+}: {
+  slot: RackSlot;
+  onAssign: (s: RackSlot) => void;
+  onClear: (s: RackSlot) => void;
+  onOpenUrl: (s: RackSlot) => void;
+}) {
+  const board = slot.motherboard;
+  return (
+    <View style={[styles.slot, { width: SLOT_SIZE, height: SLOT_SIZE }]}>
+      <Text style={styles.slotNum}>{slot.position + 1}</Text>
+      {board ? (
+        <>
+          <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+          <Text style={styles.slotChipset}>{board.chipset}</Text>
+          <View style={styles.slotBtns}>
+            <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
+              <Text style={styles.btnPageTxt}>🔗</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.btnRemove} onPress={() => onClear(slot)}>
+              <Text style={styles.btnRemoveTxt}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        <TouchableOpacity style={styles.assignBtn} onPress={() => onAssign(slot)}>
+          <Text style={styles.assignTxt}>+</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 export function RackScreen() {
   const { racks, addRack, removeRack, assignMotherboard, clearSlot } = useRacks();
-  const {
-    filteredModels,
-    isLoading,
-    isResolvingUrl,
-    loadData,
-    openOfficialPage,
-    brands,
-    chipsets,
-    selectedBrand,
-    selectedChipset,
-    setSelectedBrand,
-    setSelectedChipset,
-  } = useCatalog();
+  const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
@@ -65,7 +95,6 @@ export function RackScreen() {
 
   const handleAssign = (rackId: string, slot: RackSlot) => {
     setPendingSlot({ rackId, slot });
-    loadData();
     setAssignModalVisible(true);
   };
 
@@ -78,12 +107,12 @@ export function RackScreen() {
 
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
-      if (slot.motherboard) {
-        await openOfficialPage(slot.motherboard);
-      }
+      if (slot.motherboard) await openOfficialPage(slot.motherboard);
     },
     [openOfficialPage]
   );
+
+  const slots = selectedRack?.slots ?? [];
 
   return (
     <View style={styles.container}>
@@ -92,63 +121,54 @@ export function RackScreen() {
       {/* Rack selector strip */}
       <ScrollView
         horizontal
-        style={styles.rackStrip}
-        contentContainerStyle={styles.rackStripContent}
+        style={styles.strip}
+        contentContainerStyle={styles.stripContent}
         showsHorizontalScrollIndicator={false}
       >
         {racks.map((r) => (
           <TouchableOpacity
             key={r.id}
-            style={[
-              styles.rackTab,
-              selectedRack?.id === r.id && styles.rackTabActive,
-            ]}
+            style={[styles.tab, selectedRack?.id === r.id && styles.tabActive]}
             onPress={() => setSelectedRackId(r.id)}
             onLongPress={() => handleDeleteRack(r)}
           >
-            <Text
-              style={[
-                styles.rackTabText,
-                selectedRack?.id === r.id && styles.rackTabTextActive,
-              ]}
-            >
+            <Text style={[styles.tabTxt, selectedRack?.id === r.id && styles.tabTxtActive]}>
               {r.name}
             </Text>
           </TouchableOpacity>
         ))}
-        <TouchableOpacity
-          style={styles.addRackBtn}
-          onPress={() => setAddRackVisible(true)}
-        >
-          <Text style={styles.addRackText}>+ New Rack</Text>
+        <TouchableOpacity style={styles.newBtn} onPress={() => setAddRackVisible(true)}>
+          <Text style={styles.newBtnTxt}>+ New Rack</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Slots */}
+      {/* Grid */}
       {selectedRack ? (
-        <FlatList
-          data={selectedRack.slots}
-          keyExtractor={(s) => s.id}
-          renderItem={({ item }) => (
-            <SlotItem
-              slot={item}
-              onAssign={(s) => handleAssign(selectedRack.id, s)}
-              onClear={(s) => clearSlot(selectedRack.id, s.id)}
-              onOpenUrl={handleOpenUrl}
-            />
-          )}
-          contentContainerStyle={styles.slotList}
-        />
+        <ScrollView contentContainerStyle={styles.grid}>
+          {Array.from({ length: Math.ceil(slots.length / COLS) }, (_, row) => (
+            <View key={row} style={styles.gridRow}>
+              {slots.slice(row * COLS, row * COLS + COLS).map((slot) => (
+                <GridSlot
+                  key={slot.id}
+                  slot={slot}
+                  onAssign={(s) => handleAssign(selectedRack.id, s)}
+                  onClear={(s) => clearSlot(selectedRack.id, s.id)}
+                  onOpenUrl={handleOpenUrl}
+                />
+              ))}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No racks yet.</Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyTxt}>No racks yet.</Text>
           <Text style={styles.emptyHint}>Tap "+ New Rack" to create one.</Text>
         </View>
       )}
 
       {/* Add rack modal */}
       <Modal visible={addRackVisible} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
+        <View style={styles.modalBg}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>New Rack</Text>
             <TextInput
@@ -159,45 +179,35 @@ export function RackScreen() {
               autoFocus
               onSubmitEditing={handleAddRack}
             />
-            <View style={styles.modalActions}>
+            <View style={styles.modalRow}>
               <TouchableOpacity
                 onPress={() => setAddRackVisible(false)}
                 style={[styles.modalBtn, styles.modalBtnCancel]}
               >
-                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                <Text style={styles.cancelTxt}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleAddRack}
-                style={[styles.modalBtn, styles.modalBtnConfirm]}
-              >
-                <Text style={styles.modalBtnConfirmText}>Create</Text>
+              <TouchableOpacity onPress={handleAddRack} style={[styles.modalBtn, styles.modalBtnOk]}>
+                <Text style={styles.okTxt}>Create</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Assign board modal */}
+      {/* Assign modal */}
       <Modal visible={assignModalVisible} animationType="slide">
         <View style={styles.assignModal}>
           <View style={styles.assignHeader}>
             <Text style={styles.assignTitle}>Select Motherboard</Text>
-            <TouchableOpacity
-              onPress={() => setAssignModalVisible(false)}
-              style={styles.closeBtn}
-            >
-              <Text style={styles.closeBtnText}>Cancel</Text>
+            <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
+              <Text style={styles.cancelLink}>Cancel</Text>
             </TouchableOpacity>
           </View>
-          <LoadingOverlay visible={isLoading} message="Loading catalog..." />
           <FlatList
             data={filteredModels}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.assignRow}
-                onPress={() => handleSelectBoard(item)}
-              >
+              <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
                 <Text style={styles.assignModel}>{item.fullModelName}</Text>
                 <Text style={styles.assignChipset}>{item.chipset}</Text>
               </TouchableOpacity>
@@ -212,88 +222,62 @@ export function RackScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  rackStrip: {
-    maxHeight: 52,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
-  },
-  rackStripContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rackTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  rackTabActive: { backgroundColor: '#007AFF' },
-  rackTabText: { fontSize: 14, color: '#333', fontWeight: '500' },
-  rackTabTextActive: { color: '#fff' },
-  addRackBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-  },
-  addRackText: { color: '#007AFF', fontSize: 14, fontWeight: '500' },
-  slotList: { padding: 16 },
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
-  emptyText: { fontSize: 17, color: '#555', fontWeight: '500' },
-  emptyHint: { fontSize: 14, color: '#aaa' },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalBox: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 24,
-    gap: 16,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
+  strip: { maxHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
+  stripContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8, alignItems: 'center' },
+  tab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f0f0f0' },
+  tabActive: { backgroundColor: '#007AFF' },
+  tabTxt: { fontSize: 14, color: '#333', fontWeight: '500' },
+  tabTxtActive: { color: '#fff' },
+  newBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#007AFF' },
+  newBtnTxt: { color: '#007AFF', fontSize: 14, fontWeight: '500' },
+
+  grid: { padding: PADDING, gap: GAP },
+  gridRow: { flexDirection: 'row', gap: GAP },
+
+  slot: {
+    backgroundColor: '#f8f9ff',
     borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-  },
-  modalActions: { flexDirection: 'row', gap: 12 },
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalBtnCancel: { backgroundColor: '#f0f0f0' },
-  modalBtnConfirm: { backgroundColor: '#007AFF' },
-  modalBtnCancelText: { color: '#333', fontWeight: '600' },
-  modalBtnConfirmText: { color: '#fff', fontWeight: '600' },
-  assignModal: { flex: 1, backgroundColor: '#fff' },
-  assignHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e4f0',
+    padding: 8,
     justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
   },
+  slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
+  slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
+  slotChipset: {
+    fontSize: 10, color: '#2563EB', fontWeight: '600',
+    backgroundColor: '#EFF6FF', alignSelf: 'flex-start',
+    paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4, marginTop: 2,
+  },
+  slotBtns: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  btnPage: { backgroundColor: '#007AFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  btnPageTxt: { fontSize: 12 },
+  btnRemove: { backgroundColor: '#FEE2E2', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  btnRemoveTxt: { fontSize: 12, color: '#DC2626' },
+
+  assignBtn: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  assignTxt: { fontSize: 28, color: '#007AFF', fontWeight: '300' },
+
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
+  emptyTxt: { fontSize: 17, color: '#555', fontWeight: '500' },
+  emptyHint: { fontSize: 14, color: '#aaa' },
+
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, gap: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 15 },
+  modalRow: { flexDirection: 'row', gap: 12 },
+  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  modalBtnCancel: { backgroundColor: '#f0f0f0' },
+  modalBtnOk: { backgroundColor: '#007AFF' },
+  cancelTxt: { color: '#333', fontWeight: '600' },
+  okTxt: { color: '#fff', fontWeight: '600' },
+
+  assignModal: { flex: 1, backgroundColor: '#fff' },
+  assignHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
   assignTitle: { fontSize: 18, fontWeight: '700' },
-  closeBtn: { padding: 4 },
-  closeBtnText: { color: '#007AFF', fontSize: 16 },
-  assignRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
-  },
+  cancelLink: { color: '#007AFF', fontSize: 16 },
+  assignRow: { paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
   assignModel: { fontSize: 15, fontWeight: '500', color: '#111' },
   assignChipset: { fontSize: 13, color: '#888', marginTop: 2 },
 });
