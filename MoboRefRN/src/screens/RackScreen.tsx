@@ -10,7 +10,10 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
@@ -60,7 +63,7 @@ function GridSlot({
 }
 
 export function RackScreen() {
-  const { racks, addRack, removeRack, assignMotherboard, clearSlot } = useRacks();
+  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
@@ -68,8 +71,15 @@ export function RackScreen() {
   const [rackName, setRackName] = useState('');
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ rackId: string; slot: RackSlot } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
+
+  const searchedModels = filteredModels.filter((b) =>
+    searchQuery.trim() === '' ||
+    b.fullModelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.chipset.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleAddRack = () => {
     const name = rackName.trim();
@@ -95,6 +105,7 @@ export function RackScreen() {
 
   const handleAssign = (rackId: string, slot: RackSlot) => {
     setPendingSlot({ rackId, slot });
+    setSearchQuery('');
     setAssignModalVisible(true);
   };
 
@@ -158,6 +169,13 @@ export function RackScreen() {
               ))}
             </View>
           ))}
+          {/* Add Row button */}
+          <TouchableOpacity
+            style={styles.addRowBtn}
+            onPress={() => expandRack(selectedRack.id)}
+          >
+            <Text style={styles.addRowTxt}>+ Add Row</Text>
+          </TouchableOpacity>
         </ScrollView>
       ) : (
         <View style={styles.empty}>
@@ -168,7 +186,11 @@ export function RackScreen() {
 
       {/* Add rack modal */}
       <Modal visible={addRackVisible} transparent animationType="slide">
-        <View style={styles.modalBg}>
+        <KeyboardAvoidingView
+          style={styles.modalBg}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setAddRackVisible(false)} />
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>New Rack</Text>
             <TextInput
@@ -177,6 +199,7 @@ export function RackScreen() {
               value={rackName}
               onChangeText={setRackName}
               autoFocus
+              returnKeyType="done"
               onSubmitEditing={handleAddRack}
             />
             <View style={styles.modalRow}>
@@ -191,21 +214,33 @@ export function RackScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Assign modal */}
       <Modal visible={assignModalVisible} animationType="slide">
-        <View style={styles.assignModal}>
+        <SafeAreaView style={styles.assignModal}>
           <View style={styles.assignHeader}>
             <Text style={styles.assignTitle}>Select Motherboard</Text>
             <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
               <Text style={styles.cancelLink}>Cancel</Text>
             </TouchableOpacity>
           </View>
+          {/* Search bar */}
+          <View style={styles.searchBox}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search model or chipset..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+              autoCorrect={false}
+            />
+          </View>
           <FlatList
-            data={filteredModels}
+            data={searchedModels}
             keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
                 <Text style={styles.assignModel}>{item.fullModelName}</Text>
@@ -214,7 +249,7 @@ export function RackScreen() {
             )}
             contentContainerStyle={{ paddingBottom: 24 }}
           />
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -258,11 +293,22 @@ const styles = StyleSheet.create({
   assignBtn: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   assignTxt: { fontSize: 28, color: '#007AFF', fontWeight: '300' },
 
+  addRowBtn: {
+    marginTop: 4,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  addRowTxt: { color: '#007AFF', fontSize: 14, fontWeight: '600' },
+
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   emptyTxt: { fontSize: 17, color: '#555', fontWeight: '500' },
   emptyHint: { fontSize: 14, color: '#aaa' },
 
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalBg: { flex: 1, justifyContent: 'flex-end' },
   modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, gap: 16 },
   modalTitle: { fontSize: 18, fontWeight: '700' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 15 },
@@ -277,6 +323,8 @@ const styles = StyleSheet.create({
   assignHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
   assignTitle: { fontSize: 18, fontWeight: '700' },
   cancelLink: { color: '#007AFF', fontSize: 16 },
+  searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  searchInput: { backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
   assignRow: { paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
   assignModel: { fontSize: 15, fontWeight: '500', color: '#111' },
   assignChipset: { fontSize: 13, color: '#888', marginTop: 2 },

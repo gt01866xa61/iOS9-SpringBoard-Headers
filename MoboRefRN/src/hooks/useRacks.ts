@@ -80,5 +80,21 @@ export function useRacks() {
     [racks, persist]
   );
 
-  return { racks, addRack, removeRack, assignMotherboard, clearSlot };
+  const expandRack = useCallback(
+    (rackId: string) => {
+      const updated = racks.map((r) => {
+        if (r.id !== rackId) return r;
+        const base = r.slots.length;
+        const newSlots: RackSlot[] = Array.from({ length: 3 }, (_, i) => ({
+          id: uuid(),
+          position: base + i,
+        }));
+        return { ...r, slots: [...r.slots, ...newSlots] };
+      });
+      persist(updated);
+    },
+    [racks, persist]
+  );
+
+  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack };
 }
