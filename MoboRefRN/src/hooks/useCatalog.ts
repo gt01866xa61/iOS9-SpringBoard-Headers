@@ -40,9 +40,15 @@ export function useCatalog() {
     setError(null);
     try {
       const data = await fetchFullIndex(forceRefresh);
+      console.log(`[useCatalog] fetchFullIndex returned ${data.length} boards`);
+      if (data.length === 0) {
+        setError('Fetched 0 results — check console for scraper logs');
+      }
       setAllBoards(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load data');
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[useCatalog] loadData error:', msg);
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
