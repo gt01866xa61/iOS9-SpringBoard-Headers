@@ -56,6 +56,7 @@ async function fetchBrandPage(brand: string): Promise<Motherboard[]> {
       timeout: 20000,
     });
     console.log(`[Scraper] ${brand} HTTP ${response.status}, HTML ${response.data.length} bytes`);
+    console.log(`[Scraper] ${brand} HTML preview:`, response.data.slice(0, 800));
     const root = parse(response.data);
     const rows = root.querySelectorAll(SCRAPING_CONFIG.indexRowSelector);
     console.log(`[Scraper] ${brand} rows found: ${rows.length}`);
