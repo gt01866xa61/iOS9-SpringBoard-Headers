@@ -4,14 +4,15 @@ import { Motherboard } from '../models/Motherboard';
 import { STATIC_BOARDS } from '../data/StaticBoardData';
 import { resolve } from '../services/URLResolverService';
 import { useCustomBoards } from './useCustomBoards';
+import { useSavedUrls } from './useSavedUrls';
 
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
+  const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
 
-  // Custom boards always shown first so user can find them easily
   const allBoards = useMemo(
     () => [...customBoards, ...STATIC_BOARDS],
     [customBoards]
@@ -40,15 +41,19 @@ export function useCatalog() {
     });
   }, [allBoards, selectedBrand, selectedChipset]);
 
-  const openOfficialPage = useCallback(async (board: Motherboard) => {
-    setIsResolvingUrl(true);
-    try {
-      const url = await resolve(board);
-      await Linking.openURL(url);
-    } finally {
-      setIsResolvingUrl(false);
-    }
-  }, []);
+  const openOfficialPage = useCallback(
+    async (board: Motherboard) => {
+      setIsResolvingUrl(true);
+      try {
+        // Priority: user-saved URL → custom board URL → Google site: search
+        const url = savedUrls[board.id] ?? (await resolve(board));
+        await Linking.openURL(url);
+      } finally {
+        setIsResolvingUrl(false);
+      }
+    },
+    [savedUrls]
+  );
 
   const selectBrand = useCallback((brand: string) => {
     setSelectedBrand(brand);
@@ -71,5 +76,8 @@ export function useCatalog() {
     setSelectedChipset,
     addCustomBoard,
     removeCustomBoard,
+    savedUrls,
+    saveUrl,
+    removeSavedUrl,
   };
 }
