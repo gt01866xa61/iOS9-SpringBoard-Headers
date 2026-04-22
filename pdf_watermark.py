@@ -605,7 +605,29 @@ class DropZoneApp:
 
 
 def main():
+    import sys
+
     root = TkinterDnD.Tk()
+
+    # Desktop icon mode: file paths passed as command-line arguments
+    pdf_paths = [p for p in sys.argv[1:] if p.lower().endswith(".pdf") and os.path.isfile(p)]
+    if pdf_paths:
+        root.withdraw()  # no main window needed
+        for pdf_path in pdf_paths:
+            dlg = WatermarkDialog(root, pdf_path)
+            params = dlg.show()
+            if params is None:
+                continue
+            try:
+                engine = WatermarkEngine(pdf_path, params)
+                out_path = engine.apply()
+                messagebox.showinfo("完成", f"✓ 已儲存：\n{out_path}", parent=root)
+            except Exception as e:
+                messagebox.showerror("處理失敗", f"無法套用浮水印：\n{e}", parent=root)
+        root.destroy()
+        return
+
+    # Normal window mode: show the drag-and-drop zone
     root.geometry("420x360")
     DropZoneApp(root)
     root.mainloop()
