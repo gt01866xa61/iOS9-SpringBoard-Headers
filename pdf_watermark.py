@@ -426,7 +426,7 @@ class WatermarkDialog:
         out_frame.pack(fill="x", padx=10, pady=4)
 
         self._out_mode_var = tk.StringVar(value=c.get("output_mode", "same"))
-        self._out_suffix_var = tk.StringVar(value=c.get("output_suffix", "_浮水印"))
+        self._out_suffix_var = tk.StringVar(value=c.get("output_suffix", ""))
         self._out_folder_var = tk.StringVar(value=c.get("output_folder", ""))
 
         ttk.Label(out_frame, text="輸出方式：", font=("", 9, "bold")).grid(row=0, column=0, sticky="w")
@@ -437,6 +437,7 @@ class WatermarkDialog:
         rb_same.grid(row=0, column=1, sticky="w")
         self._suffix_entry = ttk.Entry(out_frame, textvariable=self._out_suffix_var, width=12)
         self._suffix_entry.grid(row=0, column=2, sticky="w", padx=4)
+        ttk.Label(out_frame, text="（空白→_浮水印）", foreground="#888").grid(row=0, column=3, sticky="w")
 
         rb_folder = ttk.Radiobutton(out_frame, text="指定資料夾：",
                                      variable=self._out_mode_var, value="folder",
@@ -540,7 +541,7 @@ class WatermarkDialog:
             "page_from": self._page_from_var.get(),
             "page_to": self._page_to_var.get(),
             "output_mode": self._out_mode_var.get(),
-            "output_suffix": self._out_suffix_var.get() or "_浮水印",
+            "output_suffix": self._out_suffix_var.get(),
             "output_folder": self._out_folder_var.get(),
         })
 
