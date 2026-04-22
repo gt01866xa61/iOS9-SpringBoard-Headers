@@ -2,9 +2,11 @@
 """PDF 浮水印工具 - 拖曳 PDF 自動套用浮水印"""
 
 import io
+import json
 import os
 import re
 import tkinter as tk
+from pathlib import Path
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
 try:
@@ -21,6 +23,23 @@ try:
     from PIL import Image
 except ImportError:
     raise SystemExit("請先安裝 Pillow：pip install Pillow")
+
+
+CONFIG_PATH = Path.home() / ".pdf_watermark_config.json"
+
+def load_config() -> dict:
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_config(cfg: dict):
+    try:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 
 FONTS = {
@@ -131,22 +150,25 @@ class WatermarkEngine:
         font = fitz.Font(fontname=fontname)
         tw = fitz.TextWriter(page.rect)
 
+        text_width = font.text_length(text, fontsize=fontsize)
+
         if p["position"] == "平鋪重複":
             step_x = page.rect.width / 3
             step_y = page.rect.height / 3
             for col in range(3):
                 for row in range(3):
-                    pos = fitz.Point(
-                        col * step_x + step_x / 2,
-                        row * step_y + step_y / 2,
-                    )
+                    cx = col * step_x + step_x / 2
+                    cy = row * step_y + step_y / 2
+                    pos = fitz.Point(cx - text_width / 2, cy + fontsize * 0.3)
                     tw.append(pos, text, font=font, fontsize=fontsize)
             morph = self._make_morph(page.rect.width / 2, page.rect.height / 2, rotation)
             tw.write_text(page, color=color, opacity=opacity, morph=morph, overlay=overlay)
         else:
-            pos = self._text_position(page, fontsize)
+            pos = self._text_position(page, fontsize, text_width)
+            cx = pos.x + text_width / 2
+            cy = pos.y - fontsize * 0.3
             tw.append(pos, text, font=font, fontsize=fontsize)
-            morph = self._make_morph(pos.x, pos.y, rotation)
+            morph = self._make_morph(cx, cy, rotation)
             tw.write_text(page, color=color, opacity=opacity, morph=morph, overlay=overlay)
 
     def _make_morph(self, cx, cy, angle):
@@ -156,17 +178,17 @@ class WatermarkEngine:
         mat = fitz.Matrix(1, 0, 0, 1, 0, 0).prerotate(angle)
         return (pivot, mat)
 
-    def _text_position(self, page, fontsize) -> fitz.Point:
+    def _text_position(self, page, fontsize, text_width=0) -> fitz.Point:
         w, h = page.rect.width, page.rect.height
         pad = 30
         pos_map = {
-            "置中":  fitz.Point(w / 2, h / 2),
+            "置中":  fitz.Point(w / 2 - text_width / 2, h / 2 + fontsize * 0.3),
             "左上":  fitz.Point(pad, pad + fontsize),
-            "右上":  fitz.Point(w - pad, pad + fontsize),
+            "右上":  fitz.Point(w - pad - text_width, pad + fontsize),
             "左下":  fitz.Point(pad, h - pad),
-            "右下":  fitz.Point(w - pad, h - pad),
+            "右下":  fitz.Point(w - pad - text_width, h - pad),
         }
-        return pos_map.get(self.params["position"], fitz.Point(w / 2, h / 2))
+        return pos_map.get(self.params["position"], fitz.Point(w / 2 - text_width / 2, h / 2 + fontsize * 0.3))
 
     def _apply_image(self, page):
         p = self.params
@@ -216,7 +238,8 @@ class WatermarkDialog:
         self.parent = parent
         self.pdf_path = pdf_path
         self.result = None
-        self._color_hex = "#FF0000"
+        self._cfg = load_config()
+        self._color_hex = self._cfg.get("text_color_hex", "#FF0000")
 
         self.dialog = tk.Toplevel(parent)
         self.dialog.title(f"浮水印設定 — {os.path.basename(pdf_path)}")
@@ -239,18 +262,21 @@ class WatermarkDialog:
         self._build_image_tab()
         self._build_common_section()
         self._build_buttons()
+        # restore last used tab
+        nb.select(self._cfg.get("last_tab", 0))
 
     # ---- Text tab ----
 
     def _build_text_tab(self):
         f = self._text_tab
-        self._text_var = tk.StringVar(value="機密文件")
-        self._font_var = tk.StringVar(value="Helvetica")
-        self._fontsize_var = tk.IntVar(value=60)
-        self._text_opacity_var = tk.IntVar(value=30)
-        self._text_rotation_var = tk.IntVar(value=45)
-        self._text_position_var = tk.StringVar(value="置中")
-        self._text_overlay_var = tk.BooleanVar(value=True)
+        c = self._cfg
+        self._text_var = tk.StringVar(value=c.get("text_text", "機密文件"))
+        self._font_var = tk.StringVar(value=c.get("text_font", "Helvetica"))
+        self._fontsize_var = tk.IntVar(value=c.get("text_fontsize", 60))
+        self._text_opacity_var = tk.IntVar(value=c.get("text_opacity", 25))
+        self._text_rotation_var = tk.IntVar(value=c.get("text_rotation", 45))
+        self._text_position_var = tk.StringVar(value=c.get("text_position", "置中"))
+        self._text_overlay_var = tk.BooleanVar(value=c.get("text_overlay", True))
 
         row = 0
         ttk.Label(f, text="浮水印文字：").grid(row=row, column=0, sticky="w", padx=10, pady=4)
@@ -294,12 +320,13 @@ class WatermarkDialog:
 
     def _build_image_tab(self):
         f = self._image_tab
-        self._image_path_var = tk.StringVar()
-        self._image_scale_var = tk.IntVar(value=30)
-        self._image_opacity_var = tk.IntVar(value=50)
-        self._image_rotation_var = tk.IntVar(value=0)
-        self._image_position_var = tk.StringVar(value="置中")
-        self._image_overlay_var = tk.BooleanVar(value=True)
+        c = self._cfg
+        self._image_path_var = tk.StringVar(value=c.get("image_path", ""))
+        self._image_scale_var = tk.IntVar(value=c.get("image_scale", 30))
+        self._image_opacity_var = tk.IntVar(value=c.get("image_opacity", 50))
+        self._image_rotation_var = tk.IntVar(value=c.get("image_rotation", 0))
+        self._image_position_var = tk.StringVar(value=c.get("image_position", "置中"))
+        self._image_overlay_var = tk.BooleanVar(value=c.get("image_overlay", True))
 
         row = 0
         ttk.Label(f, text="圖片路徑：").grid(row=row, column=0, sticky="w", padx=10, pady=4)
@@ -334,16 +361,19 @@ class WatermarkDialog:
     # ---- Shared helper ----
 
     def _make_scale_row(self, parent, row, var, from_, to, unit):
-        lbl = ttk.Label(parent, text=f"{var.get()}{unit}", width=6)
-        scale = ttk.Scale(parent, from_=from_, to=to, variable=var, orient="horizontal", length=180)
+        scale = ttk.Scale(parent, from_=from_, to=to, variable=var, orient="horizontal", length=150)
 
-        def update_label(*_):
-            lbl.config(text=f"{int(var.get())}{unit}")
+        def on_scale(*_):
             var.set(int(var.get()))
 
-        scale.config(command=update_label)
+        scale.config(command=on_scale)
         scale.grid(row=row, column=1, sticky="w", padx=10)
-        lbl.grid(row=row, column=2, sticky="w")
+
+        val_frame = ttk.Frame(parent)
+        val_frame.grid(row=row, column=2, sticky="w")
+        spin = ttk.Spinbox(val_frame, from_=from_, to=to, textvariable=var, width=5)
+        spin.pack(side="left")
+        ttk.Label(val_frame, text=unit).pack(side="left", padx=(2, 0))
 
     # ---- Common (page range + output) ----
 
@@ -354,10 +384,11 @@ class WatermarkDialog:
         frame = ttk.Frame(self.dialog)
         frame.pack(fill="x", padx=10, pady=6)
 
-        self._page_mode_var = tk.StringVar(value="all")
-        self._page_spec_var = tk.StringVar(value="")
-        self._page_from_var = tk.IntVar(value=1)
-        self._page_to_var = tk.IntVar(value=1)
+        c = self._cfg
+        self._page_mode_var = tk.StringVar(value=c.get("page_range_mode", "all"))
+        self._page_spec_var = tk.StringVar(value=c.get("page_spec", ""))
+        self._page_from_var = tk.IntVar(value=c.get("page_from", 1))
+        self._page_to_var = tk.IntVar(value=c.get("page_to", 1))
 
         ttk.Label(frame, text="頁面範圍：", font=("", 9, "bold")).grid(row=0, column=0, sticky="w", pady=2)
 
@@ -394,9 +425,9 @@ class WatermarkDialog:
         out_frame = ttk.Frame(self.dialog)
         out_frame.pack(fill="x", padx=10, pady=4)
 
-        self._out_mode_var = tk.StringVar(value="same")
-        self._out_suffix_var = tk.StringVar(value="_浮水印")
-        self._out_folder_var = tk.StringVar(value="")
+        self._out_mode_var = tk.StringVar(value=c.get("output_mode", "same"))
+        self._out_suffix_var = tk.StringVar(value=c.get("output_suffix", "_浮水印"))
+        self._out_folder_var = tk.StringVar(value=c.get("output_folder", ""))
 
         ttk.Label(out_frame, text="輸出方式：", font=("", 9, "bold")).grid(row=0, column=0, sticky="w")
 
@@ -417,6 +448,10 @@ class WatermarkDialog:
         self._folder_entry.pack(side="left")
         self._folder_btn = ttk.Button(folder_f, text="瀏覽…", command=self._pick_folder, state="disabled")
         self._folder_btn.pack(side="left", padx=4)
+
+        # apply saved states
+        self._update_page_widgets()
+        self._update_out_widgets()
 
     def _build_buttons(self):
         btn_f = ttk.Frame(self.dialog)
@@ -483,6 +518,31 @@ class WatermarkDialog:
             if not folder or not os.path.isdir(folder):
                 messagebox.showwarning("資料夾無效", "請選擇有效的輸出資料夾。", parent=self.dialog)
                 return
+
+        save_config({
+            "last_tab": self._nb.index(self._nb.select()),
+            "text_text": self._text_var.get(),
+            "text_font": self._font_var.get(),
+            "text_fontsize": self._fontsize_var.get(),
+            "text_color_hex": self._color_hex,
+            "text_opacity": self._text_opacity_var.get(),
+            "text_rotation": self._text_rotation_var.get(),
+            "text_position": self._text_position_var.get(),
+            "text_overlay": bool(self._text_overlay_var.get()),
+            "image_path": self._image_path_var.get(),
+            "image_scale": self._image_scale_var.get(),
+            "image_opacity": self._image_opacity_var.get(),
+            "image_rotation": self._image_rotation_var.get(),
+            "image_position": self._image_position_var.get(),
+            "image_overlay": bool(self._image_overlay_var.get()),
+            "page_range_mode": self._page_mode_var.get(),
+            "page_spec": self._page_spec_var.get(),
+            "page_from": self._page_from_var.get(),
+            "page_to": self._page_to_var.get(),
+            "output_mode": self._out_mode_var.get(),
+            "output_suffix": self._out_suffix_var.get() or "_浮水印",
+            "output_folder": self._out_folder_var.get(),
+        })
 
         self.result = {
             "watermark_type": wtype,
