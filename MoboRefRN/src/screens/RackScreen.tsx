@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
@@ -25,10 +25,15 @@ const COLS = 3;
 const GAP = 8;
 const PADDING = 12;
 const ROW_DEL_W = 36;
-const SLOT_SIZE = (Dimensions.get('window').width - PADDING * 2 - GAP * COLS - ROW_DEL_W) / COLS;
+const WIN_W = Dimensions.get('window').width;
+
+function slotSize(isEditing: boolean) {
+  return (WIN_W - PADDING * 2 - GAP * COLS - (isEditing ? ROW_DEL_W : 0)) / COLS;
+}
 
 function GridSlot({
   slot,
+  size,
   isEditing,
   isSelected,
   onAssign,
@@ -37,6 +42,7 @@ function GridSlot({
   onTap,
 }: {
   slot: RackSlot;
+  size: number;
   isEditing: boolean;
   isSelected: boolean;
   onAssign: (s: RackSlot) => void;
@@ -45,12 +51,11 @@ function GridSlot({
   onTap: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard;
-  const selectedStyle = isSelected ? styles.slotSelected : null;
 
   if (isEditing) {
     return (
       <TouchableOpacity
-        style={[styles.slot, { width: SLOT_SIZE, height: SLOT_SIZE }, selectedStyle]}
+        style={[styles.slot, { width: size, height: size }, isSelected && styles.slotSelected]}
         activeOpacity={0.7}
         onPress={() => onTap(slot)}
       >
@@ -75,7 +80,7 @@ function GridSlot({
   }
 
   return (
-    <View style={[styles.slot, { width: SLOT_SIZE, height: SLOT_SIZE }]}>
+    <View style={[styles.slot, { width: size, height: size }]}>
       <Text style={styles.slotNum}>{slot.position + 1}</Text>
       {board ? (
         <>
@@ -101,6 +106,7 @@ function GridSlot({
 
 export function RackScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
 
@@ -110,11 +116,11 @@ export function RackScreen() {
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ rackId: string; slot: RackSlot } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
+  const size = slotSize(isEditing);
 
   const searchedModels = filteredModels.filter((b) =>
     searchQuery.trim() === '' ||
@@ -124,20 +130,24 @@ export function RackScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () =>
-        selectedRack ? (
-          <TouchableOpacity
-            onPress={() => {
-              setIsEditing((v) => !v);
-              setSelectedSlotId(null);
-            }}
-            style={styles.editBtn}
-          >
-            <Text style={styles.editBtnTxt}>{isEditing ? 'Done' : 'Edit'}</Text>
-          </TouchableOpacity>
-        ) : null,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            setIsEditing((v) => !v);
+            setSelectedSlotId(null);
+          }}
+          style={styles.editBtn}
+        >
+          <Text style={styles.editBtnTxt}>{isEditing ? 'Done' : 'Edit'}</Text>
+        </TouchableOpacity>
+      ),
     });
-  }, [navigation, isEditing, selectedRack]);
+  }, [navigation, isEditing]);
+
+  const handleSelectRack = (id: string) => {
+    setSelectedRackId(id);
+    setSelectedSlotId(null);
+  };
 
   const handleAddRack = () => {
     const name = rackName.trim();
@@ -222,28 +232,36 @@ export function RackScreen() {
         showsHorizontalScrollIndicator={false}
       >
         {racks.map((r) => (
-          <TouchableOpacity
-            key={r.id}
-            style={[styles.tab, selectedRack?.id === r.id && styles.tabActive]}
-            onPress={() => setSelectedRackId(r.id)}
-            onLongPress={() => handleDeleteRack(r)}
-          >
-            <Text style={[styles.tabTxt, selectedRack?.id === r.id && styles.tabTxtActive]}>
-              {r.name}
-            </Text>
-          </TouchableOpacity>
+          <View key={r.id} style={styles.tabWrapper}>
+            <TouchableOpacity
+              style={[styles.tab, selectedRack?.id === r.id && styles.tabActive]}
+              onPress={() => handleSelectRack(r.id)}
+            >
+              <Text style={[styles.tabTxt, selectedRack?.id === r.id && styles.tabTxtActive]}>
+                {r.name}
+              </Text>
+            </TouchableOpacity>
+            {isEditing && (
+              <TouchableOpacity style={styles.tabDeleteBadge} onPress={() => handleDeleteRack(r)}>
+                <Text style={styles.tabDeleteBadgeTxt}>×</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         ))}
-        <TouchableOpacity style={styles.newBtn} onPress={() => setAddRackVisible(true)}>
-          <Text style={styles.newBtnTxt}>+ New Rack</Text>
-        </TouchableOpacity>
+        {isEditing && (
+          <TouchableOpacity style={styles.newBtn} onPress={() => setAddRackVisible(true)}>
+            <Text style={styles.newBtnTxt}>+ New Rack</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
+      {/* Edit mode hint */}
       {isEditing && (
         <View style={styles.editHint}>
           <Text style={styles.editHintTxt}>
             {selectedSlotId
               ? 'Now tap another slot to swap'
-              : 'Tap a slot to select it, then tap another to swap'}
+              : 'Tap a slot to select, tap another to swap'}
           </Text>
         </View>
       )}
@@ -257,6 +275,7 @@ export function RackScreen() {
                 <GridSlot
                   key={slot.id}
                   slot={slot}
+                  size={size}
                   isEditing={isEditing}
                   isSelected={slot.id === selectedSlotId}
                   onAssign={(s) => handleAssign(selectedRack.id, s)}
@@ -275,17 +294,27 @@ export function RackScreen() {
               )}
             </View>
           ))}
-          <TouchableOpacity
-            style={styles.addRowBtn}
-            onPress={() => expandRack(selectedRack.id)}
-          >
-            <Text style={styles.addRowTxt}>+ Add Row</Text>
-          </TouchableOpacity>
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.addRowBtn}
+              onPress={() => expandRack(selectedRack.id)}
+            >
+              <Text style={styles.addRowTxt}>+ Add Row</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       ) : (
         <View style={styles.empty}>
-          <Text style={styles.emptyTxt}>No racks yet.</Text>
-          <Text style={styles.emptyHint}>Tap "+ New Rack" to create one.</Text>
+          {isEditing ? (
+            <TouchableOpacity style={styles.createFirstBtn} onPress={() => setAddRackVisible(true)}>
+              <Text style={styles.createFirstTxt}>+ New Rack</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <Text style={styles.emptyTxt}>No racks yet.</Text>
+              <Text style={styles.emptyHint}>Tap "Edit" to create your first rack.</Text>
+            </>
+          )}
         </View>
       )}
 
@@ -322,9 +351,9 @@ export function RackScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Assign modal */}
+      {/* Assign modal — paddingTop from insets avoids status bar overlap in Modal context */}
       <Modal visible={assignModalVisible} animationType="slide">
-        <SafeAreaView style={styles.assignModal} edges={['top', 'left', 'right']}>
+        <View style={[styles.assignModal, { paddingTop: insets.top }]}>
           <View style={styles.assignHeader}>
             <Text style={styles.assignTitle}>Select Motherboard</Text>
             <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
@@ -354,7 +383,7 @@ export function RackScreen() {
             )}
             contentContainerStyle={{ paddingBottom: 24 }}
           />
-        </SafeAreaView>
+        </View>
       </Modal>
     </View>
   );
@@ -362,12 +391,23 @@ export function RackScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  strip: { maxHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
-  stripContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8, alignItems: 'center' },
+  strip: { maxHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
+  stripContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8, alignItems: 'center' },
+
+  tabWrapper: { position: 'relative' },
   tab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f0f0f0' },
   tabActive: { backgroundColor: '#007AFF' },
   tabTxt: { fontSize: 14, color: '#333', fontWeight: '500' },
   tabTxtActive: { color: '#fff' },
+  tabDeleteBadge: {
+    position: 'absolute', top: -5, right: -5,
+    backgroundColor: '#FF3B30', borderRadius: 9,
+    width: 18, height: 18,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 10,
+  },
+  tabDeleteBadgeTxt: { color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 18 },
+
   newBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#007AFF' },
   newBtnTxt: { color: '#007AFF', fontSize: 14, fontWeight: '500' },
 
@@ -379,7 +419,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: '#F0C040',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   editHintTxt: { fontSize: 13, color: '#7A5F00', textAlign: 'center' },
 
@@ -394,11 +434,7 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'space-between',
   },
-  slotSelected: {
-    borderColor: '#007AFF',
-    borderWidth: 2,
-    backgroundColor: '#EEF5FF',
-  },
+  slotSelected: { borderColor: '#007AFF', borderWidth: 2, backgroundColor: '#EEF5FF' },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
   slotChipset: {
@@ -425,27 +461,23 @@ const styles = StyleSheet.create({
   },
   selectedBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  rowDelBtn: {
-    width: ROW_DEL_W,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-  },
-  rowDelTxt: { fontSize: 22, color: '#DC2626', fontWeight: '300' },
+  rowDelBtn: { width: ROW_DEL_W, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' },
+  rowDelTxt: { fontSize: 24, color: '#DC2626', fontWeight: '300' },
+
   addRowBtn: {
-    marginTop: 4,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
-    alignItems: 'center',
+    marginTop: 4, paddingVertical: 12, borderRadius: 10,
+    borderWidth: 1, borderColor: '#007AFF', borderStyle: 'dashed', alignItems: 'center',
   },
   addRowTxt: { color: '#007AFF', fontSize: 14, fontWeight: '600' },
 
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   emptyTxt: { fontSize: 17, color: '#555', fontWeight: '500' },
   emptyHint: { fontSize: 14, color: '#aaa' },
+  createFirstBtn: {
+    backgroundColor: '#007AFF', paddingHorizontal: 28, paddingVertical: 14,
+    borderRadius: 14,
+  },
+  createFirstTxt: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
   modalBg: { flex: 1, justifyContent: 'flex-end' },
   modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, gap: 16 },
@@ -459,7 +491,10 @@ const styles = StyleSheet.create({
   okTxt: { color: '#fff', fontWeight: '600' },
 
   assignModal: { flex: 1, backgroundColor: '#fff' },
-  assignHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd' },
+  assignHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ddd',
+  },
   assignTitle: { fontSize: 18, fontWeight: '700' },
   cancelLink: { color: '#007AFF', fontSize: 16 },
   searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
