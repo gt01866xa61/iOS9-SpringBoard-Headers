@@ -607,12 +607,13 @@ class DropZoneApp:
 def main():
     import sys
 
-    root = TkinterDnD.Tk()
-
-    # Desktop icon mode: file paths passed as command-line arguments
     pdf_paths = [p for p in sys.argv[1:] if p.lower().endswith(".pdf") and os.path.isfile(p)]
+
     if pdf_paths:
-        root.withdraw()  # no main window needed
+        # Desktop icon mode: PDF dropped onto the .py file icon
+        # Use plain tk.Tk (no drag-drop window needed)
+        root = tk.Tk()
+        root.withdraw()
         for pdf_path in pdf_paths:
             dlg = WatermarkDialog(root, pdf_path)
             params = dlg.show()
@@ -628,6 +629,7 @@ def main():
         return
 
     # Normal window mode: show the drag-and-drop zone
+    root = TkinterDnD.Tk()
     root.geometry("420x360")
     DropZoneApp(root)
     root.mainloop()
