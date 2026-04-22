@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  Alert,
   RefreshControl,
   Platform,
 } from 'react-native';
@@ -28,22 +29,43 @@ export function CatalogScreen() {
     openOfficialPage,
     setSelectedBrand,
     setSelectedChipset,
+    removeCustomBoard,
   } = useCatalog();
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  const handleLongPress = (item: Motherboard) => {
+    if (!item.isCustom) return;
+    Alert.alert(
+      'Remove Custom Board',
+      `Remove "${item.fullModelName}" from your catalog?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => removeCustomBoard(item.id) },
+      ]
+    );
+  };
+
   const renderItem = ({ item }: { item: Motherboard }) => (
     <TouchableOpacity
       style={styles.row}
       onPress={() => openOfficialPage(item)}
+      onLongPress={() => handleLongPress(item)}
       activeOpacity={0.7}
     >
       <View style={styles.rowLeft}>
-        <Text style={styles.modelName} numberOfLines={2}>
-          {item.fullModelName}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.modelName} numberOfLines={2}>
+            {item.fullModelName}
+          </Text>
+          {item.isCustom && (
+            <View style={styles.customBadge}>
+              <Text style={styles.customBadgeTxt}>Custom</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.brand}>{item.brand}</Text>
       </View>
       <View style={styles.chipsetBadge}>
@@ -99,7 +121,7 @@ export function CatalogScreen() {
         </View>
       ) : null}
 
-      {/* Count + active filter summary */}
+      {/* Count + clear filters */}
       <View style={styles.countRow}>
         <Text style={styles.count}>{filteredModels.length} models</Text>
         {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL') && (
@@ -149,72 +171,42 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  filterCol: {
-    flex: 1,
-    paddingTop: 10,
-    paddingHorizontal: 4,
-    paddingBottom: 0,
-    overflow: 'hidden',
-  },
+  filterCol: { flex: 1, paddingTop: 10, paddingHorizontal: 4, overflow: 'hidden' },
   filterLabel: {
-    fontSize: 11,
-    color: '#8E8E93',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    paddingHorizontal: 8,
+    fontSize: 11, color: '#8E8E93', fontWeight: '700',
+    textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 8,
   },
-  filterDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: '#E5E5EA',
-    marginVertical: 12,
-  },
-  picker: {
-    height: PICKER_H,
-    marginTop: PICKER_OFFSET,
-  },
-  pickerItem: {
-    fontSize: 14,
-    color: '#1C1C1E',
-  },
+  filterDivider: { width: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 12 },
+  picker: { height: PICKER_H, marginTop: PICKER_OFFSET },
+  pickerItem: { fontSize: 14, color: '#1C1C1E' },
 
   countRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 6,
   },
   count: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
   clearFilter: { fontSize: 12, color: '#007AFF', fontWeight: '500' },
 
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E5E5EA',
-    gap: 12,
-    backgroundColor: '#fff',
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 12, paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#E5E5EA',
+    gap: 12, backgroundColor: '#fff',
     marginBottom: StyleSheet.hairlineWidth,
   },
   rowLeft: { flex: 1 },
-  modelName: { fontSize: 15, fontWeight: '500', color: '#1C1C1E' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  modelName: { fontSize: 15, fontWeight: '500', color: '#1C1C1E', flexShrink: 1 },
   brand: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
-  chipsetBadge: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 7,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
+
+  customBadge: { backgroundColor: '#FFF3CD', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  customBadgeTxt: { fontSize: 10, color: '#856404', fontWeight: '700' },
+
+  chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },
 
-  errorBox: {
-    margin: 16, padding: 14, backgroundColor: '#FEF2F2',
-    borderRadius: 10, alignItems: 'center', gap: 10,
-  },
+  errorBox: { margin: 16, padding: 14, backgroundColor: '#FEF2F2', borderRadius: 10, alignItems: 'center', gap: 10 },
   errorText: { color: '#DC2626', fontSize: 14, textAlign: 'center' },
   retryBtn: { backgroundColor: '#DC2626', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
   retryText: { color: '#fff', fontWeight: '600' },

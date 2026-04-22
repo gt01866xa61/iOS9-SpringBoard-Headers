@@ -5,4 +5,5 @@ export interface Motherboard {
   fullModelName: string;
   tpuDetailUrl?: string;
   officialSupportUrl?: string;
+  isCustom?: boolean;
 }

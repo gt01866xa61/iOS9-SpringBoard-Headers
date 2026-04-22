@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
+import { AddCustomBoardModal } from '../components/AddCustomBoardModal';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 
@@ -108,12 +109,13 @@ export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
-  const { filteredModels, isResolvingUrl, openOfficialPage } = useCatalog();
+  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
   const [rackName, setRackName] = useState('');
   const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [addCustomVisible, setAddCustomVisible] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ rackId: string; slot: RackSlot } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -377,14 +379,49 @@ export function RackScreen() {
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
-                <Text style={styles.assignModel}>{item.fullModelName}</Text>
-                <Text style={styles.assignChipset}>{item.chipset}</Text>
+                <View style={styles.assignRowLeft}>
+                  <Text style={styles.assignModel}>{item.fullModelName}</Text>
+                  <Text style={styles.assignChipset}>{item.chipset}</Text>
+                </View>
+                {item.isCustom && (
+                  <View style={styles.customBadge}>
+                    <Text style={styles.customBadgeTxt}>Custom</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             )}
+            ListFooterComponent={
+              <TouchableOpacity
+                style={styles.addCustomRow}
+                onPress={() => {
+                  setAssignModalVisible(false);
+                  setAddCustomVisible(true);
+                }}
+              >
+                <Text style={styles.addCustomTxt}>+ Can't find your board? Add it manually</Text>
+              </TouchableOpacity>
+            }
             contentContainerStyle={{ paddingBottom: 24 }}
           />
         </View>
       </Modal>
+
+      {/* Add Custom Board modal */}
+      <AddCustomBoardModal
+        visible={addCustomVisible}
+        onClose={() => {
+          setAddCustomVisible(false);
+          setAssignModalVisible(true);
+        }}
+        onSave={(board) => {
+          addCustomBoard(board);
+          setAddCustomVisible(false);
+          if (pendingSlot) {
+            assignMotherboard(pendingSlot.rackId, pendingSlot.slot.id, board);
+            setPendingSlot(null);
+          }
+        }}
+      />
     </View>
   );
 }
@@ -499,7 +536,17 @@ const styles = StyleSheet.create({
   cancelLink: { color: '#007AFF', fontSize: 16 },
   searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
   searchInput: { backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
-  assignRow: { paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  assignRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  assignRowLeft: { flex: 1 },
   assignModel: { fontSize: 15, fontWeight: '500', color: '#111' },
   assignChipset: { fontSize: 13, color: '#888', marginTop: 2 },
+  customBadge: { backgroundColor: '#FFF3CD', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginLeft: 8 },
+  customBadgeTxt: { fontSize: 11, color: '#856404', fontWeight: '700' },
+  addCustomRow: {
+    paddingHorizontal: 16, paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#eee',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addCustomTxt: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
 });

@@ -3,12 +3,19 @@ import * as Linking from 'expo-linking';
 import { Motherboard } from '../models/Motherboard';
 import { STATIC_BOARDS } from '../data/StaticBoardData';
 import { resolve } from '../services/URLResolverService';
+import { useCustomBoards } from './useCustomBoards';
 
 export function useCatalog() {
-  const [allBoards] = useState<Motherboard[]>(STATIC_BOARDS);
+  const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
+
+  // Custom boards always shown first so user can find them easily
+  const allBoards = useMemo(
+    () => [...customBoards, ...STATIC_BOARDS],
+    [customBoards]
+  );
 
   const brands = useMemo(() => {
     const set = new Set(allBoards.map((b) => b.brand));
@@ -62,5 +69,7 @@ export function useCatalog() {
     openOfficialPage,
     setSelectedBrand: selectBrand,
     setSelectedChipset,
+    addCustomBoard,
+    removeCustomBoard,
   };
 }
