@@ -25,11 +25,17 @@ except ImportError:
 
 FONTS = {
     "Helvetica": "helv",
-    "Helvetica 粗體": "hebo",
+    "Helvetica Bold": "hebo",
+    "Helvetica Oblique": "heit",
+    "Helvetica Bold Oblique": "hebi",
     "Times New Roman": "tiro",
-    "Times 粗體": "tibo",
+    "Times New Roman Bold": "tibo",
+    "Times New Roman Italic": "tiit",
+    "Times New Roman Bold Italic": "tibi",
     "Courier": "cour",
-    "Courier 粗體": "cobo",
+    "Courier Bold": "cobo",
+    "Courier Oblique": "coit",
+    "Courier Bold Oblique": "cobi",
 }
 
 POSITIONS = ["置中", "左上", "右上", "左下", "右下", "平鋪重複"]
@@ -134,14 +140,14 @@ class WatermarkEngine:
                         col * step_x + step_x / 2,
                         row * step_y + step_y / 2,
                     )
-                    tw.append(pos, text, font=font, fontsize=fontsize, color=color)
+                    tw.append(pos, text, font=font, fontsize=fontsize)
             morph = self._make_morph(page.rect.width / 2, page.rect.height / 2, rotation)
-            tw.write_text(page, opacity=opacity, morph=morph, overlay=overlay)
+            tw.write_text(page, color=color, opacity=opacity, morph=morph, overlay=overlay)
         else:
             pos = self._text_position(page, fontsize)
-            tw.append(pos, text, font=font, fontsize=fontsize, color=color)
+            tw.append(pos, text, font=font, fontsize=fontsize)
             morph = self._make_morph(pos.x, pos.y, rotation)
-            tw.write_text(page, opacity=opacity, morph=morph, overlay=overlay)
+            tw.write_text(page, color=color, opacity=opacity, morph=morph, overlay=overlay)
 
     def _make_morph(self, cx, cy, angle):
         if angle == 0:
