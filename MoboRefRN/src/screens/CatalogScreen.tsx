@@ -72,14 +72,27 @@ export function CatalogScreen() {
 
   const handleClipSave = async () => {
     if (!clipTarget) return;
-    const text = (await Clipboard.getStringAsync()).trim();
-    if (text.startsWith('http')) {
+    let text = '';
+    try {
+      text = (await Clipboard.getStringAsync()).trim();
+    } catch {
+      text = '';
+    }
+    if (/^https?:\/\//i.test(text)) {
       saveUrl(clipTarget.id, text);
       setClipSuccess(true);
       setTimeout(() => { setClipTarget(null); setClipSuccess(false); }, 1500);
     } else {
-      Alert.alert('No URL found', 'Copy the page URL from the address bar first, then tap Save.');
+      // Fallback: open manual entry modal
+      setEditUrlTarget(clipTarget);
+      setClipTarget(null);
     }
+  };
+
+  const handleClipEdit = () => {
+    if (!clipTarget) return;
+    setEditUrlTarget(clipTarget);
+    setClipTarget(null);
   };
 
   const handleLongPress = (item: Motherboard) => {
@@ -257,15 +270,20 @@ export function CatalogScreen() {
         <View style={styles.clipBanner}>
           <View style={styles.clipBannerLeft}>
             <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
-            <Text style={styles.clipBannerHint}>Copy the URL from the address bar, then tap Save</Text>
+            <Text style={styles.clipBannerHint}>Copy URL then tap Save — or Edit to paste manually</Text>
           </View>
           <View style={styles.clipBannerBtns}>
-            <TouchableOpacity
-              style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
-              onPress={handleClipSave}
-            >
-              <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
-            </TouchableOpacity>
+            <View style={styles.clipBannerBtnRow}>
+              <TouchableOpacity
+                style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
+                onPress={handleClipSave}
+              >
+                <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.clipEditBtn} onPress={handleClipEdit}>
+                <Text style={styles.clipEditBtnTxt}>Edit</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity onPress={() => setClipTarget(null)}>
               <Text style={styles.clipSkipTxt}>Skip</Text>
             </TouchableOpacity>
@@ -378,12 +396,18 @@ const styles = StyleSheet.create({
   clipBannerLeft: { flex: 1 },
   clipBannerTitle: { fontSize: 13, fontWeight: '600', color: '#fff' },
   clipBannerHint: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
-  clipBannerBtns: { alignItems: 'center', gap: 6 },
+  clipBannerBtns: { alignItems: 'center', gap: 4 },
+  clipBannerBtnRow: { flexDirection: 'row', gap: 6 },
   clipSaveBtn: {
     backgroundColor: '#30D158', borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 8,
+    paddingHorizontal: 14, paddingVertical: 8,
   },
   clipSaveBtnSuccess: { backgroundColor: '#34C759' },
   clipSaveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clipEditBtn: {
+    backgroundColor: '#48484A', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+  },
+  clipEditBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
   clipSkipTxt: { fontSize: 12, color: '#8E8E93' },
 });
