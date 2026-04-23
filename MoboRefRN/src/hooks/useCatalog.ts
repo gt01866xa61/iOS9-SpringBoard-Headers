@@ -6,6 +6,23 @@ import { resolve } from '../services/URLResolverService';
 import { useCustomBoards } from './useCustomBoards';
 import { useSavedUrls } from './useSavedUrls';
 
+const BRAND_ORDER = ['ASUS', 'GIGABYTE', 'MSI', 'ASRock'];
+
+function sortBrands(arr: string[]): string[] {
+  return arr.sort((a, b) => {
+    const ia = BRAND_ORDER.indexOf(a);
+    const ib = BRAND_ORDER.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
+
+function chipsetNum(cs: string): number {
+  return parseInt(cs.replace(/\D/g, ''), 10) || 0;
+}
+
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
   const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
@@ -20,7 +37,7 @@ export function useCatalog() {
 
   const brands = useMemo(() => {
     const set = new Set(allBoards.map((b) => b.brand));
-    return ['ALL', ...Array.from(set).sort()];
+    return ['ALL', ...sortBrands(Array.from(set))];
   }, [allBoards]);
 
   const chipsets = useMemo(() => {
@@ -29,7 +46,8 @@ export function useCatalog() {
         ? allBoards
         : allBoards.filter((b) => b.brand === selectedBrand);
     const set = new Set(filtered.map((b) => b.chipset));
-    return ['ALL', ...Array.from(set).sort()];
+    // Descending by number (Z890 > Z790 > B860 ...)
+    return ['ALL', ...Array.from(set).sort((a, b) => chipsetNum(b) - chipsetNum(a))];
   }, [allBoards, selectedBrand]);
 
   const filteredModels = useMemo(() => {

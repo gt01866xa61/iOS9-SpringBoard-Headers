@@ -8,7 +8,9 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
+  Animated,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
@@ -36,26 +38,43 @@ export function CatalogScreen() {
   } = useCatalog();
 
   const [editMode, setEditMode] = useState(false);
-  const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
+  // Clipboard save banner (appears after closing browser)
+  const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
+  const [clipSuccess, setClipSuccess] = useState(false);
+  // Long-press manual URL edit modal
+  const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const hasSavedUrls = Object.keys(savedUrls).length > 0;
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
     const shouldPrompt = await openOfficialPage(item);
-    if (shouldPrompt) setSaveModalTarget(item);
+    if (shouldPrompt) {
+      setClipTarget(item);
+      setClipSuccess(false);
+    }
+  };
+
+  const handleClipSave = async () => {
+    if (!clipTarget) return;
+    const text = (await Clipboard.getStringAsync()).trim();
+    if (text.startsWith('http')) {
+      saveUrl(clipTarget.id, text);
+      setClipSuccess(true);
+      setTimeout(() => { setClipTarget(null); setClipSuccess(false); }, 1500);
+    } else {
+      Alert.alert('No URL found', 'Copy the page URL from the address bar first, then tap Save.');
+    }
   };
 
   const handleLongPress = (item: Motherboard) => {
     const hasSaved = !!savedUrls[item.id];
     const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
       {
-        text: hasSaved ? 'Edit Saved URL' : 'Save Official URL',
-        onPress: () => setSaveModalTarget(item),
+        text: hasSaved ? 'Edit Saved URL' : 'Enter URL manually',
+        onPress: () => setEditUrlTarget(item),
       },
     ];
     if (hasSaved) {
@@ -70,14 +89,10 @@ export function CatalogScreen() {
         text: 'Remove Custom Board',
         style: 'destructive',
         onPress: () =>
-          Alert.alert(
-            'Remove Custom Board',
-            `Remove "${item.fullModelName}"?`,
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Remove', style: 'destructive', onPress: () => removeCustomBoard(item.id) },
-            ]
-          ),
+          Alert.alert('Remove Custom Board', `Remove "${item.fullModelName}"?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => removeCustomBoard(item.id) },
+          ]),
       });
     }
     options.push({ text: 'Cancel', style: 'cancel' });
@@ -97,14 +112,10 @@ export function CatalogScreen() {
           <View style={styles.nameRow}>
             <Text style={styles.modelName} numberOfLines={2}>{item.fullModelName}</Text>
             {item.isCustom && (
-              <View style={styles.customBadge}>
-                <Text style={styles.customBadgeTxt}>Custom</Text>
-              </View>
+              <View style={styles.customBadge}><Text style={styles.customBadgeTxt}>Custom</Text></View>
             )}
             {hasSaved && (
-              <View style={styles.savedBadge}>
-                <Text style={styles.savedBadgeTxt}>URL</Text>
-              </View>
+              <View style={styles.savedBadge}><Text style={styles.savedBadgeTxt}>URL</Text></View>
             )}
           </View>
           <Text style={styles.brand}>{item.brand}</Text>
@@ -139,15 +150,11 @@ export function CatalogScreen() {
       {/* Brand pills */}
       <View style={styles.filterSection}>
         <Text style={styles.filterLabel}>BRAND</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillRow}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
           {brands.map((b) => (
             <TouchableOpacity
               key={b}
-              style={[styles.pill, selectedBrand === b && styles.pillActive]}
+              style={[styles.pill, selectedBrand === b && styles.pillActiveDark]}
               onPress={() => setSelectedBrand(b)}
             >
               <Text style={[styles.pillTxt, selectedBrand === b && styles.pillTxtActive]}>{b}</Text>
@@ -157,13 +164,9 @@ export function CatalogScreen() {
       </View>
 
       {/* Chipset pills */}
-      <View style={[styles.filterSection, styles.filterSectionChipset]}>
+      <View style={[styles.filterSection, { borderBottomWidth: StyleSheet.hairlineWidth }]}>
         <Text style={styles.filterLabel}>CHIPSET</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillRow}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
           {chipsets.map((c) => (
             <TouchableOpacity
               key={c}
@@ -207,7 +210,7 @@ export function CatalogScreen() {
       {editMode && (
         <View style={styles.editBanner}>
           <Text style={styles.editBannerTxt}>
-            Tap "Remove" to delete a saved URL · Long-press any board to save/edit
+            Tap "Remove" to delete · Long-press any board to edit URL manually
           </Text>
         </View>
       )}
@@ -218,17 +221,37 @@ export function CatalogScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} />}
-        ListEmptyComponent={
-          !isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null
-        }
+        ListEmptyComponent={!isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null}
       />
 
+      {/* Clipboard save banner — appears after browser closes */}
+      {clipTarget && (
+        <View style={styles.clipBanner}>
+          <View style={styles.clipBannerLeft}>
+            <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
+            <Text style={styles.clipBannerHint}>Copy the URL from the address bar, then tap Save</Text>
+          </View>
+          <View style={styles.clipBannerBtns}>
+            <TouchableOpacity
+              style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
+              onPress={handleClipSave}
+            >
+              <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setClipTarget(null)}>
+              <Text style={styles.clipSkipTxt}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Manual URL editor (long-press only) */}
       <SaveUrlModal
-        visible={saveModalTarget !== null}
-        boardName={saveModalTarget?.fullModelName ?? ''}
-        existingUrl={saveModalTarget ? savedUrls[saveModalTarget.id] : undefined}
-        onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
-        onClose={() => setSaveModalTarget(null)}
+        visible={editUrlTarget !== null}
+        boardName={editUrlTarget?.fullModelName ?? ''}
+        existingUrl={editUrlTarget ? savedUrls[editUrlTarget.id] : undefined}
+        onSave={(url) => { if (editUrlTarget) saveUrl(editUrlTarget.id, url); }}
+        onClose={() => setEditUrlTarget(null)}
       />
     </View>
   );
@@ -241,10 +264,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 10,
     paddingBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E5EA',
   },
-  filterSectionChipset: {},
   filterLabel: {
     fontSize: 10, color: '#8E8E93', fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.8,
@@ -256,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, backgroundColor: '#F2F2F7',
     borderWidth: 1, borderColor: '#E5E5EA',
   },
-  pillActive: { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  pillActiveDark: { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
   pillActiveBlue: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
   pillTxt: { fontSize: 13, color: '#3C3C43', fontWeight: '500' },
   pillTxtActive: { color: '#fff' },
@@ -277,7 +298,7 @@ const styles = StyleSheet.create({
   },
   editBannerTxt: { fontSize: 11, color: '#856404', textAlign: 'center' },
 
-  list: { paddingHorizontal: 16, paddingBottom: 24 },
+  list: { paddingHorizontal: 16, paddingBottom: 100 },
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 12, paddingHorizontal: 4,
@@ -304,6 +325,27 @@ const styles = StyleSheet.create({
   errorText: { color: '#DC2626', fontSize: 14, textAlign: 'center' },
   retryBtn: { backgroundColor: '#DC2626', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
   retryText: { color: '#fff', fontWeight: '600' },
-
   emptyText: { textAlign: 'center', color: '#aaa', marginTop: 40, fontSize: 15 },
+
+  // Clipboard save banner
+  clipBanner: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#1C1C1E',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
+    paddingBottom: 28, gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 10,
+  },
+  clipBannerLeft: { flex: 1 },
+  clipBannerTitle: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  clipBannerHint: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+  clipBannerBtns: { alignItems: 'center', gap: 6 },
+  clipSaveBtn: {
+    backgroundColor: '#30D158', borderRadius: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+  },
+  clipSaveBtnSuccess: { backgroundColor: '#34C759' },
+  clipSaveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clipSkipTxt: { fontSize: 12, color: '#8E8E93' },
 });

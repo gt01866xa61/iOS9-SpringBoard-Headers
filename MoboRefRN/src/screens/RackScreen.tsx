@@ -38,6 +38,7 @@ function GridSlot({
   size,
   isEditing,
   isSelected,
+  hasSavedUrl,
   onAssign,
   onClear,
   onOpenUrl,
@@ -47,6 +48,7 @@ function GridSlot({
   size: number;
   isEditing: boolean;
   isSelected: boolean;
+  hasSavedUrl: boolean;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
@@ -87,7 +89,12 @@ function GridSlot({
       {board ? (
         <>
           <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
-          <Text style={styles.slotChipset}>{board.chipset}</Text>
+          <View style={styles.slotChipsetRow}>
+            <Text style={styles.slotChipset}>{board.chipset}</Text>
+            {hasSavedUrl && (
+              <View style={styles.slotUrlBadge}><Text style={styles.slotUrlBadgeTxt}>URL</Text></View>
+            )}
+          </View>
           <View style={styles.slotBtns}>
             <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
               <Text style={styles.btnPageTxt}>🔗</Text>
@@ -125,6 +132,8 @@ export function RackScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
+  const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
+  const [clipSuccess, setClipSuccess] = useState(false);
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
@@ -195,10 +204,23 @@ export function RackScreen() {
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
       const shouldPrompt = await openOfficialPage(slot.motherboard);
-      if (shouldPrompt) setSaveModalTarget(slot.motherboard);
+      if (shouldPrompt) { setClipTarget(slot.motherboard); setClipSuccess(false); }
     },
     [openOfficialPage]
   );
+
+  const handleClipSave = async () => {
+    if (!clipTarget) return;
+    const { getStringAsync } = await import('expo-clipboard');
+    const text = (await getStringAsync()).trim();
+    if (text.startsWith('http')) {
+      saveUrl(clipTarget.id, text);
+      setClipSuccess(true);
+      setTimeout(() => { setClipTarget(null); setClipSuccess(false); }, 1500);
+    } else {
+      Alert.alert('No URL found', 'Copy the page URL from the address bar first, then tap Save.');
+    }
+  };
 
   const handleSlotTap = useCallback(
     (slot: RackSlot) => {
@@ -287,6 +309,7 @@ export function RackScreen() {
                   size={size}
                   isEditing={isEditing}
                   isSelected={slot.id === selectedSlotId}
+                  hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
                   onAssign={(s) => handleAssign(selectedRack.id, s)}
                   onClear={(s) => clearSlot(selectedRack.id, s.id)}
                   onOpenUrl={handleOpenUrl}
@@ -390,11 +413,18 @@ export function RackScreen() {
                   <Text style={styles.assignModel}>{item.fullModelName}</Text>
                   <Text style={styles.assignChipset}>{item.chipset}</Text>
                 </View>
-                {item.isCustom && (
-                  <View style={styles.customBadge}>
-                    <Text style={styles.customBadgeTxt}>Custom</Text>
-                  </View>
-                )}
+                <View style={styles.assignBadges}>
+                  {!!savedUrls[item.id] && (
+                    <View style={styles.assignUrlBadge}>
+                      <Text style={styles.assignUrlBadgeTxt}>URL</Text>
+                    </View>
+                  )}
+                  {item.isCustom && (
+                    <View style={styles.customBadge}>
+                      <Text style={styles.customBadgeTxt}>Custom</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             )}
             ListFooterComponent={
@@ -430,7 +460,7 @@ export function RackScreen() {
         }}
       />
 
-      {/* Save URL modal — synced with Catalog via shared useSavedUrls */}
+      {/* Save URL modal — manual entry via long-press */}
       <SaveUrlModal
         visible={saveModalTarget !== null}
         boardName={saveModalTarget?.fullModelName ?? ''}
@@ -438,6 +468,27 @@ export function RackScreen() {
         onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
         onClose={() => setSaveModalTarget(null)}
       />
+
+      {/* Clipboard save banner */}
+      {clipTarget && (
+        <View style={styles.clipBanner}>
+          <View style={styles.clipBannerLeft}>
+            <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
+            <Text style={styles.clipBannerHint}>Copy the URL from address bar, then tap Save</Text>
+          </View>
+          <View style={styles.clipBannerBtns}>
+            <TouchableOpacity
+              style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
+              onPress={handleClipSave}
+            >
+              <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setClipTarget(null)}>
+              <Text style={styles.clipSkipTxt}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -493,7 +544,7 @@ const styles = StyleSheet.create({
   slotChipset: {
     fontSize: 10, color: '#2563EB', fontWeight: '600',
     backgroundColor: '#EFF6FF', alignSelf: 'flex-start',
-    paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4, marginTop: 2,
+    paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
   slotBtns: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   btnPage: { backgroundColor: '#007AFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
@@ -565,4 +616,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addCustomTxt: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
+
+  slotChipsetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  slotUrlBadge: { backgroundColor: '#E8F5E9', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
+  slotUrlBadgeTxt: { fontSize: 8, color: '#2E7D32', fontWeight: '700' },
+
+  assignBadges: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  assignUrlBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  assignUrlBadgeTxt: { fontSize: 11, color: '#2E7D32', fontWeight: '700' },
+
+  clipBanner: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#1C1C1E',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
+    paddingBottom: 28, gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 10,
+  },
+  clipBannerLeft: { flex: 1 },
+  clipBannerTitle: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  clipBannerHint: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+  clipBannerBtns: { alignItems: 'center', gap: 6 },
+  clipSaveBtn: { backgroundColor: '#30D158', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  clipSaveBtnSuccess: { backgroundColor: '#34C759' },
+  clipSaveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clipSkipTxt: { fontSize: 12, color: '#8E8E93' },
 });
