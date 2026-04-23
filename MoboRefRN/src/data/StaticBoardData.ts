@@ -386,4 +386,142 @@ export const STATIC_BOARDS: Motherboard[] = [
   board('ASRock', 'B450', 'Fatal1ty B450 Gaming K4'),
   board('ASRock', 'A320', 'A320M-HDV R4.0'),
   board('ASRock', 'A320', 'A320M Pro4'),
+
+  // ════════════════════════════════════════
+  // DDR4 — Intel Coffee Lake Refresh (9th Gen) Z390 / B365 / H370
+  // ════════════════════════════════════════
+
+  board('ASUS', 'Z390', 'ROG MAXIMUS XI HERO (WIFI)'),
+  board('ASUS', 'Z390', 'ROG MAXIMUS XI APEX'),
+  board('ASUS', 'Z390', 'ROG STRIX Z390-E GAMING'),
+  board('ASUS', 'Z390', 'ROG STRIX Z390-F GAMING'),
+  board('ASUS', 'Z390', 'TUF Z390-PLUS GAMING (WIFI)'),
+  board('ASUS', 'Z390', 'PRIME Z390-A'),
+  board('ASUS', 'Z390', 'PRIME Z390-P'),
+  board('ASUS', 'B365', 'PRIME B365M-A'),
+  board('ASUS', 'B365', 'PRIME B365-PLUS'),
+  board('ASUS', 'B365', 'TUF B365M-PLUS GAMING'),
+  board('ASUS', 'H370', 'ROG STRIX H370-F GAMING'),
+  board('ASUS', 'H370', 'TUF H370-PRO GAMING (WIFI)'),
+  board('ASUS', 'H370', 'PRIME H370M-PLUS'),
+
+  board('GIGABYTE', 'Z390', 'Z390 AORUS MASTER'),
+  board('GIGABYTE', 'Z390', 'Z390 AORUS XTREME'),
+  board('GIGABYTE', 'Z390', 'Z390 AORUS PRO WIFI'),
+  board('GIGABYTE', 'Z390', 'Z390 AORUS ELITE'),
+  board('GIGABYTE', 'Z390', 'Z390 GAMING X'),
+  board('GIGABYTE', 'Z390', 'Z390M GAMING'),
+  board('GIGABYTE', 'B365', 'B365M DS3H'),
+  board('GIGABYTE', 'B365', 'B365M AORUS ELITE'),
+  board('GIGABYTE', 'H370', 'H370M D3H GSM'),
+  board('GIGABYTE', 'H370', 'H370 AORUS GAMING 3 WIFI'),
+
+  board('MSI', 'Z390', 'MEG Z390 ACE'),
+  board('MSI', 'Z390', 'MEG Z390 GODLIKE'),
+  board('MSI', 'Z390', 'MPG Z390 GAMING PRO CARBON AC'),
+  board('MSI', 'Z390', 'MAG Z390 TOMAHAWK'),
+  board('MSI', 'Z390', 'Z390-A PRO'),
+  board('MSI', 'B365', 'B365M PRO-A'),
+  board('MSI', 'B365', 'B365M PRO-VD PLUS'),
+  board('MSI', 'H370', 'H370 GAMING PRO CARBON'),
+  board('MSI', 'H370', 'H370M BAZOOKA'),
+
+  board('ASRock', 'Z390', 'Z390 Taichi'),
+  board('ASRock', 'Z390', 'Z390 Taichi Ultimate'),
+  board('ASRock', 'Z390', 'Z390 Phantom Gaming 9'),
+  board('ASRock', 'Z390', 'Z390 Steel Legend'),
+  board('ASRock', 'Z390', 'Z390 Pro4'),
+  board('ASRock', 'B365', 'B365M Phantom Gaming 4'),
+  board('ASRock', 'B365', 'B365M Pro4'),
+  board('ASRock', 'H370', 'H370M-ITX/ac'),
+  board('ASRock', 'H370', 'H370 Performance'),
+
+  // ════════════════════════════════════════
+  // DDR4 — Intel Coffee Lake (8th Gen) Z370 / B360 / H310
+  // ════════════════════════════════════════
+
+  board('ASUS', 'Z370', 'ROG MAXIMUS X HERO'),
+  board('ASUS', 'Z370', 'ROG MAXIMUS X APEX'),
+  board('ASUS', 'Z370', 'ROG STRIX Z370-E GAMING'),
+  board('ASUS', 'Z370', 'ROG STRIX Z370-F GAMING'),
+  board('ASUS', 'Z370', 'TUF Z370-PLUS GAMING'),
+  board('ASUS', 'Z370', 'PRIME Z370-A'),
+  board('ASUS', 'Z370', 'PRIME Z370-P'),
+  board('ASUS', 'B360', 'PRIME B360M-A'),
+  board('ASUS', 'B360', 'TUF B360-PRO GAMING (WIFI)'),
+  board('ASUS', 'H310', 'PRIME H310M-E R2.0'),
+  board('ASUS', 'H310', 'PRIME H310M-K R2.0'),
+
+  board('GIGABYTE', 'Z370', 'Z370 AORUS Gaming 7'),
+  board('GIGABYTE', 'Z370', 'Z370 AORUS Gaming 5'),
+  board('GIGABYTE', 'Z370', 'Z370 AORUS Ultra Gaming'),
+  board('GIGABYTE', 'Z370', 'Z370 HD3'),
+  board('GIGABYTE', 'Z370', 'Z370M DS3H'),
+  board('GIGABYTE', 'B360', 'B360M AORUS Gaming 3'),
+  board('GIGABYTE', 'B360', 'B360M DS3H'),
+  board('GIGABYTE', 'H310', 'H310M S2H 2.0'),
+  board('GIGABYTE', 'H310', 'H310M M.2 2.0'),
+
+  board('MSI', 'Z370', 'MEG Z370 GODLIKE GAMING'),
+  board('MSI', 'Z370', 'Z370 GAMING PRO CARBON'),
+  board('MSI', 'Z370', 'Z370 GAMING PLUS'),
+  board('MSI', 'Z370', 'Z370-A PRO'),
+  board('MSI', 'B360', 'B360M GAMING PLUS'),
+  board('MSI', 'B360', 'B360M PRO-VDH'),
+  board('MSI', 'H310', 'H310M PRO-VDH PLUS'),
+  board('MSI', 'H310', 'H310M PRO-M2 PLUS'),
+
+  board('ASRock', 'Z370', 'Z370 Taichi'),
+  board('ASRock', 'Z370', 'Z370 Killer SLI/ac'),
+  board('ASRock', 'Z370', 'Z370 Extreme4'),
+  board('ASRock', 'Z370', 'Z370 Pro4'),
+  board('ASRock', 'B360', 'B360M Pro4'),
+  board('ASRock', 'B360', 'B360M-ITX/ac'),
+  board('ASRock', 'H310', 'H310M-HDV/M.2'),
+  board('ASRock', 'H310', 'H310CM-DVS'),
+
+  // ════════════════════════════════════════
+  // DDR5 — Additional B650 / B650E variants
+  // ════════════════════════════════════════
+
+  board('ASUS', 'B650', 'ROG STRIX B650-A GAMING WIFI'),
+  board('ASUS', 'B650', 'ProArt B650-CREATOR'),
+  board('ASUS', 'B650E', 'ProArt B650E-CREATOR WIFI'),
+
+  board('GIGABYTE', 'B650', 'B650 AORUS PRO AX'),
+  board('GIGABYTE', 'B650', 'B650M AORUS PRO'),
+  board('GIGABYTE', 'B650', 'B650M AORUS ELITE'),
+  board('GIGABYTE', 'B650E', 'B650E AORUS MASTER'),
+  board('GIGABYTE', 'B650E', 'B650E AORUS PRO X'),
+
+  board('MSI', 'B650E', 'MPG B650E CARBON WIFI'),
+  board('MSI', 'B650E', 'MEG B650E UNIFY'),
+
+  board('ASRock', 'B650', 'B650 LiveMixer'),
+  board('ASRock', 'B650', 'B650M-C'),
+  board('ASRock', 'B650E', 'B650E PG Riptide WiFi'),
+
+  // ════════════════════════════════════════
+  // DDR5 — Additional B760 / Z790 variants
+  // ════════════════════════════════════════
+
+  board('ASUS', 'B760', 'PRIME B760M-K D4'),
+  board('ASUS', 'B760', 'TUF GAMING B760M-PLUS D4'),
+  board('ASUS', 'Z790', 'ROG STRIX Z790-I GAMING WIFI'),
+  board('ASUS', 'Z790', 'PRIME Z790-A WIFI'),
+
+  board('GIGABYTE', 'B760', 'B760M AORUS ELITE AX'),
+  board('GIGABYTE', 'B760', 'B760 AORUS MASTER'),
+  board('GIGABYTE', 'Z790', 'Z790 AORUS XTREME X'),
+  board('GIGABYTE', 'Z790', 'Z790 AORUS PRO X'),
+
+  board('MSI', 'B760', 'MAG B760M MORTAR WIFI'),
+  board('MSI', 'B760', 'PRO B760M-E'),
+  board('MSI', 'Z790', 'MEG Z790 GODLIKE'),
+  board('MSI', 'Z790', 'MEG Z790 ACE'),
+
+  board('ASRock', 'B760', 'B760M-ITX/D4 WiFi'),
+  board('ASRock', 'B760', 'B760 Pro RS WiFi'),
+  board('ASRock', 'Z790', 'Z790 Riptide WiFi'),
+  board('ASRock', 'Z790', 'Z790M ITX WiFi'),
 ];

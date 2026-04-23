@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "count": 308,
+  "count": 414,
   "boards": [
     {
       "id": "asus::z890::rog_maximus_z890_apex",
@@ -1849,6 +1849,642 @@
       "brand": "ASRock",
       "chipset": "A320",
       "fullModelName": "A320M Pro4"
+    },
+    {
+      "id": "asus::z390::rog_maximus_xi_hero_(wifi)",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "ROG MAXIMUS XI HERO (WIFI)"
+    },
+    {
+      "id": "asus::z390::rog_maximus_xi_apex",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "ROG MAXIMUS XI APEX"
+    },
+    {
+      "id": "asus::z390::rog_strix_z390-e_gaming",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "ROG STRIX Z390-E GAMING"
+    },
+    {
+      "id": "asus::z390::rog_strix_z390-f_gaming",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "ROG STRIX Z390-F GAMING"
+    },
+    {
+      "id": "asus::z390::tuf_z390-plus_gaming_(wifi)",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "TUF Z390-PLUS GAMING (WIFI)"
+    },
+    {
+      "id": "asus::z390::prime_z390-a",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "PRIME Z390-A"
+    },
+    {
+      "id": "asus::z390::prime_z390-p",
+      "brand": "ASUS",
+      "chipset": "Z390",
+      "fullModelName": "PRIME Z390-P"
+    },
+    {
+      "id": "asus::b365::prime_b365m-a",
+      "brand": "ASUS",
+      "chipset": "B365",
+      "fullModelName": "PRIME B365M-A"
+    },
+    {
+      "id": "asus::b365::prime_b365-plus",
+      "brand": "ASUS",
+      "chipset": "B365",
+      "fullModelName": "PRIME B365-PLUS"
+    },
+    {
+      "id": "asus::b365::tuf_b365m-plus_gaming",
+      "brand": "ASUS",
+      "chipset": "B365",
+      "fullModelName": "TUF B365M-PLUS GAMING"
+    },
+    {
+      "id": "asus::h370::rog_strix_h370-f_gaming",
+      "brand": "ASUS",
+      "chipset": "H370",
+      "fullModelName": "ROG STRIX H370-F GAMING"
+    },
+    {
+      "id": "asus::h370::tuf_h370-pro_gaming_(wifi)",
+      "brand": "ASUS",
+      "chipset": "H370",
+      "fullModelName": "TUF H370-PRO GAMING (WIFI)"
+    },
+    {
+      "id": "asus::h370::prime_h370m-plus",
+      "brand": "ASUS",
+      "chipset": "H370",
+      "fullModelName": "PRIME H370M-PLUS"
+    },
+    {
+      "id": "gigabyte::z390::z390_aorus_master",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390 AORUS MASTER"
+    },
+    {
+      "id": "gigabyte::z390::z390_aorus_xtreme",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390 AORUS XTREME"
+    },
+    {
+      "id": "gigabyte::z390::z390_aorus_pro_wifi",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390 AORUS PRO WIFI"
+    },
+    {
+      "id": "gigabyte::z390::z390_aorus_elite",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390 AORUS ELITE"
+    },
+    {
+      "id": "gigabyte::z390::z390_gaming_x",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390 GAMING X"
+    },
+    {
+      "id": "gigabyte::z390::z390m_gaming",
+      "brand": "GIGABYTE",
+      "chipset": "Z390",
+      "fullModelName": "Z390M GAMING"
+    },
+    {
+      "id": "gigabyte::b365::b365m_ds3h",
+      "brand": "GIGABYTE",
+      "chipset": "B365",
+      "fullModelName": "B365M DS3H"
+    },
+    {
+      "id": "gigabyte::b365::b365m_aorus_elite",
+      "brand": "GIGABYTE",
+      "chipset": "B365",
+      "fullModelName": "B365M AORUS ELITE"
+    },
+    {
+      "id": "gigabyte::h370::h370m_d3h_gsm",
+      "brand": "GIGABYTE",
+      "chipset": "H370",
+      "fullModelName": "H370M D3H GSM"
+    },
+    {
+      "id": "gigabyte::h370::h370_aorus_gaming_3_wifi",
+      "brand": "GIGABYTE",
+      "chipset": "H370",
+      "fullModelName": "H370 AORUS GAMING 3 WIFI"
+    },
+    {
+      "id": "msi::z390::meg_z390_ace",
+      "brand": "MSI",
+      "chipset": "Z390",
+      "fullModelName": "MEG Z390 ACE"
+    },
+    {
+      "id": "msi::z390::meg_z390_godlike",
+      "brand": "MSI",
+      "chipset": "Z390",
+      "fullModelName": "MEG Z390 GODLIKE"
+    },
+    {
+      "id": "msi::z390::mpg_z390_gaming_pro_carbon_ac",
+      "brand": "MSI",
+      "chipset": "Z390",
+      "fullModelName": "MPG Z390 GAMING PRO CARBON AC"
+    },
+    {
+      "id": "msi::z390::mag_z390_tomahawk",
+      "brand": "MSI",
+      "chipset": "Z390",
+      "fullModelName": "MAG Z390 TOMAHAWK"
+    },
+    {
+      "id": "msi::z390::z390-a_pro",
+      "brand": "MSI",
+      "chipset": "Z390",
+      "fullModelName": "Z390-A PRO"
+    },
+    {
+      "id": "msi::b365::b365m_pro-a",
+      "brand": "MSI",
+      "chipset": "B365",
+      "fullModelName": "B365M PRO-A"
+    },
+    {
+      "id": "msi::b365::b365m_pro-vd_plus",
+      "brand": "MSI",
+      "chipset": "B365",
+      "fullModelName": "B365M PRO-VD PLUS"
+    },
+    {
+      "id": "msi::h370::h370_gaming_pro_carbon",
+      "brand": "MSI",
+      "chipset": "H370",
+      "fullModelName": "H370 GAMING PRO CARBON"
+    },
+    {
+      "id": "msi::h370::h370m_bazooka",
+      "brand": "MSI",
+      "chipset": "H370",
+      "fullModelName": "H370M BAZOOKA"
+    },
+    {
+      "id": "asrock::z390::z390_taichi",
+      "brand": "ASRock",
+      "chipset": "Z390",
+      "fullModelName": "Z390 Taichi"
+    },
+    {
+      "id": "asrock::z390::z390_taichi_ultimate",
+      "brand": "ASRock",
+      "chipset": "Z390",
+      "fullModelName": "Z390 Taichi Ultimate"
+    },
+    {
+      "id": "asrock::z390::z390_phantom_gaming_9",
+      "brand": "ASRock",
+      "chipset": "Z390",
+      "fullModelName": "Z390 Phantom Gaming 9"
+    },
+    {
+      "id": "asrock::z390::z390_steel_legend",
+      "brand": "ASRock",
+      "chipset": "Z390",
+      "fullModelName": "Z390 Steel Legend"
+    },
+    {
+      "id": "asrock::z390::z390_pro4",
+      "brand": "ASRock",
+      "chipset": "Z390",
+      "fullModelName": "Z390 Pro4"
+    },
+    {
+      "id": "asrock::b365::b365m_phantom_gaming_4",
+      "brand": "ASRock",
+      "chipset": "B365",
+      "fullModelName": "B365M Phantom Gaming 4"
+    },
+    {
+      "id": "asrock::b365::b365m_pro4",
+      "brand": "ASRock",
+      "chipset": "B365",
+      "fullModelName": "B365M Pro4"
+    },
+    {
+      "id": "asrock::h370::h370m-itx/ac",
+      "brand": "ASRock",
+      "chipset": "H370",
+      "fullModelName": "H370M-ITX/ac"
+    },
+    {
+      "id": "asrock::h370::h370_performance",
+      "brand": "ASRock",
+      "chipset": "H370",
+      "fullModelName": "H370 Performance"
+    },
+    {
+      "id": "asus::z370::rog_maximus_x_hero",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "ROG MAXIMUS X HERO"
+    },
+    {
+      "id": "asus::z370::rog_maximus_x_apex",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "ROG MAXIMUS X APEX"
+    },
+    {
+      "id": "asus::z370::rog_strix_z370-e_gaming",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "ROG STRIX Z370-E GAMING"
+    },
+    {
+      "id": "asus::z370::rog_strix_z370-f_gaming",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "ROG STRIX Z370-F GAMING"
+    },
+    {
+      "id": "asus::z370::tuf_z370-plus_gaming",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "TUF Z370-PLUS GAMING"
+    },
+    {
+      "id": "asus::z370::prime_z370-a",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "PRIME Z370-A"
+    },
+    {
+      "id": "asus::z370::prime_z370-p",
+      "brand": "ASUS",
+      "chipset": "Z370",
+      "fullModelName": "PRIME Z370-P"
+    },
+    {
+      "id": "asus::b360::prime_b360m-a",
+      "brand": "ASUS",
+      "chipset": "B360",
+      "fullModelName": "PRIME B360M-A"
+    },
+    {
+      "id": "asus::b360::tuf_b360-pro_gaming_(wifi)",
+      "brand": "ASUS",
+      "chipset": "B360",
+      "fullModelName": "TUF B360-PRO GAMING (WIFI)"
+    },
+    {
+      "id": "asus::h310::prime_h310m-e_r2.0",
+      "brand": "ASUS",
+      "chipset": "H310",
+      "fullModelName": "PRIME H310M-E R2.0"
+    },
+    {
+      "id": "asus::h310::prime_h310m-k_r2.0",
+      "brand": "ASUS",
+      "chipset": "H310",
+      "fullModelName": "PRIME H310M-K R2.0"
+    },
+    {
+      "id": "gigabyte::z370::z370_aorus_gaming_7",
+      "brand": "GIGABYTE",
+      "chipset": "Z370",
+      "fullModelName": "Z370 AORUS Gaming 7"
+    },
+    {
+      "id": "gigabyte::z370::z370_aorus_gaming_5",
+      "brand": "GIGABYTE",
+      "chipset": "Z370",
+      "fullModelName": "Z370 AORUS Gaming 5"
+    },
+    {
+      "id": "gigabyte::z370::z370_aorus_ultra_gaming",
+      "brand": "GIGABYTE",
+      "chipset": "Z370",
+      "fullModelName": "Z370 AORUS Ultra Gaming"
+    },
+    {
+      "id": "gigabyte::z370::z370_hd3",
+      "brand": "GIGABYTE",
+      "chipset": "Z370",
+      "fullModelName": "Z370 HD3"
+    },
+    {
+      "id": "gigabyte::z370::z370m_ds3h",
+      "brand": "GIGABYTE",
+      "chipset": "Z370",
+      "fullModelName": "Z370M DS3H"
+    },
+    {
+      "id": "gigabyte::b360::b360m_aorus_gaming_3",
+      "brand": "GIGABYTE",
+      "chipset": "B360",
+      "fullModelName": "B360M AORUS Gaming 3"
+    },
+    {
+      "id": "gigabyte::b360::b360m_ds3h",
+      "brand": "GIGABYTE",
+      "chipset": "B360",
+      "fullModelName": "B360M DS3H"
+    },
+    {
+      "id": "gigabyte::h310::h310m_s2h_2.0",
+      "brand": "GIGABYTE",
+      "chipset": "H310",
+      "fullModelName": "H310M S2H 2.0"
+    },
+    {
+      "id": "gigabyte::h310::h310m_m.2_2.0",
+      "brand": "GIGABYTE",
+      "chipset": "H310",
+      "fullModelName": "H310M M.2 2.0"
+    },
+    {
+      "id": "msi::z370::meg_z370_godlike_gaming",
+      "brand": "MSI",
+      "chipset": "Z370",
+      "fullModelName": "MEG Z370 GODLIKE GAMING"
+    },
+    {
+      "id": "msi::z370::z370_gaming_pro_carbon",
+      "brand": "MSI",
+      "chipset": "Z370",
+      "fullModelName": "Z370 GAMING PRO CARBON"
+    },
+    {
+      "id": "msi::z370::z370_gaming_plus",
+      "brand": "MSI",
+      "chipset": "Z370",
+      "fullModelName": "Z370 GAMING PLUS"
+    },
+    {
+      "id": "msi::z370::z370-a_pro",
+      "brand": "MSI",
+      "chipset": "Z370",
+      "fullModelName": "Z370-A PRO"
+    },
+    {
+      "id": "msi::b360::b360m_gaming_plus",
+      "brand": "MSI",
+      "chipset": "B360",
+      "fullModelName": "B360M GAMING PLUS"
+    },
+    {
+      "id": "msi::b360::b360m_pro-vdh",
+      "brand": "MSI",
+      "chipset": "B360",
+      "fullModelName": "B360M PRO-VDH"
+    },
+    {
+      "id": "msi::h310::h310m_pro-vdh_plus",
+      "brand": "MSI",
+      "chipset": "H310",
+      "fullModelName": "H310M PRO-VDH PLUS"
+    },
+    {
+      "id": "msi::h310::h310m_pro-m2_plus",
+      "brand": "MSI",
+      "chipset": "H310",
+      "fullModelName": "H310M PRO-M2 PLUS"
+    },
+    {
+      "id": "asrock::z370::z370_taichi",
+      "brand": "ASRock",
+      "chipset": "Z370",
+      "fullModelName": "Z370 Taichi"
+    },
+    {
+      "id": "asrock::z370::z370_killer_sli/ac",
+      "brand": "ASRock",
+      "chipset": "Z370",
+      "fullModelName": "Z370 Killer SLI/ac"
+    },
+    {
+      "id": "asrock::z370::z370_extreme4",
+      "brand": "ASRock",
+      "chipset": "Z370",
+      "fullModelName": "Z370 Extreme4"
+    },
+    {
+      "id": "asrock::z370::z370_pro4",
+      "brand": "ASRock",
+      "chipset": "Z370",
+      "fullModelName": "Z370 Pro4"
+    },
+    {
+      "id": "asrock::b360::b360m_pro4",
+      "brand": "ASRock",
+      "chipset": "B360",
+      "fullModelName": "B360M Pro4"
+    },
+    {
+      "id": "asrock::b360::b360m-itx/ac",
+      "brand": "ASRock",
+      "chipset": "B360",
+      "fullModelName": "B360M-ITX/ac"
+    },
+    {
+      "id": "asrock::h310::h310m-hdv/m.2",
+      "brand": "ASRock",
+      "chipset": "H310",
+      "fullModelName": "H310M-HDV/M.2"
+    },
+    {
+      "id": "asrock::h310::h310cm-dvs",
+      "brand": "ASRock",
+      "chipset": "H310",
+      "fullModelName": "H310CM-DVS"
+    },
+    {
+      "id": "asus::b650::rog_strix_b650-a_gaming_wifi",
+      "brand": "ASUS",
+      "chipset": "B650",
+      "fullModelName": "ROG STRIX B650-A GAMING WIFI"
+    },
+    {
+      "id": "asus::b650::proart_b650-creator",
+      "brand": "ASUS",
+      "chipset": "B650",
+      "fullModelName": "ProArt B650-CREATOR"
+    },
+    {
+      "id": "asus::b650e::proart_b650e-creator_wifi",
+      "brand": "ASUS",
+      "chipset": "B650E",
+      "fullModelName": "ProArt B650E-CREATOR WIFI"
+    },
+    {
+      "id": "gigabyte::b650::b650_aorus_pro_ax",
+      "brand": "GIGABYTE",
+      "chipset": "B650",
+      "fullModelName": "B650 AORUS PRO AX"
+    },
+    {
+      "id": "gigabyte::b650::b650m_aorus_pro",
+      "brand": "GIGABYTE",
+      "chipset": "B650",
+      "fullModelName": "B650M AORUS PRO"
+    },
+    {
+      "id": "gigabyte::b650::b650m_aorus_elite",
+      "brand": "GIGABYTE",
+      "chipset": "B650",
+      "fullModelName": "B650M AORUS ELITE"
+    },
+    {
+      "id": "gigabyte::b650e::b650e_aorus_master",
+      "brand": "GIGABYTE",
+      "chipset": "B650E",
+      "fullModelName": "B650E AORUS MASTER"
+    },
+    {
+      "id": "gigabyte::b650e::b650e_aorus_pro_x",
+      "brand": "GIGABYTE",
+      "chipset": "B650E",
+      "fullModelName": "B650E AORUS PRO X"
+    },
+    {
+      "id": "msi::b650e::mpg_b650e_carbon_wifi",
+      "brand": "MSI",
+      "chipset": "B650E",
+      "fullModelName": "MPG B650E CARBON WIFI"
+    },
+    {
+      "id": "msi::b650e::meg_b650e_unify",
+      "brand": "MSI",
+      "chipset": "B650E",
+      "fullModelName": "MEG B650E UNIFY"
+    },
+    {
+      "id": "asrock::b650::b650_livemixer",
+      "brand": "ASRock",
+      "chipset": "B650",
+      "fullModelName": "B650 LiveMixer"
+    },
+    {
+      "id": "asrock::b650::b650m-c",
+      "brand": "ASRock",
+      "chipset": "B650",
+      "fullModelName": "B650M-C"
+    },
+    {
+      "id": "asrock::b650e::b650e_pg_riptide_wifi",
+      "brand": "ASRock",
+      "chipset": "B650E",
+      "fullModelName": "B650E PG Riptide WiFi"
+    },
+    {
+      "id": "asus::b760::prime_b760m-k_d4",
+      "brand": "ASUS",
+      "chipset": "B760",
+      "fullModelName": "PRIME B760M-K D4"
+    },
+    {
+      "id": "asus::b760::tuf_gaming_b760m-plus_d4",
+      "brand": "ASUS",
+      "chipset": "B760",
+      "fullModelName": "TUF GAMING B760M-PLUS D4"
+    },
+    {
+      "id": "asus::z790::rog_strix_z790-i_gaming_wifi",
+      "brand": "ASUS",
+      "chipset": "Z790",
+      "fullModelName": "ROG STRIX Z790-I GAMING WIFI"
+    },
+    {
+      "id": "asus::z790::prime_z790-a_wifi",
+      "brand": "ASUS",
+      "chipset": "Z790",
+      "fullModelName": "PRIME Z790-A WIFI"
+    },
+    {
+      "id": "gigabyte::b760::b760m_aorus_elite_ax",
+      "brand": "GIGABYTE",
+      "chipset": "B760",
+      "fullModelName": "B760M AORUS ELITE AX"
+    },
+    {
+      "id": "gigabyte::b760::b760_aorus_master",
+      "brand": "GIGABYTE",
+      "chipset": "B760",
+      "fullModelName": "B760 AORUS MASTER"
+    },
+    {
+      "id": "gigabyte::z790::z790_aorus_xtreme_x",
+      "brand": "GIGABYTE",
+      "chipset": "Z790",
+      "fullModelName": "Z790 AORUS XTREME X"
+    },
+    {
+      "id": "gigabyte::z790::z790_aorus_pro_x",
+      "brand": "GIGABYTE",
+      "chipset": "Z790",
+      "fullModelName": "Z790 AORUS PRO X"
+    },
+    {
+      "id": "msi::b760::mag_b760m_mortar_wifi",
+      "brand": "MSI",
+      "chipset": "B760",
+      "fullModelName": "MAG B760M MORTAR WIFI"
+    },
+    {
+      "id": "msi::b760::pro_b760m-e",
+      "brand": "MSI",
+      "chipset": "B760",
+      "fullModelName": "PRO B760M-E"
+    },
+    {
+      "id": "msi::z790::meg_z790_godlike",
+      "brand": "MSI",
+      "chipset": "Z790",
+      "fullModelName": "MEG Z790 GODLIKE"
+    },
+    {
+      "id": "msi::z790::meg_z790_ace",
+      "brand": "MSI",
+      "chipset": "Z790",
+      "fullModelName": "MEG Z790 ACE"
+    },
+    {
+      "id": "asrock::b760::b760m-itx/d4_wifi",
+      "brand": "ASRock",
+      "chipset": "B760",
+      "fullModelName": "B760M-ITX/D4 WiFi"
+    },
+    {
+      "id": "asrock::b760::b760_pro_rs_wifi",
+      "brand": "ASRock",
+      "chipset": "B760",
+      "fullModelName": "B760 Pro RS WiFi"
+    },
+    {
+      "id": "asrock::z790::z790_riptide_wifi",
+      "brand": "ASRock",
+      "chipset": "Z790",
+      "fullModelName": "Z790 Riptide WiFi"
+    },
+    {
+      "id": "asrock::z790::z790m_itx_wifi",
+      "brand": "ASRock",
+      "chipset": "Z790",
+      "fullModelName": "Z790M ITX WiFi"
     }
   ]
 }

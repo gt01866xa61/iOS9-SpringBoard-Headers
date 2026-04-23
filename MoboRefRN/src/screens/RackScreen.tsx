@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -124,11 +126,73 @@ function GridSlot({
   );
 }
 
+const SWIPE_DELETE_W = 80;
+const SWIPE_TRIGGER = 50;
+
+function SwipeableCustomRow({
+  children,
+  onDelete,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const isOpen = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy) * 1.5,
+      onPanResponderMove: (_, { dx }) => {
+        const base = isOpen.current ? -SWIPE_DELETE_W : 0;
+        const next = Math.max(Math.min(base + dx, 0), -SWIPE_DELETE_W);
+        translateX.setValue(next);
+      },
+      onPanResponderRelease: (_, { dx }) => {
+        const base = isOpen.current ? -SWIPE_DELETE_W : 0;
+        const delta = base + dx;
+        if (!isOpen.current && delta < -SWIPE_TRIGGER) {
+          isOpen.current = true;
+          Animated.spring(translateX, { toValue: -SWIPE_DELETE_W, useNativeDriver: true }).start();
+        } else if (isOpen.current && delta > -SWIPE_DELETE_W + SWIPE_TRIGGER) {
+          isOpen.current = false;
+          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        } else {
+          Animated.spring(translateX, {
+            toValue: isOpen.current ? -SWIPE_DELETE_W : 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const handleDelete = () => {
+    Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      isOpen.current = false;
+      onDelete();
+    });
+  };
+
+  return (
+    <View style={styles.swipeContainer}>
+      <View style={[styles.deleteAction]}>
+        <TouchableOpacity style={styles.deleteActionBtn} onPress={handleDelete}>
+          <Text style={styles.deleteActionTxt}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
 export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
-  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, savedUrls, saveUrl } = useCatalog();
+  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
@@ -420,26 +484,36 @@ export function RackScreen() {
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            renderItem={({ item }) => (
-              <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
-                <View style={styles.assignRowLeft}>
-                  <Text style={styles.assignModel}>{item.fullModelName}</Text>
-                  <Text style={styles.assignChipset}>{item.chipset}</Text>
-                </View>
-                <View style={styles.assignBadges}>
-                  {!!savedUrls[item.id] && (
-                    <View style={styles.assignUrlBadge}>
-                      <Text style={styles.assignUrlBadgeTxt}>URL</Text>
-                    </View>
-                  )}
-                  {item.isCustom && (
-                    <View style={styles.customBadge}>
-                      <Text style={styles.customBadgeTxt}>Custom</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const row = (
+                <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
+                  <View style={styles.assignRowLeft}>
+                    <Text style={styles.assignModel}>{item.fullModelName}</Text>
+                    <Text style={styles.assignChipset}>{item.chipset}</Text>
+                  </View>
+                  <View style={styles.assignBadges}>
+                    {!!savedUrls[item.id] && (
+                      <View style={styles.assignUrlBadge}>
+                        <Text style={styles.assignUrlBadgeTxt}>URL</Text>
+                      </View>
+                    )}
+                    {item.isCustom && (
+                      <View style={styles.customBadge}>
+                        <Text style={styles.customBadgeTxt}>Custom</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+              if (item.isCustom) {
+                return (
+                  <SwipeableCustomRow onDelete={() => removeCustomBoard(item.id)}>
+                    {row}
+                  </SwipeableCustomRow>
+                );
+              }
+              return row;
+            }}
             ListFooterComponent={
               <TouchableOpacity
                 style={styles.addCustomRow}
@@ -627,7 +701,15 @@ const styles = StyleSheet.create({
   cancelLink: { color: '#007AFF', fontSize: 16 },
   searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
   searchInput: { backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
-  assignRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  swipeContainer: { overflow: 'hidden' },
+  deleteAction: {
+    position: 'absolute', right: 0, top: 0, bottom: 0,
+    width: SWIPE_DELETE_W, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#FF3B30',
+  },
+  deleteActionBtn: { flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' },
+  deleteActionTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  assignRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee', backgroundColor: '#fff' },
   assignRowLeft: { flex: 1 },
   assignModel: { fontSize: 15, fontWeight: '500', color: '#111' },
   assignChipset: { fontSize: 13, color: '#888', marginTop: 2 },

@@ -11,7 +11,6 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Motherboard } from '../models/Motherboard';
 import { buildBrandSearchUrl } from '../services/URLResolverService';
@@ -115,18 +114,24 @@ export function AddCustomBoardModal({ visible, onClose, onSave }: Props) {
             {step === 'form' && (
               <>
                 <Text style={styles.sectionLabel}>BRAND</Text>
-                <View style={styles.pickerBox}>
-                  <Picker
-                    selectedValue={brand}
-                    onValueChange={setBrand}
-                    style={styles.picker}
-                    itemStyle={styles.pickerItem}
-                  >
-                    {KNOWN_BRANDS.map((b) => (
-                      <Picker.Item key={b} label={b} value={b} />
-                    ))}
-                  </Picker>
-                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.brandScroll}
+                  contentContainerStyle={styles.brandScrollContent}
+                >
+                  {KNOWN_BRANDS.map((b) => (
+                    <TouchableOpacity
+                      key={b}
+                      style={[styles.brandPill, brand === b && styles.brandPillActive]}
+                      onPress={() => setBrand(b)}
+                    >
+                      <Text style={[styles.brandPillTxt, brand === b && styles.brandPillTxtActive]}>
+                        {b}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
 
                 <Text style={styles.sectionLabel}>CHIPSET</Text>
                 <TextInput
@@ -265,9 +270,17 @@ const styles = StyleSheet.create({
 
   sectionLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8 },
 
-  pickerBox: { backgroundColor: '#f2f2f7', borderRadius: 10, overflow: 'hidden' },
-  picker: { height: Platform.OS === 'ios' ? 120 : 48, marginTop: Platform.OS === 'ios' ? -28 : 0 },
-  pickerItem: { fontSize: 15 },
+  brandScroll: { marginTop: 6, marginBottom: 4 },
+  brandScrollContent: { gap: 8, paddingVertical: 4 },
+  brandPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+  },
+  brandPillActive: { backgroundColor: '#1C1C1E' },
+  brandPillTxt: { fontSize: 14, fontWeight: '600', color: '#3C3C43' },
+  brandPillTxtActive: { color: '#fff' },
 
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: '#fff' },
   urlInput: { minHeight: 72, textAlignVertical: 'top' },
