@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { Motherboard } from '../models/Motherboard';
 import { STATIC_BOARDS } from '../data/StaticBoardData';
 import { resolve } from '../services/URLResolverService';
+import { fetchBoards } from '../services/RemoteBoardsService';
 import { useCustomBoards } from './useCustomBoards';
 import { useSavedUrls } from './useSavedUrls';
 
@@ -30,9 +31,38 @@ export function useCatalog() {
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
 
+  // Remote boards state
+  const [remoteBoards, setRemoteBoards] = useState<Motherboard[]>(STATIC_BOARDS);
+  const [version, setVersion] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [newBoardsCount, setNewBoardsCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async (forceRefresh = false) => {
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      const res = await fetchBoards(forceRefresh);
+      setRemoteBoards(res.boards);
+      setVersion(res.version);
+      setNewBoardsCount(res.newCount);
+    } catch (e: any) {
+      setError('Offline — using built-in catalog');
+      // keep STATIC_BOARDS as the fallback (initial state)
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  const refresh = useCallback(() => loadData(true), [loadData]);
+
+  useEffect(() => {
+    loadData(false);
+  }, [loadData]);
+
   const allBoards = useMemo(
-    () => [...customBoards, ...STATIC_BOARDS],
-    [customBoards]
+    () => [...customBoards, ...remoteBoards],
+    [customBoards, remoteBoards]
   );
 
   const brands = useMemo(() => {
@@ -46,7 +76,6 @@ export function useCatalog() {
         ? allBoards
         : allBoards.filter((b) => b.brand === selectedBrand);
     const set = new Set(filtered.map((b) => b.chipset));
-    // Descending by number (Z890 > Z790 > B860 ...)
     return ['ALL', ...Array.from(set).sort((a, b) => chipsetNum(b) - chipsetNum(a))];
   }, [allBoards, selectedBrand]);
 
@@ -59,8 +88,6 @@ export function useCatalog() {
     });
   }, [allBoards, selectedBrand, selectedChipset]);
 
-  // Returns true if the caller should prompt the user to save a URL
-  // (i.e. board had no saved URL and was opened via Google search)
   const openOfficialPage = useCallback(
     async (board: Motherboard): Promise<boolean> => {
       setIsResolvingUrl(true);
@@ -84,6 +111,8 @@ export function useCatalog() {
     setSelectedChipset('ALL');
   }, []);
 
+  const clearNewBoardsCount = useCallback(() => setNewBoardsCount(0), []);
+
   return {
     brands,
     chipsets,
@@ -92,9 +121,12 @@ export function useCatalog() {
     selectedChipset,
     isLoading: false,
     isResolvingUrl,
-    error: null,
-    loadData: useCallback(() => Promise.resolve(), []),
-    refresh: useCallback(() => Promise.resolve(), []),
+    isRefreshing,
+    version,
+    newBoardsCount,
+    error,
+    loadData,
+    refresh,
     openOfficialPage,
     setSelectedBrand: selectBrand,
     setSelectedChipset,
@@ -103,5 +135,6 @@ export function useCatalog() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
+    clearNewBoardsCount,
   };
 }

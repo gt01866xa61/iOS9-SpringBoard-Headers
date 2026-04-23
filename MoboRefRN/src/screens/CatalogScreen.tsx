@@ -25,6 +25,9 @@ export function CatalogScreen() {
     selectedChipset,
     isLoading,
     isResolvingUrl,
+    isRefreshing,
+    version,
+    newBoardsCount,
     error,
     loadData,
     refresh,
@@ -35,6 +38,7 @@ export function CatalogScreen() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
+    clearNewBoardsCount,
   } = useCatalog();
 
   const [editMode, setEditMode] = useState(false);
@@ -42,7 +46,13 @@ export function CatalogScreen() {
   const [clipSuccess, setClipSuccess] = useState(false);
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // Auto-dismiss the "new boards" toast after 3s
+  useEffect(() => {
+    if (newBoardsCount > 0) {
+      const t = setTimeout(() => clearNewBoardsCount(), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [newBoardsCount, clearNewBoardsCount]);
 
   const hasSavedUrls = Object.keys(savedUrls).length > 0;
 
@@ -193,7 +203,10 @@ export function CatalogScreen() {
 
       {/* Count + controls */}
       <View style={styles.countRow}>
-        <Text style={styles.count}>{filteredModels.length} models</Text>
+        <View style={styles.countLeft}>
+          <Text style={styles.count}>{filteredModels.length} models</Text>
+          {version ? <Text style={styles.versionTxt}>· {version}</Text> : null}
+        </View>
         <View style={styles.countRowRight}>
           {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL') && (
             <TouchableOpacity onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); }}>
@@ -207,8 +220,20 @@ export function CatalogScreen() {
               </Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={refresh} disabled={isRefreshing}>
+            <Text style={[styles.refreshBtn, isRefreshing && styles.refreshBtnActive]}>
+              {isRefreshing ? '⟳' : '↻'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* New boards toast */}
+      {newBoardsCount > 0 && (
+        <View style={styles.toastBanner}>
+          <Text style={styles.toastTxt}>✨ {newBoardsCount} new board{newBoardsCount > 1 ? 's' : ''} added</Text>
+        </View>
+      )}
 
       {editMode && (
         <View style={styles.editBanner}>
@@ -290,10 +315,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8,
   },
   countRowRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  countLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   count: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
+  versionTxt: { fontSize: 11, color: '#C7C7CC' },
   clearFilter: { fontSize: 12, color: '#007AFF', fontWeight: '500' },
   editBtn: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
   editBtnActive: { color: '#007AFF', fontWeight: '600' },
+  refreshBtn: { fontSize: 18, color: '#007AFF', fontWeight: '500' },
+  refreshBtnActive: { color: '#A8C7F0' },
+  toastBanner: {
+    marginHorizontal: 16, marginBottom: 6,
+    backgroundColor: '#E8F5E9', borderRadius: 8,
+    paddingVertical: 8, paddingHorizontal: 12,
+  },
+  toastTxt: { fontSize: 12, color: '#2E7D32', fontWeight: '600', textAlign: 'center' },
 
   editBanner: {
     marginHorizontal: 16, marginBottom: 4,
