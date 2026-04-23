@@ -11,6 +11,7 @@ import {
   ScrollView,
   Dimensions,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,28 +59,35 @@ function GridSlot({
 
   if (isEditing) {
     return (
-      <TouchableOpacity
-        style={[styles.slot, { width: size, height: size }, isSelected && styles.slotSelected]}
-        activeOpacity={0.7}
-        onPress={() => onTap(slot)}
-      >
-        <Text style={styles.slotNum}>{slot.position + 1}</Text>
-        {board ? (
-          <>
-            <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
-            <Text style={styles.slotChipset}>{board.chipset}</Text>
-            {isSelected && (
-              <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeTxt}>✓</Text>
-              </View>
-            )}
-          </>
-        ) : (
-          <View style={styles.emptySlotHint}>
-            <Text style={styles.emptySlotTxt}>{isSelected ? '✓' : '—'}</Text>
+      <View style={[styles.slot, { width: size, height: size }, isSelected && styles.slotSelected]}>
+        <TouchableOpacity
+          style={styles.slotTapArea}
+          activeOpacity={0.7}
+          onPress={() => onTap(slot)}
+        >
+          <Text style={styles.slotNum}>{slot.position + 1}</Text>
+          {board ? (
+            <>
+              <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+              <Text style={styles.slotChipset}>{board.chipset}</Text>
+            </>
+          ) : (
+            <View style={styles.emptySlotHint}>
+              <Text style={styles.emptySlotTxt}>{isSelected ? '✓' : '—'}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {isSelected && (
+          <View style={styles.selectedBadge}>
+            <Text style={styles.selectedBadgeTxt}>✓</Text>
           </View>
         )}
-      </TouchableOpacity>
+        {board && (
+          <TouchableOpacity style={styles.slotDeleteBadge} onPress={() => onClear(slot)}>
+            <Text style={styles.slotDeleteBadgeTxt}>×</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     );
   }
 
@@ -138,11 +146,12 @@ export function RackScreen() {
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
 
-  const searchedModels = filteredModels.filter((b) =>
-    searchQuery.trim() === '' ||
-    b.fullModelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.chipset.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const searchedModels = filteredModels.filter((b) => {
+    const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return true;
+    const haystack = (b.fullModelName + ' ' + b.chipset + ' ' + b.brand).toLowerCase();
+    return tokens.every((t) => haystack.includes(t));
+  });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -395,18 +404,22 @@ export function RackScreen() {
           <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search model or chipset..."
+              placeholder="Search (use spaces for AND, e.g. '650 wifi')"
               value={searchQuery}
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
               autoCorrect={false}
               autoFocus={false}
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              blurOnSubmit
             />
           </View>
           <FlatList
             data={searchedModels}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
                 <View style={styles.assignRowLeft}>
@@ -539,6 +552,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   slotSelected: { borderColor: '#007AFF', borderWidth: 2, backgroundColor: '#EEF5FF' },
+  slotTapArea: { flex: 1 },
+  slotDeleteBadge: {
+    position: 'absolute', top: -6, right: -6,
+    backgroundColor: '#FF3B30', borderRadius: 11,
+    width: 22, height: 22,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
+  },
+  slotDeleteBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
   slotChipset: {
