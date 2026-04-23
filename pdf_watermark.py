@@ -673,8 +673,21 @@ class DropZoneApp:
 
 def main():
     import sys
+    import traceback
 
-    pdf_paths = [p for p in sys.argv[1:] if p.lower().endswith(".pdf") and os.path.isfile(p)]
+    # Windows drag-drop may wrap paths in {} or extra quotes; strip them
+    raw_args = sys.argv[1:]
+    cleaned = [p.strip("{}").strip('"').strip("'").strip() for p in raw_args]
+    pdf_paths = [p for p in cleaned if p.lower().endswith(".pdf") and os.path.isfile(p)]
+
+    # If paths were passed but none survived the check, log for diagnosis
+    if raw_args and not pdf_paths:
+        log = Path.home() / "pdf_watermark_error.log"
+        with open(log, "w", encoding="utf-8") as f:
+            f.write(f"argv raw  : {raw_args}\n")
+            f.write(f"argv clean: {cleaned}\n")
+            for p in cleaned:
+                f.write(f"  exists={os.path.isfile(p)} | path={p!r}\n")
 
     if pdf_paths:
         # Desktop icon mode: PDF dropped onto the .py file icon
@@ -703,4 +716,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys, traceback
+    try:
+        main()
+    except Exception:
+        log = Path.home() / "pdf_watermark_error.log"
+        with open(log, "a", encoding="utf-8") as f:
+            f.write("\n=== CRASH ===\n")
+            traceback.print_exc(file=f)
+            f.write(f"argv: {sys.argv}\n")
