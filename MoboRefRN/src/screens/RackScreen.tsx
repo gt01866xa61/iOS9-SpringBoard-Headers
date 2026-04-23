@@ -19,6 +19,7 @@ import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { AddCustomBoardModal } from '../components/AddCustomBoardModal';
+import { SaveUrlModal } from '../components/SaveUrlModal';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 
@@ -91,9 +92,12 @@ function GridSlot({
             <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
               <Text style={styles.btnPageTxt}>🔗</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnRemove} onPress={() => onClear(slot)}>
-              <Text style={styles.btnRemoveTxt}>✕</Text>
-            </TouchableOpacity>
+            {/* ✕ only visible in edit mode */}
+            {isEditing && (
+              <TouchableOpacity style={styles.btnRemove} onPress={() => onClear(slot)}>
+                <Text style={styles.btnRemoveTxt}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </>
       ) : (
@@ -109,7 +113,7 @@ export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
-  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard } = useCatalog();
+  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, savedUrls, saveUrl } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
@@ -120,6 +124,7 @@ export function RackScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
@@ -188,7 +193,9 @@ export function RackScreen() {
 
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
-      if (slot.motherboard) await openOfficialPage(slot.motherboard);
+      if (!slot.motherboard) return;
+      const shouldPrompt = await openOfficialPage(slot.motherboard);
+      if (shouldPrompt) setSaveModalTarget(slot.motherboard);
     },
     [openOfficialPage]
   );
@@ -421,6 +428,15 @@ export function RackScreen() {
             setPendingSlot(null);
           }
         }}
+      />
+
+      {/* Save URL modal — synced with Catalog via shared useSavedUrls */}
+      <SaveUrlModal
+        visible={saveModalTarget !== null}
+        boardName={saveModalTarget?.fullModelName ?? ''}
+        existingUrl={saveModalTarget ? savedUrls[saveModalTarget.id] : undefined}
+        onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
+        onClose={() => setSaveModalTarget(null)}
       />
     </View>
   );

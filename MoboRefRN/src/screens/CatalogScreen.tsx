@@ -7,9 +7,8 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
-  Platform,
+  ScrollView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
@@ -45,6 +44,12 @@ export function CatalogScreen() {
 
   const hasSavedUrls = Object.keys(savedUrls).length > 0;
 
+  const handlePress = async (item: Motherboard) => {
+    if (editMode) return;
+    const shouldPrompt = await openOfficialPage(item);
+    if (shouldPrompt) setSaveModalTarget(item);
+  };
+
   const handleLongPress = (item: Motherboard) => {
     const hasSaved = !!savedUrls[item.id];
     const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
@@ -67,7 +72,7 @@ export function CatalogScreen() {
         onPress: () =>
           Alert.alert(
             'Remove Custom Board',
-            `Remove "${item.fullModelName}" from your catalog?`,
+            `Remove "${item.fullModelName}"?`,
             [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Remove', style: 'destructive', onPress: () => removeCustomBoard(item.id) },
@@ -84,15 +89,13 @@ export function CatalogScreen() {
     return (
       <TouchableOpacity
         style={styles.row}
-        onPress={() => (editMode ? null : openOfficialPage(item))}
+        onPress={() => handlePress(item)}
         onLongPress={() => handleLongPress(item)}
         activeOpacity={editMode ? 1 : 0.7}
       >
         <View style={styles.rowLeft}>
           <View style={styles.nameRow}>
-            <Text style={styles.modelName} numberOfLines={2}>
-              {item.fullModelName}
-            </Text>
+            <Text style={styles.modelName} numberOfLines={2}>{item.fullModelName}</Text>
             {item.isCustom && (
               <View style={styles.customBadge}>
                 <Text style={styles.customBadgeTxt}>Custom</Text>
@@ -111,14 +114,10 @@ export function CatalogScreen() {
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={() =>
-              Alert.alert(
-                'Remove saved URL',
-                `Remove the saved URL for "${item.fullModelName}"?`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => removeSavedUrl(item.id) },
-                ]
-              )
+              Alert.alert('Remove saved URL', `Remove saved URL for "${item.fullModelName}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Remove', style: 'destructive', onPress: () => removeSavedUrl(item.id) },
+              ])
             }
           >
             <Text style={styles.deleteBtnTxt}>Remove</Text>
@@ -134,40 +133,47 @@ export function CatalogScreen() {
 
   return (
     <View style={styles.container}>
-      <LoadingOverlay visible={isLoading} message="Loading motherboard catalog..." />
+      <LoadingOverlay visible={isLoading} message="Loading catalog..." />
       <LoadingOverlay visible={isResolvingUrl} message="Opening page..." />
 
-      {/* Filter card */}
-      <View style={styles.filtersCard}>
-        <View style={styles.filterCol}>
-          <Text style={styles.filterLabel}>BRAND</Text>
-          <Picker
-            selectedValue={selectedBrand}
-            onValueChange={setSelectedBrand}
-            style={styles.picker}
-            itemStyle={styles.pickerItem}
-          >
-            {brands.map((b) => (
-              <Picker.Item key={b} label={b} value={b} />
-            ))}
-          </Picker>
-        </View>
+      {/* Brand pills */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>BRAND</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pillRow}
+        >
+          {brands.map((b) => (
+            <TouchableOpacity
+              key={b}
+              style={[styles.pill, selectedBrand === b && styles.pillActive]}
+              onPress={() => setSelectedBrand(b)}
+            >
+              <Text style={[styles.pillTxt, selectedBrand === b && styles.pillTxtActive]}>{b}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-        <View style={styles.filterDivider} />
-
-        <View style={styles.filterCol}>
-          <Text style={styles.filterLabel}>CHIPSET</Text>
-          <Picker
-            selectedValue={selectedChipset}
-            onValueChange={setSelectedChipset}
-            style={styles.picker}
-            itemStyle={styles.pickerItem}
-          >
-            {chipsets.map((c) => (
-              <Picker.Item key={c} label={c} value={c} />
-            ))}
-          </Picker>
-        </View>
+      {/* Chipset pills */}
+      <View style={[styles.filterSection, styles.filterSectionChipset]}>
+        <Text style={styles.filterLabel}>CHIPSET</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pillRow}
+        >
+          {chipsets.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.pill, selectedChipset === c && styles.pillActiveBlue]}
+              onPress={() => setSelectedChipset(c)}
+            >
+              <Text style={[styles.pillTxt, selectedChipset === c && styles.pillTxtActive]}>{c}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {error ? (
@@ -179,15 +185,13 @@ export function CatalogScreen() {
         </View>
       ) : null}
 
-      {/* Count row + edit toggle */}
+      {/* Count + controls */}
       <View style={styles.countRow}>
         <Text style={styles.count}>{filteredModels.length} models</Text>
         <View style={styles.countRowRight}>
           {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL') && (
-            <TouchableOpacity
-              onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); }}
-            >
-              <Text style={styles.clearFilter}>Clear filters ×</Text>
+            <TouchableOpacity onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); }}>
+              <Text style={styles.clearFilter}>Clear ×</Text>
             </TouchableOpacity>
           )}
           {hasSavedUrls && (
@@ -203,7 +207,7 @@ export function CatalogScreen() {
       {editMode && (
         <View style={styles.editBanner}>
           <Text style={styles.editBannerTxt}>
-            Tap "Remove" to delete a saved URL. Long-press any board to save or edit its URL.
+            Tap "Remove" to delete a saved URL · Long-press any board to save/edit
           </Text>
         </View>
       )}
@@ -213,13 +217,9 @@ export function CatalogScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={false} onRefresh={refresh} />
-        }
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} />}
         ListEmptyComponent={
-          !isLoading ? (
-            <Text style={styles.emptyText}>No models found.</Text>
-          ) : null
+          !isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null
         }
       />
 
@@ -227,47 +227,43 @@ export function CatalogScreen() {
         visible={saveModalTarget !== null}
         boardName={saveModalTarget?.fullModelName ?? ''}
         existingUrl={saveModalTarget ? savedUrls[saveModalTarget.id] : undefined}
-        onSave={(url) => {
-          if (saveModalTarget) saveUrl(saveModalTarget.id, url);
-        }}
+        onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
         onClose={() => setSaveModalTarget(null)}
       />
     </View>
   );
 }
 
-const PICKER_H = Platform.OS === 'ios' ? 120 : 48;
-const PICKER_OFFSET = Platform.OS === 'ios' ? -28 : 0;
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f2f7' },
 
-  filtersCard: {
-    flexDirection: 'row',
+  filterSection: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E5EA',
   },
-  filterCol: { flex: 1, paddingTop: 10, paddingHorizontal: 4, overflow: 'hidden' },
+  filterSectionChipset: {},
   filterLabel: {
-    fontSize: 11, color: '#8E8E93', fontWeight: '700',
-    textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 8,
+    fontSize: 10, color: '#8E8E93', fontWeight: '700',
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    paddingHorizontal: 16, marginBottom: 6,
   },
-  filterDivider: { width: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 12 },
-  picker: { height: PICKER_H, marginTop: PICKER_OFFSET },
-  pickerItem: { fontSize: 14, color: '#1C1C1E' },
+  pillRow: { paddingHorizontal: 12, gap: 6, paddingBottom: 2 },
+  pill: {
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: '#F2F2F7',
+    borderWidth: 1, borderColor: '#E5E5EA',
+  },
+  pillActive: { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  pillActiveBlue: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  pillTxt: { fontSize: 13, color: '#3C3C43', fontWeight: '500' },
+  pillTxtActive: { color: '#fff' },
 
   countRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 6,
+    paddingHorizontal: 16, paddingVertical: 8,
   },
   countRowRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   count: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
@@ -279,15 +275,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 16, marginBottom: 4,
     backgroundColor: '#FFF9E6', borderRadius: 8, padding: 10,
   },
-  editBannerTxt: { fontSize: 12, color: '#856404', textAlign: 'center' },
+  editBannerTxt: { fontSize: 11, color: '#856404', textAlign: 'center' },
 
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 12, paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#E5E5EA',
-    gap: 12, backgroundColor: '#fff',
-    marginBottom: StyleSheet.hairlineWidth,
+    gap: 12, backgroundColor: '#fff', marginBottom: StyleSheet.hairlineWidth,
   },
   rowLeft: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
@@ -296,17 +291,13 @@ const styles = StyleSheet.create({
 
   customBadge: { backgroundColor: '#FFF3CD', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   customBadgeTxt: { fontSize: 10, color: '#856404', fontWeight: '700' },
-
   savedBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   savedBadgeTxt: { fontSize: 10, color: '#2E7D32', fontWeight: '700' },
 
   chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },
 
-  deleteBtn: {
-    backgroundColor: '#FEE2E2', borderRadius: 7,
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
+  deleteBtn: { backgroundColor: '#FEE2E2', borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5 },
   deleteBtnTxt: { fontSize: 12, color: '#DC2626', fontWeight: '700' },
 
   errorBox: { margin: 16, padding: 14, backgroundColor: '#FEF2F2', borderRadius: 10, alignItems: 'center', gap: 10 },

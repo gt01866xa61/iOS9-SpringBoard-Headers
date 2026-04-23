@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Motherboard } from '../models/Motherboard';
 import { STATIC_BOARDS } from '../data/StaticBoardData';
 import { resolve } from '../services/URLResolverService';
@@ -41,16 +41,22 @@ export function useCatalog() {
     });
   }, [allBoards, selectedBrand, selectedChipset]);
 
+  // Returns true if the caller should prompt the user to save a URL
+  // (i.e. board had no saved URL and was opened via Google search)
   const openOfficialPage = useCallback(
-    async (board: Motherboard) => {
+    async (board: Motherboard): Promise<boolean> => {
       setIsResolvingUrl(true);
+      const hasSaved = !!savedUrls[board.id];
       try {
-        // Priority: user-saved URL → custom board URL → Google site: search
         const url = savedUrls[board.id] ?? (await resolve(board));
-        await Linking.openURL(url);
+        await WebBrowser.openBrowserAsync(url, {
+          dismissButtonStyle: 'done',
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+        });
       } finally {
         setIsResolvingUrl(false);
       }
+      return !hasSaved;
     },
     [savedUrls]
   );
