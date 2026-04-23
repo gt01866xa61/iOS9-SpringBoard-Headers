@@ -38,15 +38,18 @@ export function CatalogScreen() {
   } = useCatalog();
 
   const [editMode, setEditMode] = useState(false);
-  // Clipboard save banner (appears after closing browser)
   const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
   const [clipSuccess, setClipSuccess] = useState(false);
-  // Long-press manual URL edit modal
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const hasSavedUrls = Object.keys(savedUrls).length > 0;
+
+  // Auto-exit edit mode when last saved URL is removed
+  useEffect(() => {
+    if (!hasSavedUrls) setEditMode(false);
+  }, [hasSavedUrls]);
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
@@ -197,7 +200,7 @@ export function CatalogScreen() {
               <Text style={styles.clearFilter}>Clear ×</Text>
             </TouchableOpacity>
           )}
-          {hasSavedUrls && (
+          {(hasSavedUrls || editMode) && (
             <TouchableOpacity onPress={() => setEditMode((e) => !e)}>
               <Text style={[styles.editBtn, editMode && styles.editBtnActive]}>
                 {editMode ? 'Done' : 'Edit URLs'}
