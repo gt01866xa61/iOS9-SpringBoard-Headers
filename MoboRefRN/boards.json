@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "count": 414,
+  "count": 411,
   "boards": [
     {
       "id": "asus::z890::rog_maximus_z890_apex",
@@ -2415,12 +2415,6 @@
       "fullModelName": "PRIME Z790-A WIFI"
     },
     {
-      "id": "gigabyte::b760::b760m_aorus_elite_ax",
-      "brand": "GIGABYTE",
-      "chipset": "B760",
-      "fullModelName": "B760M AORUS ELITE AX"
-    },
-    {
       "id": "gigabyte::b760::b760_aorus_master",
       "brand": "GIGABYTE",
       "chipset": "B760",
@@ -2449,18 +2443,6 @@
       "brand": "MSI",
       "chipset": "B760",
       "fullModelName": "PRO B760M-E"
-    },
-    {
-      "id": "msi::z790::meg_z790_godlike",
-      "brand": "MSI",
-      "chipset": "Z790",
-      "fullModelName": "MEG Z790 GODLIKE"
-    },
-    {
-      "id": "msi::z790::meg_z790_ace",
-      "brand": "MSI",
-      "chipset": "Z790",
-      "fullModelName": "MEG Z790 ACE"
     },
     {
       "id": "asrock::b760::b760m-itx/d4_wifi",

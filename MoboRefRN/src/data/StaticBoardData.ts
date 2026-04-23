@@ -510,15 +510,12 @@ export const STATIC_BOARDS: Motherboard[] = [
   board('ASUS', 'Z790', 'ROG STRIX Z790-I GAMING WIFI'),
   board('ASUS', 'Z790', 'PRIME Z790-A WIFI'),
 
-  board('GIGABYTE', 'B760', 'B760M AORUS ELITE AX'),
   board('GIGABYTE', 'B760', 'B760 AORUS MASTER'),
   board('GIGABYTE', 'Z790', 'Z790 AORUS XTREME X'),
   board('GIGABYTE', 'Z790', 'Z790 AORUS PRO X'),
 
   board('MSI', 'B760', 'MAG B760M MORTAR WIFI'),
   board('MSI', 'B760', 'PRO B760M-E'),
-  board('MSI', 'Z790', 'MEG Z790 GODLIKE'),
-  board('MSI', 'Z790', 'MEG Z790 ACE'),
 
   board('ASRock', 'B760', 'B760M-ITX/D4 WiFi'),
   board('ASRock', 'B760', 'B760 Pro RS WiFi'),
