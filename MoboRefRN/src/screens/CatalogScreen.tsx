@@ -10,7 +10,6 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
@@ -43,7 +42,6 @@ export function CatalogScreen() {
 
   const [editMode, setEditMode] = useState(false);
   const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
-  const [clipSuccess, setClipSuccess] = useState(false);
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
   // Auto-dismiss the "new boards" toast after 3s
@@ -64,33 +62,12 @@ export function CatalogScreen() {
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
     const shouldPrompt = await openOfficialPage(item);
-    if (shouldPrompt) {
-      setClipTarget(item);
-      setClipSuccess(false);
-    }
+    if (shouldPrompt) setClipTarget(item);
   };
 
-  const handleClipSave = async () => {
+  const handleClipSave = () => {
     if (!clipTarget) return;
-    let text = '';
-    try {
-      text = (await Clipboard.getStringAsync()).trim();
-    } catch {
-      text = '';
-    }
-    if (/^https?:\/\//i.test(text)) {
-      saveUrl(clipTarget.id, text);
-      setClipSuccess(true);
-      setTimeout(() => { setClipTarget(null); setClipSuccess(false); }, 1500);
-    } else {
-      // Fallback: open manual entry modal
-      setEditUrlTarget(clipTarget);
-      setClipTarget(null);
-    }
-  };
-
-  const handleClipEdit = () => {
-    if (!clipTarget) return;
+    // Open the modal — it auto-reads clipboard so user can confirm before saving.
     setEditUrlTarget(clipTarget);
     setClipTarget(null);
   };
@@ -265,25 +242,17 @@ export function CatalogScreen() {
         ListEmptyComponent={!isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null}
       />
 
-      {/* Clipboard save banner — appears after browser closes */}
+      {/* Save URL prompt — appears after browser closes */}
       {clipTarget && (
         <View style={styles.clipBanner}>
           <View style={styles.clipBannerLeft}>
             <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
-            <Text style={styles.clipBannerHint}>Copy URL then tap Save — or Edit to paste manually</Text>
+            <Text style={styles.clipBannerHint}>Tap Save URL to paste and confirm</Text>
           </View>
           <View style={styles.clipBannerBtns}>
-            <View style={styles.clipBannerBtnRow}>
-              <TouchableOpacity
-                style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
-                onPress={handleClipSave}
-              >
-                <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.clipEditBtn} onPress={handleClipEdit}>
-                <Text style={styles.clipEditBtnTxt}>Edit</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.clipSaveBtn} onPress={handleClipSave}>
+              <Text style={styles.clipSaveBtnTxt}>Save URL</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setClipTarget(null)}>
               <Text style={styles.clipSkipTxt}>Skip</Text>
             </TouchableOpacity>

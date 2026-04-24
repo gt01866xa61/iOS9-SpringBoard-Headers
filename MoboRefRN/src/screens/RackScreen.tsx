@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as Clipboard from 'expo-clipboard';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
@@ -206,7 +205,6 @@ export function RackScreen() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
   const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
-  const [clipSuccess, setClipSuccess] = useState(false);
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
@@ -278,32 +276,14 @@ export function RackScreen() {
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
       const shouldPrompt = await openOfficialPage(slot.motherboard);
-      if (shouldPrompt) { setClipTarget(slot.motherboard); setClipSuccess(false); }
+      if (shouldPrompt) setClipTarget(slot.motherboard);
     },
     [openOfficialPage]
   );
 
-  const handleClipSave = async () => {
+  const handleClipSave = () => {
     if (!clipTarget) return;
-    let text = '';
-    try {
-      text = (await Clipboard.getStringAsync()).trim();
-    } catch {
-      text = '';
-    }
-    if (/^https?:\/\//i.test(text)) {
-      saveUrl(clipTarget.id, text);
-      setClipSuccess(true);
-      setTimeout(() => { setClipTarget(null); setClipSuccess(false); }, 1500);
-    } else {
-      // Clipboard has no URL — open manual entry modal, pre-fill with whatever is there
-      setSaveModalTarget(clipTarget);
-      setClipTarget(null);
-    }
-  };
-
-  const handleClipEdit = () => {
-    if (!clipTarget) return;
+    // Open the modal — it auto-reads clipboard so user can confirm before saving.
     setSaveModalTarget(clipTarget);
     setClipTarget(null);
   };
@@ -569,25 +549,17 @@ export function RackScreen() {
         onClose={() => setSaveModalTarget(null)}
       />
 
-      {/* Clipboard save banner */}
+      {/* Save URL prompt */}
       {clipTarget && (
         <View style={styles.clipBanner}>
           <View style={styles.clipBannerLeft}>
             <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
-            <Text style={styles.clipBannerHint}>Copy URL then tap Save — or Edit to paste manually</Text>
+            <Text style={styles.clipBannerHint}>Tap Save URL to paste and confirm</Text>
           </View>
           <View style={styles.clipBannerBtns}>
-            <View style={styles.clipBannerBtnRow}>
-              <TouchableOpacity
-                style={[styles.clipSaveBtn, clipSuccess && styles.clipSaveBtnSuccess]}
-                onPress={handleClipSave}
-              >
-                <Text style={styles.clipSaveBtnTxt}>{clipSuccess ? '✓ Saved' : '📋 Save'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.clipEditBtn} onPress={handleClipEdit}>
-                <Text style={styles.clipEditBtnTxt}>Edit</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.clipSaveBtn} onPress={handleClipSave}>
+              <Text style={styles.clipSaveBtnTxt}>Save URL</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setClipTarget(null)}>
               <Text style={styles.clipSkipTxt}>Skip</Text>
             </TouchableOpacity>
