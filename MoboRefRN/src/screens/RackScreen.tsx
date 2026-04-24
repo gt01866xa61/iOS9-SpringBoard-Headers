@@ -204,7 +204,9 @@ export function RackScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
+  const [saveModalInitialUrl, setSaveModalInitialUrl] = useState('');
   const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
+  const [clipOpenedUrl, setClipOpenedUrl] = useState('');
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
@@ -275,17 +277,18 @@ export function RackScreen() {
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
-      const shouldPrompt = await openOfficialPage(slot.motherboard);
-      if (shouldPrompt) setClipTarget(slot.motherboard);
+      const { shouldPrompt, openedUrl } = await openOfficialPage(slot.motherboard);
+      if (shouldPrompt) { setClipTarget(slot.motherboard); setClipOpenedUrl(openedUrl); }
     },
     [openOfficialPage]
   );
 
   const handleClipSave = () => {
     if (!clipTarget) return;
-    // Open the modal — it auto-reads clipboard so user can confirm before saving.
     setSaveModalTarget(clipTarget);
+    setSaveModalInitialUrl(clipOpenedUrl);
     setClipTarget(null);
+    setClipOpenedUrl('');
   };
 
   const handleSlotTap = useCallback(
@@ -540,13 +543,13 @@ export function RackScreen() {
         }}
       />
 
-      {/* Save URL modal — manual entry via long-press */}
       <SaveUrlModal
         visible={saveModalTarget !== null}
         boardName={saveModalTarget?.fullModelName ?? ''}
         existingUrl={saveModalTarget ? savedUrls[saveModalTarget.id] : undefined}
+        initialUrl={saveModalInitialUrl || undefined}
         onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
-        onClose={() => setSaveModalTarget(null)}
+        onClose={() => { setSaveModalTarget(null); setSaveModalInitialUrl(''); }}
       />
 
       {/* Save URL prompt */}

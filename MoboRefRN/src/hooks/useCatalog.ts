@@ -89,19 +89,20 @@ export function useCatalog() {
   }, [allBoards, selectedBrand, selectedChipset]);
 
   const openOfficialPage = useCallback(
-    async (board: Motherboard): Promise<boolean> => {
+    async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string }> => {
       setIsResolvingUrl(true);
       const hasSaved = !!savedUrls[board.id];
+      let openedUrl = '';
       try {
-        const url = savedUrls[board.id] ?? (await resolve(board));
-        await WebBrowser.openBrowserAsync(url, {
+        openedUrl = savedUrls[board.id] ?? (await resolve(board));
+        await WebBrowser.openBrowserAsync(openedUrl, {
           dismissButtonStyle: 'done',
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
         });
       } finally {
         setIsResolvingUrl(false);
       }
-      return !hasSaved;
+      return { shouldPrompt: !hasSaved, openedUrl };
     },
     [savedUrls]
   );

@@ -16,44 +16,43 @@ interface Props {
   visible: boolean;
   boardName: string;
   existingUrl?: string;
+  initialUrl?: string;   // URL that was just opened in the browser (highest priority pre-fill)
   onSave: (url: string) => void;
   onClose: () => void;
 }
 
-export function SaveUrlModal({ visible, boardName, existingUrl, onSave, onClose }: Props) {
+type FillSource = 'initial' | 'clipboard' | 'manual' | null;
+
+export function SaveUrlModal({ visible, boardName, existingUrl, initialUrl, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [url, setUrl] = useState('');
-  const [pastedFromClipboard, setPastedFromClipboard] = useState(false);
+  const [fillSource, setFillSource] = useState<FillSource>(null);
 
   useEffect(() => {
     if (!visible) return;
-    // If there's an existing saved URL, prefer it. Otherwise try clipboard.
-    if (existingUrl) {
-      setUrl(existingUrl);
-      setPastedFromClipboard(false);
-      return;
-    }
+    // Priority 1: existing saved URL (editing)
+    if (existingUrl) { setUrl(existingUrl); setFillSource('manual'); return; }
+    // Priority 2: URL from the page that was just opened in the browser
+    if (initialUrl) { setUrl(initialUrl); setFillSource('initial'); return; }
+    // Priority 3: try clipboard
     (async () => {
       try {
         const clip = (await Clipboard.getStringAsync()).trim();
         if (/^https?:\/\//i.test(clip)) {
           setUrl(clip);
-          setPastedFromClipboard(true);
+          setFillSource('clipboard');
           return;
         }
       } catch {}
       setUrl('');
-      setPastedFromClipboard(false);
+      setFillSource(null);
     })();
-  }, [visible, existingUrl]);
+  }, [visible, existingUrl, initialUrl]);
 
   const handlePaste = async () => {
     try {
       const clip = (await Clipboard.getStringAsync()).trim();
-      if (clip) {
-        setUrl(clip);
-        setPastedFromClipboard(true);
-      }
+      if (clip) { setUrl(clip); setFillSource('clipboard'); }
     } catch {}
   };
 
@@ -75,9 +74,14 @@ export function SaveUrlModal({ visible, boardName, existingUrl, onSave, onClose 
           <Text style={styles.title}>Save Official URL</Text>
           <Text style={styles.subtitle} numberOfLines={2}>{boardName}</Text>
 
-          {pastedFromClipboard && (
-            <View style={styles.pastedTag}>
-              <Text style={styles.pastedTagTxt}>📋 Auto-pasted from clipboard</Text>
+          {fillSource === 'initial' && (
+            <View style={[styles.fillTag, styles.fillTagInitial]}>
+              <Text style={styles.fillTagTxt}>🔗 URL from opened page — confirm or paste a different one</Text>
+            </View>
+          )}
+          {fillSource === 'clipboard' && (
+            <View style={[styles.fillTag, styles.fillTagClipboard]}>
+              <Text style={styles.fillTagTxt}>📋 Auto-pasted from clipboard</Text>
             </View>
           )}
 
@@ -89,7 +93,7 @@ export function SaveUrlModal({ visible, boardName, existingUrl, onSave, onClose 
             <TextInput
               style={styles.input}
               value={url}
-              onChangeText={(t) => { setUrl(t); setPastedFromClipboard(false); }}
+              onChangeText={(t) => { setUrl(t); setFillSource('manual'); }}
               placeholder="https://..."
               autoCapitalize="none"
               autoCorrect={false}
@@ -140,14 +144,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
   subtitle: { fontSize: 13, color: '#8E8E93', marginTop: -4 },
-  pastedTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E9',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  fillTag: {
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
   },
-  pastedTagTxt: { fontSize: 12, color: '#2E7D32', fontWeight: '600' },
+  fillTagInitial: { backgroundColor: '#EEF5FF' },
+  fillTagClipboard: { backgroundColor: '#E8F5E9' },
+  fillTagTxt: { fontSize: 12, color: '#1C1C1E', fontWeight: '500', lineHeight: 16 },
   hint: { fontSize: 13, color: '#555', lineHeight: 18 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   input: {

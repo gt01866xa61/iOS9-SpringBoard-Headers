@@ -42,6 +42,7 @@ export function CatalogScreen() {
 
   const [editMode, setEditMode] = useState(false);
   const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
+  const [clipOpenedUrl, setClipOpenedUrl] = useState('');
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
   // Auto-dismiss the "new boards" toast after 3s
@@ -61,13 +62,12 @@ export function CatalogScreen() {
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
-    const shouldPrompt = await openOfficialPage(item);
-    if (shouldPrompt) setClipTarget(item);
+    const { shouldPrompt, openedUrl } = await openOfficialPage(item);
+    if (shouldPrompt) { setClipTarget(item); setClipOpenedUrl(openedUrl); }
   };
 
   const handleClipSave = () => {
     if (!clipTarget) return;
-    // Open the modal — it auto-reads clipboard so user can confirm before saving.
     setEditUrlTarget(clipTarget);
     setClipTarget(null);
   };
@@ -260,13 +260,13 @@ export function CatalogScreen() {
         </View>
       )}
 
-      {/* Manual URL editor (long-press only) */}
       <SaveUrlModal
         visible={editUrlTarget !== null}
         boardName={editUrlTarget?.fullModelName ?? ''}
         existingUrl={editUrlTarget ? savedUrls[editUrlTarget.id] : undefined}
+        initialUrl={clipOpenedUrl || undefined}
         onSave={(url) => { if (editUrlTarget) saveUrl(editUrlTarget.id, url); }}
-        onClose={() => setEditUrlTarget(null)}
+        onClose={() => { setEditUrlTarget(null); setClipOpenedUrl(''); }}
       />
     </View>
   );
