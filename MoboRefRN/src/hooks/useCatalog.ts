@@ -92,20 +92,20 @@ export function useCatalog() {
 
   const openOfficialPage = useCallback(
     async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string; isFirstVisit: boolean }> => {
-      setIsResolvingUrl(true);
       const hasSaved = !!savedUrls[board.id];
       // Re-ask on every visit when wrong (URL needs fixing); first-time for unconfirmed
       const isFirstVisit = !visitRecord[board.id] || visitRecord[board.id] === 'wrong';
-      let openedUrl = '';
-      try {
-        openedUrl = savedUrls[board.id] ?? (await resolve(board));
-        await WebBrowser.openBrowserAsync(openedUrl, {
-          dismissButtonStyle: 'done',
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-        });
-      } finally {
-        setIsResolvingUrl(false);
-      }
+
+      // Resolve the URL synchronously (string manipulation only) — no overlay needed.
+      // CRITICAL: do NOT show the LoadingOverlay Modal while calling openBrowserAsync;
+      // iOS rejects stacking two modals, so the browser never opens and the spinner
+      // hangs forever. Resolve fast, then let the browser's own sheet take over.
+      const openedUrl = savedUrls[board.id] ?? (await resolve(board));
+      await WebBrowser.openBrowserAsync(openedUrl, {
+        dismissButtonStyle: 'done',
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+      });
+
       return { shouldPrompt: !hasSaved, openedUrl, isFirstVisit };
     },
     [savedUrls, visitRecord]

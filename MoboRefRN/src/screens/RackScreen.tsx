@@ -123,6 +123,7 @@ function GridSlot({
   onRemoveSlot,
   onTap,
   onInfo,
+  onOpenUrl,
   onLongPressDrag,
 }: {
   slot: RackSlot;
@@ -138,6 +139,7 @@ function GridSlot({
   onRemoveSlot: (s: RackSlot) => void;
   onTap: (s: RackSlot) => void;
   onInfo: (s: RackSlot) => void;
+  onOpenUrl: (s: RackSlot) => void;
   onLongPressDrag: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard;
@@ -211,29 +213,41 @@ function GridSlot({
   }
 
   return (
-    <TouchableOpacity
-      style={[styles.slot, { width: size, height: size }]}
-      activeOpacity={board ? 0.75 : 1}
-      onPress={() => (board ? onInfo(slot) : onAssign(slot))}
-    >
-      <Text style={styles.slotNum}>{slot.position + 1}</Text>
-      {board ? (
-        <>
-          <Text style={styles.slotModel} numberOfLines={1}>{board.fullModelName}</Text>
-          <Text style={styles.slotBrand}>{board.brand}</Text>
-          <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
-            {board.chipset}
-          </Text>
-          <View style={styles.slotBadgesRow}>
-            <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
+    <View style={[styles.slot, { width: size, height: size }]}>
+      <TouchableOpacity
+        style={styles.slotTapArea}
+        activeOpacity={board ? 0.75 : 1}
+        onPress={() => (board ? onInfo(slot) : onAssign(slot))}
+      >
+        <Text style={styles.slotNum}>{slot.position + 1}</Text>
+        {board ? (
+          <>
+            <Text style={styles.slotModel} numberOfLines={1}>{board.fullModelName}</Text>
+            <Text style={styles.slotBrand}>{board.brand}</Text>
+            <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
+              {board.chipset}
+            </Text>
+            <View style={styles.slotBadgesRow}>
+              <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
+            </View>
+          </>
+        ) : (
+          <View style={styles.emptySlotHint}>
+            <Text style={styles.assignTxt}>+</Text>
           </View>
-        </>
-      ) : (
-        <View style={styles.emptySlotHint}>
-          <Text style={styles.assignTxt}>+</Text>
-        </View>
+        )}
+      </TouchableOpacity>
+      {/* Quick-open URL: bypasses InfoCard for one-tap access. */}
+      {board && (
+        <TouchableOpacity
+          style={styles.slotUrlBtn}
+          onPress={() => onOpenUrl(slot)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.slotUrlBtnTxt}>🔗</Text>
+        </TouchableOpacity>
       )}
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -655,6 +669,7 @@ export function RackScreen() {
                     onRemoveSlot={(s) => handleRemoveSlot(selectedRack.id, s)}
                     onTap={handleSlotTap}
                     onInfo={handleSlotInfo}
+                    onOpenUrl={handleOpenUrl}
                     onLongPressDrag={handleLongPressDrag}
                   />
                 ))}
@@ -895,6 +910,14 @@ const styles = StyleSheet.create({
   slotHover: { borderColor: '#34C759', borderWidth: 2, backgroundColor: '#E8F8EE' },
   slotDragging: { opacity: 0.25, borderColor: '#C0C0C0', borderStyle: 'dashed' },
   slotTapArea: { flex: 1 },
+  slotUrlBtn: {
+    position: 'absolute', bottom: 4, right: 4,
+    width: 26, height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0,122,255,0.10)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  slotUrlBtnTxt: { fontSize: 13 },
   slotRemoveBadge: {
     position: 'absolute', top: -6, left: -6,
     backgroundColor: '#FF3B30', borderRadius: 11,
