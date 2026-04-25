@@ -15,7 +15,6 @@ import {
   Platform,
   Animated,
   PanResponder,
-  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +27,7 @@ import { BoardBadges } from '../components/BoardBadges';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 import { VisitStatus } from '../hooks/useVisitedBoards';
-import { isIntelChipset, buildDirectProductUrl } from '../services/URLResolverService';
+import { isIntelChipset } from '../services/URLResolverService';
 
 const COLS = 3;
 const GAP = 8;
@@ -168,11 +167,6 @@ function GridSlot({
           isDragging && styles.slotDragging,
         ]}
       >
-        {/* Delete entire slot — top-left iPhone-style × */}
-        <TouchableOpacity style={styles.slotRemoveBadge} onPress={() => onRemoveSlot(slot)}>
-          <Text style={styles.slotRemoveBadgeTxt}>×</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.slotTapArea}
           activeOpacity={0.7}
@@ -196,7 +190,8 @@ function GridSlot({
           )}
         </TouchableOpacity>
 
-        {/* Top-right: selected ✓ OR clear-board ×, never both */}
+        {/* Top-right: selected ✓ OR clear-board ×, never both. Slot count is
+            managed only via row +/− buttons so the grid framework stays fixed. */}
         {isSelected ? (
           <View style={styles.selectedBadge}>
             <Text style={styles.selectedBadgeTxt}>✓</Text>
@@ -346,6 +341,9 @@ export function RackScreen() {
   // When user taps "Open Spec Page", we first close the sheet (→ slide-out
   // animation), then open the URL in onDismiss (fires after animation ends).
   const pendingInfoOpenRef = useRef<RackSlot | null>(null);
+  // Forward-declared ref to handleOpenUrl (defined later) so handleInfoDismiss
+  // can call it without a circular dep / TDZ on the useCallback dependency list.
+  const handleOpenUrlRef = useRef<((slot: RackSlot) => Promise<void>) | null>(null);
 
   // ── iPhone-style drag state ────────────────────────────────────────────
   // dragSlotId === null while idle. Once long-press fires, we set everything
@@ -484,6 +482,10 @@ export function RackScreen() {
     [openOfficialPage, markConfirmed, markWrong, saveUrl]
   );
 
+  // Keep the forward-declared ref in sync so handleInfoDismiss reads the
+  // latest handleOpenUrl (avoids stale closure when its deps change).
+  useEffect(() => { handleOpenUrlRef.current = handleOpenUrl; }, [handleOpenUrl]);
+
   const handleRemoveSlot = useCallback(
     (rackId: string, slot: RackSlot) => {
       const label = slot.motherboard ? ` (${slot.motherboard.fullModelName})` : '';
@@ -546,15 +548,16 @@ export function RackScreen() {
   }, []);
 
   // Fires after the slide-out animation fully completes (iOS onDismiss).
+  // We delegate to handleOpenUrl (via ref to avoid TDZ) so the in-app browser
+  // is used — same UX as the 🔗 button. onDismiss timing guarantees the
+  // InfoCard Modal is fully gone before the browser Modal presents, avoiding
+  // the "two stacked Modals" hang we hit before.
   const handleInfoDismiss = useCallback(() => {
     const slot = pendingInfoOpenRef.current;
     pendingInfoOpenRef.current = null;
     setInfoCardSlot(null);
-    if (!slot?.motherboard) return;
-    const board = slot.motherboard;
-    const url = (savedUrls as Record<string, string>)[board.id] ?? buildDirectProductUrl(board);
-    Linking.openURL(url).catch(() => {});
-  }, [savedUrls]);
+    if (slot) handleOpenUrlRef.current?.(slot);
+  }, []);
 
   // Long-press → enter drag mode. We measure the grid container in window
   // coordinates so subsequent finger positions can be mapped to slot indices.
@@ -689,7 +692,7 @@ export function RackScreen() {
               ? 'Drag to a target slot, release to drop'
               : selectedSlotId
               ? 'Tap destination slot to move here (or hold any slot to drag)'
-              : '× = delete · Tap to select+move · Hold to drag'}
+              : 'Tap to select+move · Hold to drag · × removes board · − removes row'}
           </Text>
         </View>
       )}
