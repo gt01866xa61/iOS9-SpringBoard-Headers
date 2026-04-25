@@ -274,7 +274,12 @@ export function RackScreen() {
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
-      await openOfficialPage(slot.motherboard);
+      const board = slot.motherboard;
+      const result = await openOfficialPage(board);
+      // Auto-prompt to save URL for custom boards (they often have guessed URLs)
+      if (board.isCustom && result.shouldPrompt) {
+        setSaveModalTarget(board);
+      }
     },
     [openOfficialPage]
   );

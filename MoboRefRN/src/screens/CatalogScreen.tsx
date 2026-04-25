@@ -74,7 +74,12 @@ export function CatalogScreen() {
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
-    await openOfficialPage(item);
+    const result = await openOfficialPage(item);
+    // Custom boards often have wrong/guessed URLs — auto-prompt to save the
+    // verified URL after the user has navigated. Skip if already saved.
+    if (item.isCustom && result.shouldPrompt) {
+      setEditUrlTarget(item);
+    }
   };
 
   const handleLongPress = (item: Motherboard) => {
