@@ -631,7 +631,10 @@ export function RackScreen() {
       {/* Grid */}
       {selectedRack ? (
         <ScrollView contentContainerStyle={styles.grid} scrollEnabled={!dragSlotId}>
-          <View ref={gridContainerRef} collapsable={false}>
+          {/* PanResponder lives on the grid (an ancestor of every slot) so it can
+              steal the in-progress touch from the slot's TouchableOpacity right
+              after long-press flips dragSlotIdRef.current to true. */}
+          <View ref={gridContainerRef} collapsable={false} {...overlayPan.panHandlers}>
             {Array.from({ length: Math.ceil(slots.length / COLS) }, (_, row) => (
               <View key={row} style={styles.gridRow}>
                 {slots.slice(row * COLS, row * COLS + COLS).map((slot) => (
@@ -830,16 +833,15 @@ export function RackScreen() {
         />
       )}
 
-      {/* Drag overlay — always mounted so onMoveShouldSetPanResponderCapture
-          can steal the ongoing touch right after long-press fires. The overlay
-          is visually empty and pointer-transparent while dragSlotId is null. */}
-      <View style={styles.dragOverlay} {...overlayPan.panHandlers}>
-        {dragSlotId !== null && draggedSlot && (
+      {/* Visual-only overlay for the floating slot. pointerEvents="none" so it
+          never blocks taps; the actual gesture is handled by the grid View. */}
+      {dragSlotId !== null && draggedSlot && (
+        <View style={styles.dragOverlay} pointerEvents="none">
           <View style={[styles.dragFloatPos, { left: dragPos.x, top: dragPos.y }]}>
             <FloatingSlot slot={draggedSlot} sz={size} />
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 }
