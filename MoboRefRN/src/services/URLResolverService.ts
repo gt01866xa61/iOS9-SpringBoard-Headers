@@ -34,14 +34,27 @@ export function buildDirectProductUrl(board: Motherboard): string {
     case 'ASUS': {
       const slug = hyphenate(model).toLowerCase();
 
-      // ROG products live on a separate subdomain (rog.asus.com), NOT www.asus.com
-      // e.g. https://rog.asus.com/motherboards/rog-maximus/rog-maximus-z890-apex/
-      if (/^rog\s+strix/i.test(model))     return `https://rog.asus.com/motherboards/rog-strix/${slug}/`;
-      if (/^rog\s+maximus/i.test(model))   return `https://rog.asus.com/motherboards/rog-maximus/${slug}/`;
-      if (/^rog\s+crosshair/i.test(model)) return `https://rog.asus.com/motherboards/rog-crosshair/${slug}/`;
-      if (/^rog/i.test(model))             return `https://rog.asus.com/motherboards/${slug}/`;
+      // ROG slugs are inconsistent across eras — newest-gen omits -model, older
+      // ones append it, WIFI II variants omit it again, and WIFI vs WI-FI varies
+      // per product. We can only reliably build URLs for the newest gen. Older
+      // ROG boards fall back to Google site:rog.asus.com (1 extra click, but
+      // always reaches the right page; user can long-press to save direct URL).
+      if (/^rog/i.test(model)) {
+        const NEWEST = new Set(['Z890','B860','H810','X870E','X870','B850','B840']);
+        if (NEWEST.has(board.chipset.toUpperCase())) {
+          const subdir =
+              /^rog\s+strix/i.test(model)     ? 'rog-strix'
+            : /^rog\s+maximus/i.test(model)   ? 'rog-maximus'
+            : /^rog\s+crosshair/i.test(model) ? 'rog-crosshair'
+            :                                   '';
+          const path = subdir ? `${subdir}/${slug}` : slug;
+          return `https://rog.asus.com/motherboards/${path}/`;
+        }
+        const q = `"${model}" site:rog.asus.com`;
+        return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+      }
 
-      // CSM (commercial-stable) variants live under /csm/ regardless of PRIME/PRO prefix
+      // CSM (commercial-stable) variants live under /csm/ regardless of prefix
       if (/-csm$/i.test(model)) {
         return `https://www.asus.com/motherboards-components/motherboards/csm/${slug}/`;
       }

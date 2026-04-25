@@ -28,7 +28,7 @@ function chipsetNum(cs: string): number {
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
   const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
-  const { visitRecord, markConfirmed, markWrong } = useVisitedBoards();
+  const { visitRecord, markConfirmed, markWrong, clearStatus } = useVisitedBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
@@ -117,6 +117,16 @@ export function useCatalog() {
 
   const clearNewBoardsCount = useCallback(() => setNewBoardsCount(0), []);
 
+  // Reset everything we know about a board's URL — used by the Edit Status flow
+  // to take a board back to "not yet confirmed" regardless of which badge it had.
+  const resetBoardState = useCallback(
+    (id: string) => {
+      removeSavedUrl(id);
+      clearStatus(id);
+    },
+    [removeSavedUrl, clearStatus]
+  );
+
   return {
     brands,
     chipsets,
@@ -142,6 +152,7 @@ export function useCatalog() {
     visitRecord,
     markConfirmed,
     markWrong,
+    resetBoardState,
     clearNewBoardsCount,
   };
 }

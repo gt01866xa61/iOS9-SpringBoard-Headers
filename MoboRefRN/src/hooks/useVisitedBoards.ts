@@ -36,6 +36,15 @@ async function setStatus(id: string, status: VisitStatus) {
   try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(_snapshot)); } catch {}
 }
 
+async function clearStatusInternal(id: string) {
+  if (!(id in _snapshot)) return;
+  const next = { ..._snapshot };
+  delete next[id];
+  _snapshot = next;
+  emitChange();
+  try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(_snapshot)); } catch {}
+}
+
 export function useVisitedBoards() {
   const visitRecord = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -43,6 +52,7 @@ export function useVisitedBoards() {
 
   const markConfirmed = useCallback((id: string) => { setStatus(id, 'confirmed'); }, []);
   const markWrong = useCallback((id: string) => { setStatus(id, 'wrong'); }, []);
+  const clearStatus = useCallback((id: string) => { clearStatusInternal(id); }, []);
 
-  return { visitRecord, markConfirmed, markWrong };
+  return { visitRecord, markConfirmed, markWrong, clearStatus };
 }

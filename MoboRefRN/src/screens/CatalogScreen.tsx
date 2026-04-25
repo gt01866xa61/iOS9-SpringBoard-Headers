@@ -38,10 +38,10 @@ export function CatalogScreen() {
     removeCustomBoard,
     savedUrls,
     saveUrl,
-    removeSavedUrl,
     visitRecord,
     markConfirmed,
     markWrong,
+    resetBoardState,
     clearNewBoardsCount,
   } = useCatalog();
 
@@ -67,11 +67,13 @@ export function CatalogScreen() {
     }
   }, [newBoardsCount, clearNewBoardsCount]);
 
-  const hasSavedUrls = Object.keys(savedUrls).length > 0;
+  // Edit-mode visibility: any board with saved URL OR a visit status.
+  // Auto-exit when the last managed state is cleared.
+  const hasAnyState = Object.keys(savedUrls).length > 0 || Object.keys(visitRecord).length > 0;
 
   useEffect(() => {
-    if (!hasSavedUrls) setEditMode(false);
-  }, [hasSavedUrls]);
+    if (!hasAnyState) setEditMode(false);
+  }, [hasAnyState]);
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
@@ -105,17 +107,18 @@ export function CatalogScreen() {
 
   const handleLongPress = (item: Motherboard) => {
     const hasSaved = !!savedUrls[item.id];
+    const hasState = hasSaved || !!visitRecord[item.id];
     const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
       {
         text: hasSaved ? 'Edit Saved URL' : 'Enter URL manually',
         onPress: () => setEditUrlTarget(item),
       },
     ];
-    if (hasSaved) {
+    if (hasState) {
       options.push({
-        text: 'Remove Saved URL',
+        text: 'Reset Status',
         style: 'destructive',
-        onPress: () => removeSavedUrl(item.id),
+        onPress: () => resetBoardState(item.id),
       });
     }
     if (item.isCustom) {
@@ -151,14 +154,18 @@ export function CatalogScreen() {
           <Text style={styles.brand}>{item.brand}</Text>
         </View>
 
-        {editMode && hasSaved ? (
+        {editMode && (hasSaved || visitStatus) ? (
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={() =>
-              Alert.alert('Remove saved URL', `Remove saved URL for "${item.fullModelName}"?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: () => removeSavedUrl(item.id) },
-              ])
+              Alert.alert(
+                'Reset status?',
+                `Clear all marks for "${item.fullModelName}"? Saved URL and visit confirmation will be removed; the board returns to "not yet confirmed".`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Reset', style: 'destructive', onPress: () => resetBoardState(item.id) },
+                ]
+              )
             }
           >
             <Text style={styles.deleteBtnTxt}>Remove</Text>
@@ -246,10 +253,10 @@ export function CatalogScreen() {
               <Text style={styles.clearFilter}>Clear ×</Text>
             </TouchableOpacity>
           )}
-          {(hasSavedUrls || editMode) && (
+          {(hasAnyState || editMode) && (
             <TouchableOpacity onPress={() => setEditMode((e) => !e)}>
               <Text style={[styles.editBtn, editMode && styles.editBtnActive]}>
-                {editMode ? 'Done' : 'Edit URLs'}
+                {editMode ? 'Done' : 'Edit Status'}
               </Text>
             </TouchableOpacity>
           )}
@@ -270,7 +277,7 @@ export function CatalogScreen() {
       {editMode && (
         <View style={styles.editBanner}>
           <Text style={styles.editBannerTxt}>
-            Tap "Remove" to delete · Long-press any board to edit URL manually
+            Tap "Remove" to reset a board's status (clears URL + SEEN/WRONG/FIXED marks)
           </Text>
         </View>
       )}
