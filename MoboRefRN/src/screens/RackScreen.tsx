@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -39,37 +39,121 @@ function slotSize(isEditing: boolean) {
   return (WIN_W - PADDING * 2 - GAP * COLS - (isEditing ? ROW_DEL_W : 0)) / COLS;
 }
 
+// Bottom-sheet info card. Tap backdrop to dismiss.
+function InfoCard({
+  slot,
+  hasSavedUrl,
+  visitStatus,
+  onClose,
+  onOpenUrl,
+}: {
+  slot: RackSlot;
+  hasSavedUrl: boolean;
+  visitStatus?: VisitStatus;
+  onClose: () => void;
+  onOpenUrl: (s: RackSlot) => void;
+}) {
+  const board = slot.motherboard!;
+  const chipsetIsIntel = isIntelChipset(board.chipset);
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={ic.backdrop} activeOpacity={1} onPress={onClose} />
+      <View style={ic.sheet}>
+        <View style={ic.handle} />
+        <View style={ic.chipRow}>
+          <View style={[ic.chipBadge, chipsetIsIntel ? ic.chipIntel : ic.chipAmd]}>
+            <Text style={[ic.chipTxt, chipsetIsIntel ? ic.chipTxtIntel : ic.chipTxtAmd]}>
+              {board.chipset}
+            </Text>
+          </View>
+          <Text style={ic.brandTxt}>{board.brand}</Text>
+        </View>
+        <Text style={ic.modelTxt}>{board.fullModelName}</Text>
+        <View style={ic.badgesRow}>
+          <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} />
+        </View>
+        <TouchableOpacity
+          style={ic.openBtn}
+          activeOpacity={0.85}
+          // Close the sheet first so the browser/alert isn't stacked on top of it.
+          onPress={() => { onClose(); setTimeout(() => onOpenUrl(slot), 180); }}
+        >
+          <Text style={ic.openBtnTxt}>🔗  Open Spec Page</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+// Drag visual: a copy of the slot that follows the finger.
+function FloatingSlot({ slot, sz }: { slot: RackSlot; sz: number }) {
+  const board = slot.motherboard;
+  const isIntel = board ? isIntelChipset(board.chipset) : true;
+  return (
+    <View style={[styles.slot, styles.floatSlot, { width: sz, height: sz }]}>
+      <Text style={styles.slotNum}>{slot.position + 1}</Text>
+      {board ? (
+        <>
+          <Text style={styles.slotModel} numberOfLines={2}>{board.fullModelName}</Text>
+          <Text style={styles.slotBrand}>{board.brand}</Text>
+          <Text style={[styles.slotChipset, isIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
+            {board.chipset}
+          </Text>
+        </>
+      ) : (
+        <View style={styles.emptySlotHint}>
+          <Text style={styles.emptySlotTxt}>—</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function GridSlot({
   slot,
   size,
   isEditing,
   isSelected,
+  isDragging,
+  isHoverTarget,
   hasSavedUrl,
   visitStatus,
   onAssign,
   onClear,
   onRemoveSlot,
-  onOpenUrl,
   onTap,
+  onInfo,
+  onLongPressDrag,
 }: {
   slot: RackSlot;
   size: number;
   isEditing: boolean;
   isSelected: boolean;
+  isDragging: boolean;
+  isHoverTarget: boolean;
   hasSavedUrl: boolean;
   visitStatus?: VisitStatus;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
   onRemoveSlot: (s: RackSlot) => void;
-  onOpenUrl: (s: RackSlot) => void;
   onTap: (s: RackSlot) => void;
+  onInfo: (s: RackSlot) => void;
+  onLongPressDrag: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard;
   const chipsetIsIntel = board ? isIntelChipset(board.chipset) : true;
 
   if (isEditing) {
     return (
-      <View style={[styles.slot, { width: size, height: size }, isSelected && styles.slotSelected]}>
+      <View
+        style={[
+          styles.slot,
+          { width: size, height: size },
+          isSelected && styles.slotSelected,
+          isHoverTarget && !isSelected && styles.slotHover,
+          isDragging && styles.slotDragging,
+        ]}
+      >
         {/* Delete entire slot — top-left iPhone-style × */}
         <TouchableOpacity style={styles.slotRemoveBadge} onPress={() => onRemoveSlot(slot)}>
           <Text style={styles.slotRemoveBadgeTxt}>×</Text>
@@ -79,6 +163,8 @@ function GridSlot({
           style={styles.slotTapArea}
           activeOpacity={0.7}
           onPress={() => onTap(slot)}
+          onLongPress={() => onLongPressDrag(slot)}
+          delayLongPress={350}
         >
           <Text style={styles.slotNum}>{slot.position + 1}</Text>
           {board ? (
@@ -125,30 +211,29 @@ function GridSlot({
   }
 
   return (
-    <View style={[styles.slot, { width: size, height: size }]}>
+    <TouchableOpacity
+      style={[styles.slot, { width: size, height: size }]}
+      activeOpacity={board ? 0.75 : 1}
+      onPress={() => (board ? onInfo(slot) : onAssign(slot))}
+    >
       <Text style={styles.slotNum}>{slot.position + 1}</Text>
       {board ? (
         <>
-          <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+          <Text style={styles.slotModel} numberOfLines={1}>{board.fullModelName}</Text>
           <Text style={styles.slotBrand}>{board.brand}</Text>
-          <View style={styles.slotChipsetRow}>
-            <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
-              {board.chipset}
-            </Text>
+          <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
+            {board.chipset}
+          </Text>
+          <View style={styles.slotBadgesRow}>
             <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
-          </View>
-          <View style={styles.slotBtns}>
-            <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
-              <Text style={styles.btnPageTxt}>🔗</Text>
-            </TouchableOpacity>
           </View>
         </>
       ) : (
-        <TouchableOpacity style={styles.assignBtn} onPress={() => onAssign(slot)}>
+        <View style={styles.emptySlotHint}>
           <Text style={styles.assignTxt}>+</Text>
-        </TouchableOpacity>
+        </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -230,9 +315,33 @@ export function RackScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
+  const [infoCardSlot, setInfoCardSlot] = useState<RackSlot | null>(null);
+
+  // ── iPhone-style drag state ────────────────────────────────────────────
+  // dragSlotId === null while idle. Once long-press fires, we set everything
+  // and the absolute overlay below captures finger movement.
+  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  // Refs feed values into PanResponder closures (created once via useRef below).
+  const dragSlotIdRef = useRef<string | null>(null);
+  const hoverIndexRef = useRef<number | null>(null);
+  const slotsRef = useRef<RackSlot[]>([]);
+  const selectedRackRef = useRef<Rack | null>(null);
+  const moveSlotRef = useRef(moveSlot);
+  const gridContainerRef = useRef<View>(null);
+  const gridOriginRef = useRef({ x: 0, y: 0 });
+  const szRef = useRef(0);
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
+  const slots = selectedRack?.slots ?? [];
+
+  // Keep refs in sync so the once-created PanResponder always sees fresh values.
+  useEffect(() => { slotsRef.current = slots; }, [slots]);
+  useEffect(() => { selectedRackRef.current = selectedRack; }, [selectedRack]);
+  useEffect(() => { moveSlotRef.current = moveSlot; }, [moveSlot]);
 
   const searchedModels = filteredModels.filter((b) => {
     const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -374,7 +483,93 @@ export function RackScreen() {
     [removeRow]
   );
 
-  const slots = selectedRack?.slots ?? [];
+  const handleSlotInfo = useCallback((slot: RackSlot) => {
+    if (!slot.motherboard) return;
+    setInfoCardSlot(slot);
+  }, []);
+
+  // Long-press → enter drag mode. We measure the grid container in window
+  // coordinates so subsequent finger positions can be mapped to slot indices.
+  const handleLongPressDrag = useCallback((slot: RackSlot) => {
+    gridContainerRef.current?.measureInWindow((gx, gy) => {
+      const sz = slotSize(true);
+      szRef.current = sz;
+      gridOriginRef.current = { x: gx, y: gy };
+
+      const col = slot.position % COLS;
+      const row = Math.floor(slot.position / COLS);
+      const x = gx + PADDING + col * (sz + GAP);
+      const y = gy + PADDING + row * (sz + GAP);
+
+      dragSlotIdRef.current = slot.id;
+      hoverIndexRef.current = slot.position;
+      setDragSlotId(slot.id);
+      setDragPos({ x, y });
+      setHoverIndex(slot.position);
+      setSelectedSlotId(null);
+    });
+  }, []);
+
+  // Created once. Closures reference *Ref values so they always read fresh state.
+  // Capture variants are set so this overlay wins responder negotiation while
+  // dragging, even though the touch originated on the slot below.
+  const overlayPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !!dragSlotIdRef.current,
+      onStartShouldSetPanResponderCapture: () => !!dragSlotIdRef.current,
+      onMoveShouldSetPanResponder: () => !!dragSlotIdRef.current,
+      onMoveShouldSetPanResponderCapture: () => !!dragSlotIdRef.current,
+      onPanResponderGrant: (e) => {
+        // Sync the floating slot to the actual finger position the moment we take over.
+        const sz = szRef.current;
+        const { pageX, pageY } = e.nativeEvent;
+        setDragPos({ x: pageX - sz / 2, y: pageY - sz / 2 });
+      },
+      onPanResponderMove: (_, { moveX, moveY }) => {
+        const sz = szRef.current;
+        setDragPos({ x: moveX - sz / 2, y: moveY - sz / 2 });
+
+        const { x: gx, y: gy } = gridOriginRef.current;
+        const relX = moveX - gx - PADDING;
+        const relY = moveY - gy - PADDING;
+        if (relX < 0 || relY < 0) return;
+        const total = slotsRef.current.length;
+        if (total === 0) return;
+        const col = Math.min(Math.max(Math.floor(relX / (sz + GAP)), 0), COLS - 1);
+        const row = Math.max(Math.floor(relY / (sz + GAP)), 0);
+        const idx = Math.min(row * COLS + col, total - 1);
+        if (idx !== hoverIndexRef.current) {
+          hoverIndexRef.current = idx;
+          setHoverIndex(idx);
+        }
+      },
+      onPanResponderRelease: () => {
+        const fromId = dragSlotIdRef.current;
+        const toIdx = hoverIndexRef.current;
+        const rack = selectedRackRef.current;
+        const cur = slotsRef.current;
+        if (fromId && toIdx !== null && rack) {
+          const from = cur.find((s) => s.id === fromId);
+          if (from && from.position !== toIdx) {
+            const to = cur.find((s) => s.position === toIdx);
+            if (to) moveSlotRef.current(rack.id, fromId, to.id);
+          }
+        }
+        dragSlotIdRef.current = null;
+        hoverIndexRef.current = null;
+        setDragSlotId(null);
+        setHoverIndex(null);
+      },
+      onPanResponderTerminate: () => {
+        dragSlotIdRef.current = null;
+        hoverIndexRef.current = null;
+        setDragSlotId(null);
+        setHoverIndex(null);
+      },
+    })
+  ).current;
+
+  const draggedSlot = dragSlotId ? slots.find((s) => s.id === dragSlotId) ?? null : null;
 
   return (
     <View style={styles.container}>
@@ -415,44 +610,53 @@ export function RackScreen() {
       {isEditing && (
         <View style={styles.editHint}>
           <Text style={styles.editHintTxt}>
-            {selectedSlotId
-              ? 'Tap destination slot to move here (others shift)'
-              : '× (left) = delete slot · Tap slot to select, tap another to move'}
+            {dragSlotId
+              ? 'Drag to a target slot, release to drop'
+              : selectedSlotId
+              ? 'Tap destination slot to move here (or hold any slot to drag)'
+              : '× = delete · Tap to select+move · Hold to drag'}
           </Text>
         </View>
       )}
 
       {/* Grid */}
       {selectedRack ? (
-        <ScrollView contentContainerStyle={styles.grid}>
-          {Array.from({ length: Math.ceil(slots.length / COLS) }, (_, row) => (
-            <View key={row} style={styles.gridRow}>
-              {slots.slice(row * COLS, row * COLS + COLS).map((slot) => (
-                <GridSlot
-                  key={slot.id}
-                  slot={slot}
-                  size={size}
-                  isEditing={isEditing}
-                  isSelected={slot.id === selectedSlotId}
-                  hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
-                  visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
-                  onAssign={(s) => handleAssign(selectedRack.id, s)}
-                  onClear={(s) => clearSlot(selectedRack.id, s.id)}
-                  onRemoveSlot={(s) => handleRemoveSlot(selectedRack.id, s)}
-                  onOpenUrl={handleOpenUrl}
-                  onTap={handleSlotTap}
-                />
-              ))}
-              {isEditing && (
-                <TouchableOpacity
-                  style={styles.rowDelBtn}
-                  onPress={() => handleRemoveRow(selectedRack.id, row)}
-                >
-                  <Text style={styles.rowDelTxt}>−</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+        <ScrollView contentContainerStyle={styles.grid} scrollEnabled={!dragSlotId}>
+          <View ref={gridContainerRef} collapsable={false}>
+            {Array.from({ length: Math.ceil(slots.length / COLS) }, (_, row) => (
+              <View key={row} style={styles.gridRow}>
+                {slots.slice(row * COLS, row * COLS + COLS).map((slot) => (
+                  <GridSlot
+                    key={slot.id}
+                    slot={slot}
+                    size={size}
+                    isEditing={isEditing}
+                    isSelected={slot.id === selectedSlotId}
+                    isDragging={slot.id === dragSlotId}
+                    isHoverTarget={
+                      dragSlotId !== null && slot.id !== dragSlotId && slot.position === hoverIndex
+                    }
+                    hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
+                    visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
+                    onAssign={(s) => handleAssign(selectedRack.id, s)}
+                    onClear={(s) => clearSlot(selectedRack.id, s.id)}
+                    onRemoveSlot={(s) => handleRemoveSlot(selectedRack.id, s)}
+                    onTap={handleSlotTap}
+                    onInfo={handleSlotInfo}
+                    onLongPressDrag={handleLongPressDrag}
+                  />
+                ))}
+                {isEditing && (
+                  <TouchableOpacity
+                    style={styles.rowDelBtn}
+                    onPress={() => handleRemoveRow(selectedRack.id, row)}
+                  >
+                    <Text style={styles.rowDelTxt}>−</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
           {isEditing && (
             <TouchableOpacity
               style={styles.addRowBtn}
@@ -603,6 +807,28 @@ export function RackScreen() {
         onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
         onClose={() => setSaveModalTarget(null)}
       />
+
+      {/* Info card (board details + open spec) */}
+      {infoCardSlot && (
+        <InfoCard
+          slot={infoCardSlot}
+          hasSavedUrl={!!infoCardSlot.motherboard && !!savedUrls[infoCardSlot.motherboard.id]}
+          visitStatus={
+            infoCardSlot.motherboard ? visitRecord[infoCardSlot.motherboard.id] : undefined
+          }
+          onClose={() => setInfoCardSlot(null)}
+          onOpenUrl={handleOpenUrl}
+        />
+      )}
+
+      {/* Drag overlay (only mounted while dragging) */}
+      {dragSlotId !== null && draggedSlot && (
+        <View style={styles.dragOverlay} {...overlayPan.panHandlers}>
+          <View style={[styles.dragFloatPos, { left: dragPos.x, top: dragPos.y }]}>
+            <FloatingSlot slot={draggedSlot} sz={size} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -653,6 +879,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   slotSelected: { borderColor: '#007AFF', borderWidth: 2, backgroundColor: '#EEF5FF' },
+  slotHover: { borderColor: '#34C759', borderWidth: 2, backgroundColor: '#E8F8EE' },
+  slotDragging: { opacity: 0.25, borderColor: '#C0C0C0', borderStyle: 'dashed' },
   slotTapArea: { flex: 1 },
   slotRemoveBadge: {
     position: 'absolute', top: -6, left: -6,
@@ -762,6 +990,54 @@ const styles = StyleSheet.create({
   addCustomTxt: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
 
   slotChipsetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' },
+  slotBadgesRow: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: 3, marginTop: 3, minHeight: 14,
+  },
   assignBadges: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' },
 
+  // Drag visual: floating slot follows the finger; receives raised shadow.
+  dragOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 100,
+  },
+  dragFloatPos: { position: 'absolute' },
+  floatSlot: {
+    backgroundColor: '#fff',
+    borderColor: '#007AFF', borderWidth: 2,
+    transform: [{ scale: 1.06 }],
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25, shadowRadius: 14,
+    elevation: 12,
+  },
+});
+
+// Info card (bottom sheet) styles — kept separate for clarity.
+const ic = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 22, borderTopRightRadius: 22,
+    paddingHorizontal: 24, paddingTop: 12, paddingBottom: 44,
+    gap: 14,
+  },
+  handle: {
+    alignSelf: 'center', width: 36, height: 4,
+    borderRadius: 2, backgroundColor: '#D1D1D6', marginBottom: 2,
+  },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
+  chipBadge: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+  chipIntel: { backgroundColor: '#EFF6FF' },
+  chipAmd: { backgroundColor: '#F8CBAD' },
+  chipTxt: { fontSize: 14, fontWeight: '700' },
+  chipTxtIntel: { color: '#2563EB' },
+  chipTxtAmd: { color: '#8B3A1B' },
+  brandTxt: { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
+  modelTxt: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', lineHeight: 30 },
+  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, minHeight: 20 },
+  openBtn: {
+    marginTop: 4, backgroundColor: '#007AFF',
+    borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+  },
+  openBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
