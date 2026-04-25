@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   RefreshControl,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
@@ -41,6 +43,18 @@ export function CatalogScreen() {
 
   const [editMode, setEditMode] = useState(false);
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // AND search: every space-separated token must appear in model+chipset+brand.
+  // Combined with existing brand/chipset pills (already applied in filteredModels).
+  const searchedModels = useMemo(() => {
+    const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return filteredModels;
+    return filteredModels.filter((b) => {
+      const haystack = (b.fullModelName + ' ' + b.chipset + ' ' + b.brand).toLowerCase();
+      return tokens.every((t) => haystack.includes(t));
+    });
+  }, [filteredModels, searchQuery]);
 
   // Auto-dismiss the "new boards" toast after 3s
   useEffect(() => {
@@ -172,6 +186,22 @@ export function CatalogScreen() {
         </ScrollView>
       </View>
 
+      {/* Search box — AND-combined with brand/chipset pills */}
+      <View style={styles.searchBox}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search (use spaces for AND, e.g. '650 wifi')"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+          autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={Keyboard.dismiss}
+          blurOnSubmit
+        />
+      </View>
+
       {error ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
@@ -184,12 +214,12 @@ export function CatalogScreen() {
       {/* Count + controls */}
       <View style={styles.countRow}>
         <View style={styles.countLeft}>
-          <Text style={styles.count}>{filteredModels.length} models</Text>
+          <Text style={styles.count}>{searchedModels.length} models</Text>
           {version ? <Text style={styles.versionTxt}>· {version}</Text> : null}
         </View>
         <View style={styles.countRowRight}>
-          {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL') && (
-            <TouchableOpacity onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); }}>
+          {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL' || searchQuery !== '') && (
+            <TouchableOpacity onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); setSearchQuery(''); }}>
               <Text style={styles.clearFilter}>Clear ×</Text>
             </TouchableOpacity>
           )}
@@ -224,10 +254,12 @@ export function CatalogScreen() {
       )}
 
       <FlatList
-        data={filteredModels}
+        data={searchedModels}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} />}
         ListEmptyComponent={!isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null}
       />
@@ -268,6 +300,16 @@ const styles = StyleSheet.create({
   pillActiveBlue: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
   pillTxt: { fontSize: 13, color: '#3C3C43', fontWeight: '500' },
   pillTxtActive: { color: '#fff' },
+
+  searchBox: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#E5E5EA',
+  },
+  searchInput: {
+    backgroundColor: '#F2F2F7', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, fontSize: 15,
+  },
 
   countRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
