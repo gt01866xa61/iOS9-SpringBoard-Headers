@@ -27,6 +27,7 @@ import { BoardBadges } from '../components/BoardBadges';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 import { VisitStatus } from '../hooks/useVisitedBoards';
+import { isIntelChipset } from '../services/URLResolverService';
 
 const COLS = 3;
 const GAP = 8;
@@ -47,6 +48,7 @@ function GridSlot({
   visitStatus,
   onAssign,
   onClear,
+  onRemoveSlot,
   onOpenUrl,
   onTap,
 }: {
@@ -58,14 +60,21 @@ function GridSlot({
   visitStatus?: VisitStatus;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
+  onRemoveSlot: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
   onTap: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard;
+  const chipsetIsIntel = board ? isIntelChipset(board.chipset) : true;
 
   if (isEditing) {
     return (
       <View style={[styles.slot, { width: size, height: size }, isSelected && styles.slotSelected]}>
+        {/* Delete entire slot — top-left iPhone-style × */}
+        <TouchableOpacity style={styles.slotRemoveBadge} onPress={() => onRemoveSlot(slot)}>
+          <Text style={styles.slotRemoveBadgeTxt}>×</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.slotTapArea}
           activeOpacity={0.7}
@@ -76,7 +85,9 @@ function GridSlot({
             <>
               <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
               <Text style={styles.slotBrand}>{board.brand}</Text>
-              <Text style={styles.slotChipset}>{board.chipset}</Text>
+              <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
+                {board.chipset}
+              </Text>
             </>
           ) : (
             <View style={styles.emptySlotHint}>
@@ -84,15 +95,18 @@ function GridSlot({
             </View>
           )}
         </TouchableOpacity>
-        {isSelected && (
+
+        {/* Top-right: selected ✓ OR clear-board ×, never both */}
+        {isSelected ? (
           <View style={styles.selectedBadge}>
             <Text style={styles.selectedBadgeTxt}>✓</Text>
           </View>
-        )}
-        {board && (
-          <TouchableOpacity style={styles.slotDeleteBadge} onPress={() => onClear(slot)}>
-            <Text style={styles.slotDeleteBadgeTxt}>×</Text>
-          </TouchableOpacity>
+        ) : (
+          board && (
+            <TouchableOpacity style={styles.slotDeleteBadge} onPress={() => onClear(slot)}>
+              <Text style={styles.slotDeleteBadgeTxt}>×</Text>
+            </TouchableOpacity>
+          )
         )}
       </View>
     );
@@ -106,19 +120,15 @@ function GridSlot({
           <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
           <Text style={styles.slotBrand}>{board.brand}</Text>
           <View style={styles.slotChipsetRow}>
-            <Text style={styles.slotChipset}>{board.chipset}</Text>
+            <Text style={[styles.slotChipset, chipsetIsIntel ? styles.slotChipsetIntel : styles.slotChipsetAmd]}>
+              {board.chipset}
+            </Text>
             <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
           </View>
           <View style={styles.slotBtns}>
             <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
               <Text style={styles.btnPageTxt}>🔗</Text>
             </TouchableOpacity>
-            {/* ✕ only visible in edit mode */}
-            {isEditing && (
-              <TouchableOpacity style={styles.btnRemove} onPress={() => onClear(slot)}>
-                <Text style={styles.btnRemoveTxt}>✕</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </>
       ) : (
@@ -195,7 +205,7 @@ function SwipeableCustomRow({
 export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
+  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, removeSlot, moveSlot } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl, visitRecord, markConfirmed, markWrong } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
@@ -305,6 +315,21 @@ export function RackScreen() {
     [openOfficialPage, markConfirmed, markWrong, saveUrl]
   );
 
+  const handleRemoveSlot = useCallback(
+    (rackId: string, slot: RackSlot) => {
+      const label = slot.motherboard ? ` (${slot.motherboard.fullModelName})` : '';
+      Alert.alert(
+        'Delete Slot',
+        `Delete slot ${slot.position + 1}${label}? This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => removeSlot(rackId, slot.id) },
+        ]
+      );
+    },
+    [removeSlot]
+  );
+
   const handleSlotTap = useCallback(
     (slot: RackSlot) => {
       if (!selectedRack) return;
@@ -316,10 +341,10 @@ export function RackScreen() {
         setSelectedSlotId(null);
         return;
       }
-      swapSlots(selectedRack.id, selectedSlotId, slot.id);
+      moveSlot(selectedRack.id, selectedSlotId, slot.id);
       setSelectedSlotId(null);
     },
-    [selectedRack, selectedSlotId, swapSlots]
+    [selectedRack, selectedSlotId, moveSlot]
   );
 
   const handleRemoveRow = useCallback(
@@ -374,8 +399,8 @@ export function RackScreen() {
         <View style={styles.editHint}>
           <Text style={styles.editHintTxt}>
             {selectedSlotId
-              ? 'Now tap another slot to swap'
-              : 'Tap a slot to select, tap another to swap'}
+              ? 'Tap destination slot to move here (others shift)'
+              : '× (left) = delete slot · Tap slot to select, tap another to move'}
           </Text>
         </View>
       )}
@@ -396,6 +421,7 @@ export function RackScreen() {
                   visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
                   onAssign={(s) => handleAssign(selectedRack.id, s)}
                   onClear={(s) => clearSlot(selectedRack.id, s.id)}
+                  onRemoveSlot={(s) => handleRemoveSlot(selectedRack.id, s)}
                   onOpenUrl={handleOpenUrl}
                   onTap={handleSlotTap}
                 />
@@ -611,9 +637,19 @@ const styles = StyleSheet.create({
   },
   slotSelected: { borderColor: '#007AFF', borderWidth: 2, backgroundColor: '#EEF5FF' },
   slotTapArea: { flex: 1 },
+  slotRemoveBadge: {
+    position: 'absolute', top: -6, left: -6,
+    backgroundColor: '#FF3B30', borderRadius: 11,
+    width: 22, height: 22,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
+  },
+  slotRemoveBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   slotDeleteBadge: {
     position: 'absolute', top: -6, right: -6,
-    backgroundColor: '#FF3B30', borderRadius: 11,
+    backgroundColor: '#8E8E93', borderRadius: 11,
     width: 22, height: 22,
     justifyContent: 'center', alignItems: 'center',
     zIndex: 20,
@@ -625,10 +661,12 @@ const styles = StyleSheet.create({
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
   slotBrand: { fontSize: 9, color: '#8E8E93', fontWeight: '500', marginTop: 1 },
   slotChipset: {
-    fontSize: 10, color: '#2563EB', fontWeight: '600',
-    backgroundColor: '#EFF6FF', alignSelf: 'flex-start',
+    fontSize: 10, fontWeight: '600',
+    alignSelf: 'flex-start',
     paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
+  slotChipsetIntel: { color: '#2563EB', backgroundColor: '#EFF6FF' },
+  slotChipsetAmd: { color: '#8B3A1B', backgroundColor: '#F8CBAD' },
   slotBtns: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   btnPage: { backgroundColor: '#007AFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   btnPageTxt: { fontSize: 12 },

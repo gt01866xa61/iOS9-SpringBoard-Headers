@@ -110,26 +110,37 @@ export function useRacks() {
     [racks, persist]
   );
 
-  const swapSlots = useCallback(
-    (rackId: string, slotIdA: string, slotIdB: string) => {
+  // Remove a single slot entirely; remaining slots are reindexed compactly.
+  const removeSlot = useCallback(
+    (rackId: string, slotId: string) => {
       const updated = racks.map((r) => {
         if (r.id !== rackId) return r;
-        const a = r.slots.find((s) => s.id === slotIdA);
-        const b = r.slots.find((s) => s.id === slotIdB);
-        if (!a || !b) return r;
-        return {
-          ...r,
-          slots: r.slots.map((s) => {
-            if (s.id === slotIdA) return { ...s, motherboard: b.motherboard };
-            if (s.id === slotIdB) return { ...s, motherboard: a.motherboard };
-            return s;
-          }),
-        };
+        const remaining = r.slots.filter((s) => s.id !== slotId);
+        return { ...r, slots: remaining.map((s, i) => ({ ...s, position: i })) };
       });
       persist(updated);
     },
     [racks, persist]
   );
 
-  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots };
+  // iPhone-style move: remove slot from source index, insert at destination index,
+  // slots between the two positions shift to fill the gap (no swap, no jump).
+  const moveSlot = useCallback(
+    (rackId: string, fromId: string, toId: string) => {
+      const updated = racks.map((r) => {
+        if (r.id !== rackId) return r;
+        const sorted = [...r.slots].sort((a, b) => a.position - b.position);
+        const fromIdx = sorted.findIndex((s) => s.id === fromId);
+        const toIdx = sorted.findIndex((s) => s.id === toId);
+        if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return r;
+        const [moved] = sorted.splice(fromIdx, 1);
+        sorted.splice(toIdx, 0, moved);
+        return { ...r, slots: sorted.map((s, i) => ({ ...s, position: i })) };
+      });
+      persist(updated);
+    },
+    [racks, persist]
+  );
+
+  return { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, removeSlot, moveSlot };
 }

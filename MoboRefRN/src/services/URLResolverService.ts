@@ -10,6 +10,10 @@ function getArch(chipset: string): 'Intel' | 'AMD' {
   return INTEL_CHIPSETS.has(chipset.toUpperCase()) ? 'Intel' : 'AMD';
 }
 
+export function isIntelChipset(chipset: string): boolean {
+  return INTEL_CHIPSETS.has(chipset.toUpperCase());
+}
+
 // Convert model name to a URL-safe hyphenated slug.
 // Handles GIGABYTE rev notation: "(rev. 1.0)" → "-rev-10"
 function hyphenate(s: string): string {

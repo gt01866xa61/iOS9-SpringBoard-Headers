@@ -16,6 +16,7 @@ import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
 import { BoardBadges } from '../components/BoardBadges';
 import { Motherboard } from '../models/Motherboard';
+import { isIntelChipset } from '../services/URLResolverService';
 
 export function CatalogScreen() {
   const {
@@ -201,8 +202,10 @@ export function CatalogScreen() {
             <Text style={styles.deleteBtnTxt}>Remove</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.chipsetBadge}>
-            <Text style={styles.chipsetText}>{item.chipset}</Text>
+          <View style={[styles.chipsetBadge, isIntelChipset(item.chipset) ? styles.chipsetBadgeIntel : styles.chipsetBadgeAmd]}>
+            <Text style={[styles.chipsetText, isIntelChipset(item.chipset) ? styles.chipsetTextIntel : styles.chipsetTextAmd]}>
+              {item.chipset}
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -427,8 +430,12 @@ const styles = StyleSheet.create({
   modelName: { fontSize: 15, fontWeight: '500', color: '#1C1C1E', flexShrink: 1 },
   brand: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
 
-  chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
-  chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },
+  chipsetBadge: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
+  chipsetBadgeIntel: { backgroundColor: '#EFF6FF' },
+  chipsetBadgeAmd: { backgroundColor: '#F8CBAD' },
+  chipsetText: { fontSize: 12, fontWeight: '700' },
+  chipsetTextIntel: { color: '#2563EB' },
+  chipsetTextAmd: { color: '#8B3A1B' },
 
   deleteBtn: { backgroundColor: '#FEE2E2', borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5 },
   deleteBtnTxt: { fontSize: 12, color: '#DC2626', fontWeight: '700' },
