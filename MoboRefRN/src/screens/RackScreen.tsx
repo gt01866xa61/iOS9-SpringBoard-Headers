@@ -190,30 +190,31 @@ function GridSlot({
           )}
         </TouchableOpacity>
 
-        {/* Top-right: selected ✓ OR clear-board ×, never both. Slot count is
-            managed only via row +/− buttons so the grid framework stays fixed. */}
-        {isSelected ? (
+        {/* Top-left: red × clears the board (iPhone jiggle-delete style).
+            The slot position is preserved as a drop target. Use row − to
+            shrink the grid framework itself. */}
+        {board && !isSelected && (
+          <TouchableOpacity
+            style={styles.slotRemoveBadge}
+            onPress={() =>
+              Alert.alert(
+                'Remove Board',
+                `Remove "${board.fullModelName}" from this slot?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Remove', style: 'destructive', onPress: () => onClear(slot) },
+                ]
+              )
+            }
+          >
+            <Text style={styles.slotRemoveBadgeTxt}>×</Text>
+          </TouchableOpacity>
+        )}
+        {/* Top-right: ✓ marks the selected source slot for tap-to-move. */}
+        {isSelected && (
           <View style={styles.selectedBadge}>
             <Text style={styles.selectedBadgeTxt}>✓</Text>
           </View>
-        ) : (
-          board && (
-            <TouchableOpacity
-              style={styles.slotDeleteBadge}
-              onPress={() =>
-                Alert.alert(
-                  'Remove Board',
-                  `Remove "${board.fullModelName}" from this slot?`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => onClear(slot) },
-                  ]
-                )
-              }
-            >
-              <Text style={styles.slotDeleteBadgeTxt}>×</Text>
-            </TouchableOpacity>
-          )
         )}
       </View>
     );
@@ -692,7 +693,7 @@ export function RackScreen() {
               ? 'Drag to a target slot, release to drop'
               : selectedSlotId
               ? 'Tap destination slot to move here (or hold any slot to drag)'
-              : 'Tap to select+move · Hold to drag · × removes board · − removes row'}
+              : '× clears board · Tap to select+move · Hold to drag · − removes row'}
           </Text>
         </View>
       )}
@@ -986,16 +987,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
   },
   slotRemoveBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
-  slotDeleteBadge: {
-    position: 'absolute', top: -6, right: -6,
-    backgroundColor: '#8E8E93', borderRadius: 11,
-    width: 22, height: 22,
-    justifyContent: 'center', alignItems: 'center',
-    zIndex: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
-  },
-  slotDeleteBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
   slotBrand: { fontSize: 9, color: '#8E8E93', fontWeight: '500', marginTop: 1 },
