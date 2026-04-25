@@ -1,49 +1,58 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Motherboard } from '../models/Motherboard';
 
 const STORAGE_KEY = 'custom_boards_v1';
 
-// Module-level singleton: all hook instances share the same in-memory state.
-// When any screen adds/removes a custom board, every other screen is notified instantly.
-let _cache: Motherboard[] = [];
-let _loaded = false;
-const _listeners = new Set<(boards: Motherboard[]) => void>();
+// External store: every screen reads from the same snapshot.
+// When boards change, all subscribers are notified synchronously
+// via useSyncExternalStore (React 18's canonical primitive for this).
+let _snapshot: Motherboard[] = [];
+let _hydrated = false;
+const _listeners = new Set<() => void>();
 
-function broadcast(boards: Motherboard[]) {
-  _cache = boards;
-  _listeners.forEach((fn) => fn([...boards]));
+function emitChange() {
+  _listeners.forEach((cb) => cb());
 }
 
-async function persist(boards: Motherboard[]) {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
-  broadcast(boards);
+function subscribe(cb: () => void): () => void {
+  _listeners.add(cb);
+  return () => { _listeners.delete(cb); };
+}
+
+function getSnapshot(): Motherboard[] {
+  return _snapshot;
+}
+
+async function hydrate() {
+  if (_hydrated) return;
+  _hydrated = true;
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      _snapshot = JSON.parse(raw);
+      emitChange();
+    }
+  } catch { /* ignore */ }
+}
+
+async function setBoards(next: Motherboard[]) {
+  _snapshot = next;
+  emitChange();
+  try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
 }
 
 export function useCustomBoards() {
-  const [customBoards, setCustomBoards] = useState<Motherboard[]>(_cache);
+  const customBoards = useSyncExternalStore(subscribe, getSnapshot);
 
-  useEffect(() => {
-    _listeners.add(setCustomBoards);
-    if (!_loaded) {
-      _loaded = true;
-      AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-        if (raw) {
-          try { broadcast(JSON.parse(raw)); } catch { /* ignore */ }
-        }
-      });
-    } else {
-      setCustomBoards([..._cache]);
-    }
-    return () => { _listeners.delete(setCustomBoards); };
-  }, []);
+  useEffect(() => { hydrate(); }, []);
 
   const addCustomBoard = useCallback((board: Motherboard) => {
-    persist([board, ..._cache]);
+    setBoards([board, ..._snapshot]);
   }, []);
 
   const removeCustomBoard = useCallback((id: string) => {
-    persist(_cache.filter((b) => b.id !== id));
+    setBoards(_snapshot.filter((b) => b.id !== id));
   }, []);
 
   return { customBoards, addCustomBoard, removeCustomBoard };
