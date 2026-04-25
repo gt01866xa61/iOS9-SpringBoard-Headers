@@ -75,6 +75,7 @@ function GridSlot({
           {board ? (
             <>
               <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+              <Text style={styles.slotBrand}>{board.brand}</Text>
               <Text style={styles.slotChipset}>{board.chipset}</Text>
             </>
           ) : (
@@ -103,6 +104,7 @@ function GridSlot({
       {board ? (
         <>
           <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
+          <Text style={styles.slotBrand}>{board.brand}</Text>
           <View style={styles.slotChipsetRow}>
             <Text style={styles.slotChipset}>{board.chipset}</Text>
             <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
@@ -491,7 +493,7 @@ export function RackScreen() {
                 <TouchableOpacity style={styles.assignRow} onPress={() => handleSelectBoard(item)}>
                   <View style={styles.assignRowLeft}>
                     <Text style={styles.assignModel}>{item.fullModelName}</Text>
-                    <Text style={styles.assignChipset}>{item.chipset}</Text>
+                    <Text style={styles.assignChipset}>{item.brand} · {item.chipset}</Text>
                   </View>
                   <View style={styles.assignBadges}>
                     <BoardBadges
@@ -614,6 +616,7 @@ const styles = StyleSheet.create({
   slotDeleteBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
+  slotBrand: { fontSize: 9, color: '#8E8E93', fontWeight: '500', marginTop: 1 },
   slotChipset: {
     fontSize: 10, color: '#2563EB', fontWeight: '600',
     backgroundColor: '#EFF6FF', alignSelf: 'flex-start',
