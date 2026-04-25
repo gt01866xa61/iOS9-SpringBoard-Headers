@@ -16,7 +16,17 @@ export function useRacks() {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
       if (raw) {
         try {
-          setRacks(JSON.parse(raw));
+          const parsed: Rack[] = JSON.parse(raw);
+          // Re-sort and re-number positions so they are always 0…n-1.
+          // Fixes data corrupted by old removeSlot code that left gaps/duplicates.
+          const normalized = parsed.map(r => ({
+            ...r,
+            slots: [...r.slots]
+              .sort((a, b) => a.position - b.position)
+              .map((s, i) => ({ ...s, position: i })),
+          }));
+          setRacks(normalized);
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
         } catch {
           // ignore corrupt data
         }

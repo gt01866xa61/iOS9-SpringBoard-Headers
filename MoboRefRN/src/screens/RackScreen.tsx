@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -198,11 +198,11 @@ function GridSlot({
             style={styles.slotRemoveBadge}
             onPress={() =>
               Alert.alert(
-                'Remove Board',
-                `Remove "${board.fullModelName}" from this slot?`,
+                'Clear Slot',
+                `Remove "${board.fullModelName}"?\nSlot position stays as a drop target.`,
                 [
                   { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => onClear(slot) },
+                  { text: 'Clear', style: 'destructive', onPress: () => onClear(slot) },
                 ]
               )
             }
@@ -367,7 +367,11 @@ export function RackScreen() {
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
-  const slots = selectedRack?.slots ?? [];
+  // Always sort by position so visual index === slot.position (required for drag math).
+  const slots = useMemo(
+    () => [...(selectedRack?.slots ?? [])].sort((a, b) => a.position - b.position),
+    [selectedRack]
+  );
 
   // Keep refs in sync so the once-created PanResponder always sees fresh values.
   useEffect(() => { slotsRef.current = slots; }, [slots]);
