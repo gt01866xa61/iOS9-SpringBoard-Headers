@@ -1,6 +1,6 @@
 {
-  "version": "2026-04-23",
-  "count": 411,
+  "version": "2026-04-25",
+  "count": 468,
   "boards": [
     {
       "id": "asus::z890::rog_maximus_z890_apex",
@@ -2467,6 +2467,348 @@
       "brand": "ASRock",
       "chipset": "Z790",
       "fullModelName": "Z790M ITX WiFi"
+    },
+    {
+      "id": "asus::z890::rog_maximus_z890_hero",
+      "brand": "ASUS",
+      "chipset": "Z890",
+      "fullModelName": "ROG MAXIMUS Z890 HERO"
+    },
+    {
+      "id": "asus::z890::prime_z890-p_wifi-csm",
+      "brand": "ASUS",
+      "chipset": "Z890",
+      "fullModelName": "PRIME Z890-P WIFI-CSM"
+    },
+    {
+      "id": "asus::z890::z890_ayw_gaming_wifi_w",
+      "brand": "ASUS",
+      "chipset": "Z890",
+      "fullModelName": "Z890 AYW GAMING WIFI W"
+    },
+    {
+      "id": "asus::b840::prime_b840m-a_wifi-csm",
+      "brand": "ASUS",
+      "chipset": "B840",
+      "fullModelName": "PRIME B840M-A WIFI-CSM"
+    },
+    {
+      "id": "gigabyte::z890::z890_aorus_pro_ice",
+      "brand": "GIGABYTE",
+      "chipset": "Z890",
+      "fullModelName": "Z890 AORUS PRO ICE"
+    },
+    {
+      "id": "msi::z890::pro_z890-s_wifi_white",
+      "brand": "MSI",
+      "chipset": "Z890",
+      "fullModelName": "PRO Z890-S WIFI WHITE"
+    },
+    {
+      "id": "asrock::z890::phantom_gaming_z890_riptide_wifi",
+      "brand": "ASRock",
+      "chipset": "Z890",
+      "fullModelName": "PHANTOM GAMING Z890 Riptide WiFi"
+    },
+    {
+      "id": "asrock::z890::z890_taichi_ocf",
+      "brand": "ASRock",
+      "chipset": "Z890",
+      "fullModelName": "Z890 Taichi OCF"
+    },
+    {
+      "id": "asus::z790::rog_maximus_z790_apex_encore",
+      "brand": "ASUS",
+      "chipset": "Z790",
+      "fullModelName": "ROG MAXIMUS Z790 APEX ENCORE"
+    },
+    {
+      "id": "gigabyte::z790::z790_gaming_x_(rev._1.0)",
+      "brand": "GIGABYTE",
+      "chipset": "Z790",
+      "fullModelName": "Z790 GAMING X (rev. 1.0)"
+    },
+    {
+      "id": "gigabyte::z790::z790_d_ddr4",
+      "brand": "GIGABYTE",
+      "chipset": "Z790",
+      "fullModelName": "Z790 D DDR4"
+    },
+    {
+      "id": "gigabyte::b760::b760_aorus_elite_ddr4",
+      "brand": "GIGABYTE",
+      "chipset": "B760",
+      "fullModelName": "B760 AORUS ELITE DDR4"
+    },
+    {
+      "id": "gigabyte::b760::b760m_c_v2_(rev._1.0)",
+      "brand": "GIGABYTE",
+      "chipset": "B760",
+      "fullModelName": "B760M C V2 (rev. 1.0)"
+    },
+    {
+      "id": "msi::b760::b760m_gaming_wifi",
+      "brand": "MSI",
+      "chipset": "B760",
+      "fullModelName": "B760M GAMING WIFI"
+    },
+    {
+      "id": "msi::x870e::mag_x870e_tomahawk_wifi",
+      "brand": "MSI",
+      "chipset": "X870E",
+      "fullModelName": "MAG X870E TOMAHAWK WIFI"
+    },
+    {
+      "id": "msi::x870::x870_gaming_plus_wifi",
+      "brand": "MSI",
+      "chipset": "X870",
+      "fullModelName": "X870 GAMING PLUS WIFI"
+    },
+    {
+      "id": "asus::b850::tuf_gaming_b850-plus_wifi",
+      "brand": "ASUS",
+      "chipset": "B850",
+      "fullModelName": "TUF GAMING B850-PLUS WIFI"
+    },
+    {
+      "id": "asus::b850::prime_b850m-a_wifi",
+      "brand": "ASUS",
+      "chipset": "B850",
+      "fullModelName": "PRIME B850M-A WIFI"
+    },
+    {
+      "id": "gigabyte::b850::b850_aorus_elite_wifi7",
+      "brand": "GIGABYTE",
+      "chipset": "B850",
+      "fullModelName": "B850 AORUS ELITE WIFI7"
+    },
+    {
+      "id": "gigabyte::b850::b850m_aorus_elite_wifi7",
+      "brand": "GIGABYTE",
+      "chipset": "B850",
+      "fullModelName": "B850M AORUS ELITE WIFI7"
+    },
+    {
+      "id": "msi::b850::b850_gaming_plus_wifi",
+      "brand": "MSI",
+      "chipset": "B850",
+      "fullModelName": "B850 GAMING PLUS WIFI"
+    },
+    {
+      "id": "msi::b850::pro_b850m-p_wifi",
+      "brand": "MSI",
+      "chipset": "B850",
+      "fullModelName": "PRO B850M-P WIFI"
+    },
+    {
+      "id": "asrock::b850::b850_steel_legend_wifi",
+      "brand": "ASRock",
+      "chipset": "B850",
+      "fullModelName": "B850 Steel Legend WiFi"
+    },
+    {
+      "id": "asrock::b850::b850m_steel_legend_wifi",
+      "brand": "ASRock",
+      "chipset": "B850",
+      "fullModelName": "B850M Steel Legend WiFi"
+    },
+    {
+      "id": "msi::x670e::mag_x670e_tomahawk_wifi",
+      "brand": "MSI",
+      "chipset": "X670E",
+      "fullModelName": "MAG X670E TOMAHAWK WIFI"
+    },
+    {
+      "id": "msi::b650::pro_b650m-b",
+      "brand": "MSI",
+      "chipset": "B650",
+      "fullModelName": "PRO B650M-B"
+    },
+    {
+      "id": "asus::a620::tuf_gaming_a620m-plus_wifi",
+      "brand": "ASUS",
+      "chipset": "A620",
+      "fullModelName": "TUF GAMING A620M-PLUS WIFI"
+    },
+    {
+      "id": "asus::a620::prime_a620m-a",
+      "brand": "ASUS",
+      "chipset": "A620",
+      "fullModelName": "PRIME A620M-A"
+    },
+    {
+      "id": "gigabyte::a620::a620m_aorus_elite",
+      "brand": "GIGABYTE",
+      "chipset": "A620",
+      "fullModelName": "A620M AORUS ELITE"
+    },
+    {
+      "id": "gigabyte::a620::a620m_ds3h",
+      "brand": "GIGABYTE",
+      "chipset": "A620",
+      "fullModelName": "A620M DS3H"
+    },
+    {
+      "id": "msi::a620::pro_a620m-e",
+      "brand": "MSI",
+      "chipset": "A620",
+      "fullModelName": "PRO A620M-E"
+    },
+    {
+      "id": "msi::a620::a620m-a_pro",
+      "brand": "MSI",
+      "chipset": "A620",
+      "fullModelName": "A620M-A PRO"
+    },
+    {
+      "id": "asrock::a620::a620m-c/2.5g",
+      "brand": "ASRock",
+      "chipset": "A620",
+      "fullModelName": "A620M-C/2.5G"
+    },
+    {
+      "id": "asrock::a620::a620m_pro_rs_wifi",
+      "brand": "ASRock",
+      "chipset": "A620",
+      "fullModelName": "A620M Pro RS WiFi"
+    },
+    {
+      "id": "msi::b660::pro_b660m-g_ddr4",
+      "brand": "MSI",
+      "chipset": "B660",
+      "fullModelName": "PRO B660M-G DDR4"
+    },
+    {
+      "id": "asus::h670::prime_h670-plus_d4",
+      "brand": "ASUS",
+      "chipset": "H670",
+      "fullModelName": "PRIME H670-PLUS D4"
+    },
+    {
+      "id": "asus::h670::tuf_gaming_h670-pro_wifi_d4",
+      "brand": "ASUS",
+      "chipset": "H670",
+      "fullModelName": "TUF GAMING H670-PRO WIFI D4"
+    },
+    {
+      "id": "gigabyte::h670::h670_gaming_x_ddr4",
+      "brand": "GIGABYTE",
+      "chipset": "H670",
+      "fullModelName": "H670 GAMING X DDR4"
+    },
+    {
+      "id": "gigabyte::h670::h670m_ds3h_ddr4",
+      "brand": "GIGABYTE",
+      "chipset": "H670",
+      "fullModelName": "H670M DS3H DDR4"
+    },
+    {
+      "id": "msi::h670::mag_h670_tomahawk_wifi_ddr4",
+      "brand": "MSI",
+      "chipset": "H670",
+      "fullModelName": "MAG H670 TOMAHAWK WIFI DDR4"
+    },
+    {
+      "id": "msi::h670::pro_h670-a_wifi_ddr4",
+      "brand": "MSI",
+      "chipset": "H670",
+      "fullModelName": "PRO H670-A WIFI DDR4"
+    },
+    {
+      "id": "asrock::h670::h670m_pro_rs",
+      "brand": "ASRock",
+      "chipset": "H670",
+      "fullModelName": "H670M Pro RS"
+    },
+    {
+      "id": "asrock::h670::h670_steel_legend_wifi_6e",
+      "brand": "ASRock",
+      "chipset": "H670",
+      "fullModelName": "H670 Steel Legend WiFi 6E"
+    },
+    {
+      "id": "asrock::h670::h670_pg_riptide",
+      "brand": "ASRock",
+      "chipset": "H670",
+      "fullModelName": "H670 PG Riptide"
+    },
+    {
+      "id": "msi::h610::pro_h610s_ddr4",
+      "brand": "MSI",
+      "chipset": "H610",
+      "fullModelName": "PRO H610S DDR4"
+    },
+    {
+      "id": "asus::z590::prime_z590-p",
+      "brand": "ASUS",
+      "chipset": "Z590",
+      "fullModelName": "PRIME Z590-P"
+    },
+    {
+      "id": "asus::h410::prime_h410m-k",
+      "brand": "ASUS",
+      "chipset": "H410",
+      "fullModelName": "PRIME H410M-K"
+    },
+    {
+      "id": "asus::h410::prime_h410m-e",
+      "brand": "ASUS",
+      "chipset": "H410",
+      "fullModelName": "PRIME H410M-E"
+    },
+    {
+      "id": "asus::h410::tuf_gaming_h410m-plus",
+      "brand": "ASUS",
+      "chipset": "H410",
+      "fullModelName": "TUF GAMING H410M-PLUS"
+    },
+    {
+      "id": "gigabyte::h410::h410m_s2h_v3",
+      "brand": "GIGABYTE",
+      "chipset": "H410",
+      "fullModelName": "H410M S2H V3"
+    },
+    {
+      "id": "gigabyte::h410::h410m_h_v3",
+      "brand": "GIGABYTE",
+      "chipset": "H410",
+      "fullModelName": "H410M H V3"
+    },
+    {
+      "id": "msi::h410::pro_h410m-a",
+      "brand": "MSI",
+      "chipset": "H410",
+      "fullModelName": "PRO H410M-A"
+    },
+    {
+      "id": "msi::h410::mag_h410m_bazooka",
+      "brand": "MSI",
+      "chipset": "H410",
+      "fullModelName": "MAG H410M BAZOOKA"
+    },
+    {
+      "id": "asrock::h410::h410m-hdv/m.2_r2.0",
+      "brand": "ASRock",
+      "chipset": "H410",
+      "fullModelName": "H410M-HDV/M.2 R2.0"
+    },
+    {
+      "id": "asrock::h410::h410m-itx/ac",
+      "brand": "ASRock",
+      "chipset": "H410",
+      "fullModelName": "H410M-ITX/ac"
+    },
+    {
+      "id": "asus::b550::tuf_gaming_b550-pro",
+      "brand": "ASUS",
+      "chipset": "B550",
+      "fullModelName": "TUF GAMING B550-PRO"
+    },
+    {
+      "id": "msi::b550::meg_b550_unify-x",
+      "brand": "MSI",
+      "chipset": "B550",
+      "fullModelName": "MEG B550 UNIFY-X"
     }
   ]
 }

@@ -204,9 +204,6 @@ export function RackScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
-  const [saveModalInitialUrl, setSaveModalInitialUrl] = useState('');
-  const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
-  const [clipOpenedUrl, setClipOpenedUrl] = useState('');
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
@@ -277,26 +274,10 @@ export function RackScreen() {
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
-      const board = slot.motherboard;
-      const { shouldPrompt, openedUrl } = await openOfficialPage(board);
-      // Only prompt for custom boards — catalog boards open their real
-      // product page directly, so saving is unnecessary.
-      if (shouldPrompt && board.isCustom) {
-        setClipTarget(board);
-        const isSearch = /google\.com\/search/i.test(openedUrl);
-        setClipOpenedUrl(isSearch ? '' : openedUrl);
-      }
+      await openOfficialPage(slot.motherboard);
     },
     [openOfficialPage]
   );
-
-  const handleClipSave = () => {
-    if (!clipTarget) return;
-    setSaveModalTarget(clipTarget);
-    setSaveModalInitialUrl(clipOpenedUrl);
-    setClipTarget(null);
-    setClipOpenedUrl('');
-  };
 
   const handleSlotTap = useCallback(
     (slot: RackSlot) => {
@@ -554,28 +535,9 @@ export function RackScreen() {
         visible={saveModalTarget !== null}
         boardName={saveModalTarget?.fullModelName ?? ''}
         existingUrl={saveModalTarget ? savedUrls[saveModalTarget.id] : undefined}
-        initialUrl={saveModalInitialUrl || undefined}
         onSave={(url) => { if (saveModalTarget) saveUrl(saveModalTarget.id, url); }}
-        onClose={() => { setSaveModalTarget(null); setSaveModalInitialUrl(''); }}
+        onClose={() => setSaveModalTarget(null)}
       />
-
-      {/* Save URL prompt */}
-      {clipTarget && (
-        <View style={styles.clipBanner}>
-          <View style={styles.clipBannerLeft}>
-            <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
-            <Text style={styles.clipBannerHint}>Tap Save URL to paste and confirm</Text>
-          </View>
-          <View style={styles.clipBannerBtns}>
-            <TouchableOpacity style={styles.clipSaveBtn} onPress={handleClipSave}>
-              <Text style={styles.clipSaveBtnTxt}>Save URL</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setClipTarget(null)}>
-              <Text style={styles.clipSkipTxt}>Skip</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -731,24 +693,4 @@ const styles = StyleSheet.create({
   assignUrlBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   assignUrlBadgeTxt: { fontSize: 11, color: '#2E7D32', fontWeight: '700' },
 
-  clipBanner: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#1C1C1E',
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    paddingBottom: 28, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2, shadowRadius: 8, elevation: 10,
-  },
-  clipBannerLeft: { flex: 1 },
-  clipBannerTitle: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  clipBannerHint: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
-  clipBannerBtns: { alignItems: 'center', gap: 4 },
-  clipBannerBtnRow: { flexDirection: 'row', gap: 6 },
-  clipSaveBtn: { backgroundColor: '#30D158', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  clipSaveBtnSuccess: { backgroundColor: '#34C759' },
-  clipSaveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  clipEditBtn: { backgroundColor: '#48484A', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  clipEditBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  clipSkipTxt: { fontSize: 12, color: '#8E8E93' },
 });

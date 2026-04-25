@@ -521,4 +521,110 @@ export const STATIC_BOARDS: Motherboard[] = [
   board('ASRock', 'B760', 'B760 Pro RS WiFi'),
   board('ASRock', 'Z790', 'Z790 Riptide WiFi'),
   board('ASRock', 'Z790', 'Z790M ITX WiFi'),
+
+  // ════════════════════════════════════════
+  // Additional Intel Arrow Lake (Z890 / B860 / B840)
+  // ════════════════════════════════════════
+
+  board('ASUS', 'Z890', 'ROG MAXIMUS Z890 HERO'),
+  board('ASUS', 'Z890', 'PRIME Z890-P WIFI-CSM'),
+  board('ASUS', 'Z890', 'Z890 AYW GAMING WIFI W'),
+  board('ASUS', 'B840', 'PRIME B840M-A WIFI-CSM'),
+
+  board('GIGABYTE', 'Z890', 'Z890 AORUS PRO ICE'),
+
+  board('MSI', 'Z890', 'PRO Z890-S WIFI WHITE'),
+
+  board('ASRock', 'Z890', 'PHANTOM GAMING Z890 Riptide WiFi'),
+  board('ASRock', 'Z890', 'Z890 Taichi OCF'),
+
+  // ════════════════════════════════════════
+  // Additional Intel Raptor Lake (Z790 / B760)
+  // ════════════════════════════════════════
+
+  board('ASUS', 'Z790', 'ROG MAXIMUS Z790 APEX ENCORE'),
+
+  board('GIGABYTE', 'Z790', 'Z790 GAMING X (rev. 1.0)'),
+  board('GIGABYTE', 'Z790', 'Z790 D DDR4'),
+  board('GIGABYTE', 'B760', 'B760 AORUS ELITE DDR4'),
+  board('GIGABYTE', 'B760', 'B760M C V2 (rev. 1.0)'),
+
+  board('MSI', 'B760', 'B760M GAMING WIFI'),
+
+  // ════════════════════════════════════════
+  // Additional AMD Zen 5 (X870E / X870 / B850)
+  // ════════════════════════════════════════
+
+  board('MSI', 'X870E', 'MAG X870E TOMAHAWK WIFI'),
+  board('MSI', 'X870', 'X870 GAMING PLUS WIFI'),
+
+  board('ASUS', 'B850', 'TUF GAMING B850-PLUS WIFI'),
+  board('ASUS', 'B850', 'PRIME B850M-A WIFI'),
+  board('GIGABYTE', 'B850', 'B850 AORUS ELITE WIFI7'),
+  board('GIGABYTE', 'B850', 'B850M AORUS ELITE WIFI7'),
+  board('MSI', 'B850', 'B850 GAMING PLUS WIFI'),
+  board('MSI', 'B850', 'PRO B850M-P WIFI'),
+  board('ASRock', 'B850', 'B850 Steel Legend WiFi'),
+  board('ASRock', 'B850', 'B850M Steel Legend WiFi'),
+
+  // ════════════════════════════════════════
+  // Additional AMD Zen 4 (X670E / B650 / A620)
+  // ════════════════════════════════════════
+
+  board('MSI', 'X670E', 'MAG X670E TOMAHAWK WIFI'),
+  board('MSI', 'B650', 'PRO B650M-B'),
+
+  board('ASUS', 'A620', 'TUF GAMING A620M-PLUS WIFI'),
+  board('ASUS', 'A620', 'PRIME A620M-A'),
+  board('GIGABYTE', 'A620', 'A620M AORUS ELITE'),
+  board('GIGABYTE', 'A620', 'A620M DS3H'),
+  board('MSI', 'A620', 'PRO A620M-E'),
+  board('MSI', 'A620', 'A620M-A PRO'),
+  board('ASRock', 'A620', 'A620M-C/2.5G'),
+  board('ASRock', 'A620', 'A620M Pro RS WiFi'),
+
+  // ════════════════════════════════════════
+  // Additional Intel Alder Lake (Z690 / B660 / H670)
+  // ════════════════════════════════════════
+
+  board('MSI', 'B660', 'PRO B660M-G DDR4'),
+
+  board('ASUS', 'H670', 'PRIME H670-PLUS D4'),
+  board('ASUS', 'H670', 'TUF GAMING H670-PRO WIFI D4'),
+  board('GIGABYTE', 'H670', 'H670 GAMING X DDR4'),
+  board('GIGABYTE', 'H670', 'H670M DS3H DDR4'),
+  board('MSI', 'H670', 'MAG H670 TOMAHAWK WIFI DDR4'),
+  board('MSI', 'H670', 'PRO H670-A WIFI DDR4'),
+  board('ASRock', 'H670', 'H670M Pro RS'),
+  board('ASRock', 'H670', 'H670 Steel Legend WiFi 6E'),
+  board('ASRock', 'H670', 'H670 PG Riptide'),
+
+  board('MSI', 'H610', 'PRO H610S DDR4'),
+
+  // ════════════════════════════════════════
+  // Additional Intel Rocket Lake (Z590 / B560)
+  // ════════════════════════════════════════
+
+  board('ASUS', 'Z590', 'PRIME Z590-P'),
+
+  // ════════════════════════════════════════
+  // Additional Intel Comet Lake (Z490 / H410)
+  // ════════════════════════════════════════
+
+  board('ASUS', 'H410', 'PRIME H410M-K'),
+  board('ASUS', 'H410', 'PRIME H410M-E'),
+  board('ASUS', 'H410', 'TUF GAMING H410M-PLUS'),
+  board('GIGABYTE', 'H410', 'H410M S2H V3'),
+  board('GIGABYTE', 'H410', 'H410M H V3'),
+  board('MSI', 'H410', 'PRO H410M-A'),
+  board('MSI', 'H410', 'MAG H410M BAZOOKA'),
+  board('ASRock', 'H410', 'H410M-HDV/M.2 R2.0'),
+  board('ASRock', 'H410', 'H410M-ITX/ac'),
+
+  // ════════════════════════════════════════
+  // Additional AMD Zen 2 / Zen 3 (X570 / B550)
+  // ════════════════════════════════════════
+
+  board('ASUS', 'B550', 'TUF GAMING B550-PRO'),
+  board('MSI', 'B550', 'MEG B550 UNIFY-X'),
 ];

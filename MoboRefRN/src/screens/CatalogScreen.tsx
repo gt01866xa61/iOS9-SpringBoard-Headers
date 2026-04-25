@@ -8,7 +8,6 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
-  Animated,
 } from 'react-native';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
@@ -41,8 +40,6 @@ export function CatalogScreen() {
   } = useCatalog();
 
   const [editMode, setEditMode] = useState(false);
-  const [clipTarget, setClipTarget] = useState<Motherboard | null>(null);
-  const [clipOpenedUrl, setClipOpenedUrl] = useState('');
   const [editUrlTarget, setEditUrlTarget] = useState<Motherboard | null>(null);
 
   // Auto-dismiss the "new boards" toast after 3s
@@ -62,23 +59,7 @@ export function CatalogScreen() {
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
-    const { shouldPrompt, openedUrl } = await openOfficialPage(item);
-    // Only prompt to save URL for custom boards — catalog boards open their
-    // real product page directly, so saving is unnecessary. Long-press still
-    // exposes a manual override if a catalog URL turns out wrong.
-    if (shouldPrompt && item.isCustom) {
-      setClipTarget(item);
-      // Don't pre-fill with a Google search URL — saving that would trap the
-      // user in the search page on every subsequent open.
-      const isSearch = /google\.com\/search/i.test(openedUrl);
-      setClipOpenedUrl(isSearch ? '' : openedUrl);
-    }
-  };
-
-  const handleClipSave = () => {
-    if (!clipTarget) return;
-    setEditUrlTarget(clipTarget);
-    setClipTarget(null);
+    await openOfficialPage(item);
   };
 
   const handleLongPress = (item: Motherboard) => {
@@ -252,30 +233,12 @@ export function CatalogScreen() {
       />
 
       {/* Save URL prompt — appears after browser closes */}
-      {clipTarget && (
-        <View style={styles.clipBanner}>
-          <View style={styles.clipBannerLeft}>
-            <Text style={styles.clipBannerTitle} numberOfLines={1}>{clipTarget.fullModelName}</Text>
-            <Text style={styles.clipBannerHint}>Tap Save URL to paste and confirm</Text>
-          </View>
-          <View style={styles.clipBannerBtns}>
-            <TouchableOpacity style={styles.clipSaveBtn} onPress={handleClipSave}>
-              <Text style={styles.clipSaveBtnTxt}>Save URL</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setClipTarget(null)}>
-              <Text style={styles.clipSkipTxt}>Skip</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
       <SaveUrlModal
         visible={editUrlTarget !== null}
         boardName={editUrlTarget?.fullModelName ?? ''}
         existingUrl={editUrlTarget ? savedUrls[editUrlTarget.id] : undefined}
-        initialUrl={clipOpenedUrl || undefined}
         onSave={(url) => { if (editUrlTarget) saveUrl(editUrlTarget.id, url); }}
-        onClose={() => { setEditUrlTarget(null); setClipOpenedUrl(''); }}
+        onClose={() => setEditUrlTarget(null)}
       />
     </View>
   );
@@ -360,32 +323,4 @@ const styles = StyleSheet.create({
   retryBtn: { backgroundColor: '#DC2626', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
   retryText: { color: '#fff', fontWeight: '600' },
   emptyText: { textAlign: 'center', color: '#aaa', marginTop: 40, fontSize: 15 },
-
-  // Clipboard save banner
-  clipBanner: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#1C1C1E',
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    paddingBottom: 28, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2, shadowRadius: 8, elevation: 10,
-  },
-  clipBannerLeft: { flex: 1 },
-  clipBannerTitle: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  clipBannerHint: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
-  clipBannerBtns: { alignItems: 'center', gap: 4 },
-  clipBannerBtnRow: { flexDirection: 'row', gap: 6 },
-  clipSaveBtn: {
-    backgroundColor: '#30D158', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 8,
-  },
-  clipSaveBtnSuccess: { backgroundColor: '#34C759' },
-  clipSaveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  clipEditBtn: {
-    backgroundColor: '#48484A', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 8,
-  },
-  clipEditBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  clipSkipTxt: { fontSize: 12, color: '#8E8E93' },
 });

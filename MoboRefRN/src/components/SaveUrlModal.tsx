@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -8,6 +8,9 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,43 +19,53 @@ interface Props {
   visible: boolean;
   boardName: string;
   existingUrl?: string;
-  initialUrl?: string;   // URL that was just opened in the browser (highest priority pre-fill)
   onSave: (url: string) => void;
   onClose: () => void;
 }
 
-type FillSource = 'initial' | 'clipboard' | 'manual' | null;
-
-export function SaveUrlModal({ visible, boardName, existingUrl, initialUrl, onSave, onClose }: Props) {
+export function SaveUrlModal({ visible, boardName, existingUrl, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [url, setUrl] = useState('');
-  const [fillSource, setFillSource] = useState<FillSource>(null);
+  const [fromClipboard, setFromClipboard] = useState(false);
+
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 8,
+    onPanResponderMove: (_, { dy }) => {
+      if (dy > 0) translateY.setValue(dy);
+    },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 80 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: 600, duration: 180, useNativeDriver: true })
+          .start(() => { translateY.setValue(0); onClose(); });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  })).current;
 
   useEffect(() => {
-    if (!visible) return;
-    // Priority 1: existing saved URL (editing)
-    if (existingUrl) { setUrl(existingUrl); setFillSource('manual'); return; }
-    // Priority 2: URL from the page that was just opened in the browser
-    if (initialUrl) { setUrl(initialUrl); setFillSource('initial'); return; }
-    // Priority 3: try clipboard
+    if (!visible) { translateY.setValue(0); return; }
+    if (existingUrl) { setUrl(existingUrl); setFromClipboard(false); return; }
     (async () => {
       try {
         const clip = (await Clipboard.getStringAsync()).trim();
         if (/^https?:\/\//i.test(clip)) {
           setUrl(clip);
-          setFillSource('clipboard');
+          setFromClipboard(true);
           return;
         }
       } catch {}
       setUrl('');
-      setFillSource(null);
+      setFromClipboard(false);
     })();
-  }, [visible, existingUrl, initialUrl]);
+  }, [visible, existingUrl]);
 
   const handlePaste = async () => {
     try {
       const clip = (await Clipboard.getStringAsync()).trim();
-      if (clip) { setUrl(clip); setFillSource('clipboard'); }
+      if (clip) { setUrl(clip); setFromClipboard(true); }
     } catch {}
   };
 
@@ -65,61 +78,66 @@ export function SaveUrlModal({ visible, boardName, existingUrl, initialUrl, onSa
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>Save Official URL</Text>
-          <Text style={styles.subtitle} numberOfLines={2}>{boardName}</Text>
+      <View style={styles.overlay}>
+        {/* Backdrop — tap anywhere outside sheet to dismiss */}
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFillObject} />
+        </TouchableWithoutFeedback>
 
-          {fillSource === 'initial' && (
-            <View style={[styles.fillTag, styles.fillTagInitial]}>
-              <Text style={styles.fillTagTxt}>🔗 URL from opened page — confirm or paste a different one</Text>
-            </View>
-          )}
-          {fillSource === 'clipboard' && (
-            <View style={[styles.fillTag, styles.fillTagClipboard]}>
-              <Text style={styles.fillTagTxt}>📋 Auto-pasted from clipboard</Text>
-            </View>
-          )}
-
-          <Text style={styles.hint}>
-            Open the board in Safari, copy the URL from the address bar, and paste it below.
-          </Text>
-
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={url}
-              onChangeText={(t) => { setUrl(t); setFillSource('manual'); }}
-              placeholder="https://..."
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-              multiline
-            />
-            <TouchableOpacity style={styles.pasteBtn} onPress={handlePaste}>
-              <Text style={styles.pasteBtnTxt}>📋</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveBtn, !url.trim() && styles.saveBtnDisabled]}
-            onPress={handleSave}
-            disabled={!url.trim()}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <Animated.View
+            style={[styles.sheet, { paddingBottom: insets.bottom + 16 }, { transform: [{ translateY }] }]}
           >
-            <Text style={styles.saveBtnTxt}>Save URL</Text>
-          </TouchableOpacity>
+            {/* Drag handle — drag down to dismiss */}
+            <View {...panResponder.panHandlers} style={styles.handleArea}>
+              <View style={styles.handle} />
+            </View>
 
-          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelTxt}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            <Text style={styles.title}>Save Official URL</Text>
+            <Text style={styles.subtitle} numberOfLines={2}>{boardName}</Text>
+
+            {fromClipboard && (
+              <View style={styles.clipTag}>
+                <Text style={styles.clipTagTxt}>📋 Auto-pasted from clipboard</Text>
+              </View>
+            )}
+
+            <Text style={styles.hint}>
+              Open the board in Safari, copy the URL from the address bar, and paste it below.
+            </Text>
+
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={url}
+                onChangeText={(t) => { setUrl(t); setFromClipboard(false); }}
+                placeholder="https://..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+                multiline
+              />
+              <TouchableOpacity style={styles.pasteBtn} onPress={handlePaste}>
+                <Text style={styles.pasteBtnTxt}>📋</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, !url.trim() && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={!url.trim()}
+            >
+              <Text style={styles.saveBtnTxt}>Save URL</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <Text style={styles.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -135,21 +153,23 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 12,
     gap: 10,
+  },
+  handleArea: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   handle: {
     width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#D1D1D6', alignSelf: 'center', marginBottom: 8,
+    backgroundColor: '#D1D1D6',
   },
   title: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
   subtitle: { fontSize: 13, color: '#8E8E93', marginTop: -4 },
-  fillTag: {
-    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
+  clipTag: {
+    backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
   },
-  fillTagInitial: { backgroundColor: '#EEF5FF' },
-  fillTagClipboard: { backgroundColor: '#E8F5E9' },
-  fillTagTxt: { fontSize: 12, color: '#1C1C1E', fontWeight: '500', lineHeight: 16 },
+  clipTagTxt: { fontSize: 12, color: '#1C1C1E', fontWeight: '500', lineHeight: 16 },
   hint: { fontSize: 13, color: '#555', lineHeight: 18 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   input: {
