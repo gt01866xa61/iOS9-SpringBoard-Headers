@@ -33,13 +33,15 @@ export function buildDirectProductUrl(board: Motherboard): string {
 
     case 'ASUS': {
       const slug = hyphenate(model).toLowerCase();
-      if (/^rog/i.test(model)) {
-        return `https://rog.asus.com/motherboards/${slug}-model/`;
-      }
-      const category = /^tuf/i.test(model) ? 'tuf-gaming'
-        : /^proart/i.test(model) ? 'proart'
-        : /^prime/i.test(model) ? 'prime'
-        : 'all-series';
+      const category =
+          /^rog\s+strix/i.test(model)    ? 'rog-strix'
+        : /^rog\s+maximus/i.test(model)  ? 'rog-maximus'
+        : /^rog\s+crosshair/i.test(model) ? 'rog-crosshair'
+        : /^rog/i.test(model)            ? 'rog'
+        : /^tuf/i.test(model)            ? 'tuf-gaming'
+        : /^proart/i.test(model)         ? 'proart'
+        : /^prime/i.test(model)          ? 'prime'
+        :                                  'all-series';
       return `https://www.asus.com/motherboards-components/motherboards/${category}/${slug}/`;
     }
 
