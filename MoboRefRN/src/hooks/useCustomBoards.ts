@@ -4,35 +4,47 @@ import { Motherboard } from '../models/Motherboard';
 
 const STORAGE_KEY = 'custom_boards_v1';
 
+// Module-level singleton: all hook instances share the same in-memory state.
+// When any screen adds/removes a custom board, every other screen is notified instantly.
+let _cache: Motherboard[] = [];
+let _loaded = false;
+const _listeners = new Set<(boards: Motherboard[]) => void>();
+
+function broadcast(boards: Motherboard[]) {
+  _cache = boards;
+  _listeners.forEach((fn) => fn([...boards]));
+}
+
+async function persist(boards: Motherboard[]) {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
+  broadcast(boards);
+}
+
 export function useCustomBoards() {
-  const [customBoards, setCustomBoards] = useState<Motherboard[]>([]);
+  const [customBoards, setCustomBoards] = useState<Motherboard[]>(_cache);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try { setCustomBoards(JSON.parse(raw)); } catch { /* ignore */ }
-      }
-    });
+    _listeners.add(setCustomBoards);
+    if (!_loaded) {
+      _loaded = true;
+      AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+        if (raw) {
+          try { broadcast(JSON.parse(raw)); } catch { /* ignore */ }
+        }
+      });
+    } else {
+      setCustomBoards([..._cache]);
+    }
+    return () => { _listeners.delete(setCustomBoards); };
   }, []);
 
-  const persist = useCallback(async (updated: Motherboard[]) => {
-    setCustomBoards(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const addCustomBoard = useCallback((board: Motherboard) => {
+    persist([board, ..._cache]);
   }, []);
 
-  const addCustomBoard = useCallback(
-    (board: Motherboard) => {
-      persist([board, ...customBoards]);
-    },
-    [customBoards, persist]
-  );
-
-  const removeCustomBoard = useCallback(
-    (id: string) => {
-      persist(customBoards.filter((b) => b.id !== id));
-    },
-    [customBoards, persist]
-  );
+  const removeCustomBoard = useCallback((id: string) => {
+    persist(_cache.filter((b) => b.id !== id));
+  }, []);
 
   return { customBoards, addCustomBoard, removeCustomBoard };
 }
