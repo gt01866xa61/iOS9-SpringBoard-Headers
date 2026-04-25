@@ -15,6 +15,7 @@ import {
   Platform,
   Animated,
   PanResponder,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,7 +28,7 @@ import { BoardBadges } from '../components/BoardBadges';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 import { VisitStatus } from '../hooks/useVisitedBoards';
-import { isIntelChipset } from '../services/URLResolverService';
+import { isIntelChipset, buildDirectProductUrl } from '../services/URLResolverService';
 
 const COLS = 3;
 const GAP = 8;
@@ -40,23 +41,35 @@ function slotSize(isEditing: boolean) {
 }
 
 // Bottom-sheet info card. Tap backdrop to dismiss.
+// Uses visible+onDismiss so the open-URL call only fires AFTER the slide-out
+// animation fully completes — prevents the iOS "two Modals at once" hang.
 function InfoCard({
   slot,
+  visible,
   hasSavedUrl,
   visitStatus,
   onClose,
+  onDismiss,
   onOpenUrl,
 }: {
   slot: RackSlot;
+  visible: boolean;
   hasSavedUrl: boolean;
   visitStatus?: VisitStatus;
   onClose: () => void;
+  onDismiss: () => void;
   onOpenUrl: (s: RackSlot) => void;
 }) {
   const board = slot.motherboard!;
   const chipsetIsIntel = isIntelChipset(board.chipset);
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="slide"
+      visible={visible}
+      onRequestClose={onClose}
+      onDismiss={onDismiss}
+    >
       <TouchableOpacity style={ic.backdrop} activeOpacity={1} onPress={onClose} />
       <View style={ic.sheet}>
         <View style={ic.handle} />
@@ -75,8 +88,7 @@ function InfoCard({
         <TouchableOpacity
           style={ic.openBtn}
           activeOpacity={0.85}
-          // Close the sheet first; wait for the slide-out animation (~350ms) before opening browser.
-          onPress={() => { onClose(); setTimeout(() => onOpenUrl(slot), 450); }}
+          onPress={() => onOpenUrl(slot)}
         >
           <Text style={ic.openBtnTxt}>🔗  Open Spec Page</Text>
         </TouchableOpacity>
@@ -330,6 +342,10 @@ export function RackScreen() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [saveModalTarget, setSaveModalTarget] = useState<Motherboard | null>(null);
   const [infoCardSlot, setInfoCardSlot] = useState<RackSlot | null>(null);
+  const [infoCardVisible, setInfoCardVisible] = useState(false);
+  // When user taps "Open Spec Page", we first close the sheet (→ slide-out
+  // animation), then open the URL in onDismiss (fires after animation ends).
+  const pendingInfoOpenRef = useRef<RackSlot | null>(null);
 
   // ── iPhone-style drag state ────────────────────────────────────────────
   // dragSlotId === null while idle. Once long-press fires, we set everything
@@ -422,11 +438,22 @@ export function RackScreen() {
     setPendingSlot(null);
   };
 
+  // Guard: prevent two concurrent openOfficialPage calls — iOS rejects stacking
+  // multiple SFSafariViewController presentations and both would hang.
+  const isBrowserOpenRef = useRef(false);
+
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
+      if (isBrowserOpenRef.current) return;
+      isBrowserOpenRef.current = true;
       const board = slot.motherboard;
-      const result = await openOfficialPage(board);
+      let result: Awaited<ReturnType<typeof openOfficialPage>>;
+      try {
+        result = await openOfficialPage(board);
+      } finally {
+        isBrowserOpenRef.current = false;
+      }
       if (board.isCustom && result.shouldPrompt) {
         setSaveModalTarget(board);
         return;
@@ -501,8 +528,33 @@ export function RackScreen() {
 
   const handleSlotInfo = useCallback((slot: RackSlot) => {
     if (!slot.motherboard) return;
+    pendingInfoOpenRef.current = null;
     setInfoCardSlot(slot);
+    setInfoCardVisible(true);
   }, []);
+
+  const handleInfoClose = useCallback(() => {
+    pendingInfoOpenRef.current = null;
+    setInfoCardVisible(false);
+  }, []);
+
+  // "Open Spec Page" pressed inside the card: dismiss the sheet, then open
+  // the URL in onDismiss so iOS has no overlapping modal animations.
+  const handleInfoOpenUrl = useCallback((slot: RackSlot) => {
+    pendingInfoOpenRef.current = slot;
+    setInfoCardVisible(false);
+  }, []);
+
+  // Fires after the slide-out animation fully completes (iOS onDismiss).
+  const handleInfoDismiss = useCallback(() => {
+    const slot = pendingInfoOpenRef.current;
+    pendingInfoOpenRef.current = null;
+    setInfoCardSlot(null);
+    if (!slot?.motherboard) return;
+    const board = slot.motherboard;
+    const url = (savedUrls as Record<string, string>)[board.id] ?? buildDirectProductUrl(board);
+    Linking.openURL(url).catch(() => {});
+  }, [savedUrls]);
 
   // Long-press → enter drag mode. We measure the grid container in window
   // coordinates so subsequent finger positions can be mapped to slot indices.
@@ -835,16 +887,19 @@ export function RackScreen() {
         onClose={() => setSaveModalTarget(null)}
       />
 
-      {/* Info card (board details + open spec) */}
+      {/* Info card — keep mounted until onDismiss so the slot data stays valid
+          during the slide-out animation; visible controls actual visibility. */}
       {infoCardSlot && (
         <InfoCard
           slot={infoCardSlot}
+          visible={infoCardVisible}
           hasSavedUrl={!!infoCardSlot.motherboard && !!savedUrls[infoCardSlot.motherboard.id]}
           visitStatus={
             infoCardSlot.motherboard ? visitRecord[infoCardSlot.motherboard.id] : undefined
           }
-          onClose={() => setInfoCardSlot(null)}
-          onOpenUrl={handleOpenUrl}
+          onClose={handleInfoClose}
+          onDismiss={handleInfoDismiss}
+          onOpenUrl={handleInfoOpenUrl}
         />
       )}
 
