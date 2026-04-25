@@ -14,6 +14,7 @@ import {
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
+import { BoardBadges } from '../components/BoardBadges';
 import { Motherboard } from '../models/Motherboard';
 
 export function CatalogScreen() {
@@ -134,19 +135,7 @@ export function CatalogScreen() {
 
   const renderItem = ({ item }: { item: Motherboard }) => {
     const hasSaved = !!savedUrls[item.id];
-    const visitStatus = visitRecord[item.id]; // 'confirmed' | 'wrong' | undefined
-
-    // Badge priority (only one shown at a time):
-    // FIXED (orange) = URL was wrong, but user manually saved the correct one → code needs fixing
-    // WRONG (red)   = URL was wrong, not yet corrected
-    // SEEN  (blue)  = URL confirmed correct on first visit
-    // URL   (green) = user proactively saved a URL (no wrong-flag context)
-    const badge =
-      visitStatus === 'wrong' && hasSaved ? 'FIXED' :
-      visitStatus === 'wrong'             ? 'WRONG' :
-      visitStatus === 'confirmed'         ? 'SEEN'  :
-      hasSaved                            ? 'URL'   : null;
-
+    const visitStatus = visitRecord[item.id];
     return (
       <TouchableOpacity
         style={styles.row}
@@ -157,21 +146,7 @@ export function CatalogScreen() {
         <View style={styles.rowLeft}>
           <View style={styles.nameRow}>
             <Text style={styles.modelName} numberOfLines={2}>{item.fullModelName}</Text>
-            {item.isCustom && (
-              <View style={styles.customBadge}><Text style={styles.customBadgeTxt}>Custom</Text></View>
-            )}
-            {badge === 'FIXED' && (
-              <View style={styles.fixedBadge}><Text style={styles.fixedBadgeTxt}>FIXED</Text></View>
-            )}
-            {badge === 'WRONG' && (
-              <View style={styles.wrongBadge}><Text style={styles.wrongBadgeTxt}>WRONG</Text></View>
-            )}
-            {badge === 'SEEN' && (
-              <View style={styles.seenBadge}><Text style={styles.seenBadgeTxt}>SEEN</Text></View>
-            )}
-            {badge === 'URL' && (
-              <View style={styles.savedBadge}><Text style={styles.savedBadgeTxt}>URL</Text></View>
-            )}
+            <BoardBadges board={item} hasSaved={hasSaved} visitStatus={visitStatus} />
           </View>
           <Text style={styles.brand}>{item.brand}</Text>
         </View>
@@ -394,17 +369,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   modelName: { fontSize: 15, fontWeight: '500', color: '#1C1C1E', flexShrink: 1 },
   brand: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
-
-  customBadge: { backgroundColor: '#FFF3CD', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  customBadgeTxt: { fontSize: 10, color: '#856404', fontWeight: '700' },
-  savedBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  savedBadgeTxt: { fontSize: 10, color: '#2E7D32', fontWeight: '700' },
-  seenBadge: { backgroundColor: '#DBEAFE', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  seenBadgeTxt: { fontSize: 10, color: '#1D4ED8', fontWeight: '700' },
-  fixedBadge: { backgroundColor: '#FFF7ED', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  fixedBadgeTxt: { fontSize: 10, color: '#C2410C', fontWeight: '700' },
-  wrongBadge: { backgroundColor: '#FEF2F2', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  wrongBadgeTxt: { fontSize: 10, color: '#DC2626', fontWeight: '700' },
 
   chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },

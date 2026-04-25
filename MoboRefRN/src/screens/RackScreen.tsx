@@ -23,8 +23,10 @@ import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { AddCustomBoardModal } from '../components/AddCustomBoardModal';
 import { SaveUrlModal } from '../components/SaveUrlModal';
+import { BoardBadges } from '../components/BoardBadges';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
+import { VisitStatus } from '../hooks/useVisitedBoards';
 
 const COLS = 3;
 const GAP = 8;
@@ -42,6 +44,7 @@ function GridSlot({
   isEditing,
   isSelected,
   hasSavedUrl,
+  visitStatus,
   onAssign,
   onClear,
   onOpenUrl,
@@ -52,6 +55,7 @@ function GridSlot({
   isEditing: boolean;
   isSelected: boolean;
   hasSavedUrl: boolean;
+  visitStatus?: VisitStatus;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
@@ -101,9 +105,7 @@ function GridSlot({
           <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
           <View style={styles.slotChipsetRow}>
             <Text style={styles.slotChipset}>{board.chipset}</Text>
-            {hasSavedUrl && (
-              <View style={styles.slotUrlBadge}><Text style={styles.slotUrlBadgeTxt}>URL</Text></View>
-            )}
+            <BoardBadges board={board} hasSaved={hasSavedUrl} visitStatus={visitStatus} size="compact" />
           </View>
           <View style={styles.slotBtns}>
             <TouchableOpacity style={styles.btnPage} onPress={() => onOpenUrl(slot)}>
@@ -382,6 +384,7 @@ export function RackScreen() {
                   isEditing={isEditing}
                   isSelected={slot.id === selectedSlotId}
                   hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
+                  visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
                   onAssign={(s) => handleAssign(selectedRack.id, s)}
                   onClear={(s) => clearSlot(selectedRack.id, s.id)}
                   onOpenUrl={handleOpenUrl}
@@ -491,16 +494,11 @@ export function RackScreen() {
                     <Text style={styles.assignChipset}>{item.chipset}</Text>
                   </View>
                   <View style={styles.assignBadges}>
-                    {!!savedUrls[item.id] && (
-                      <View style={styles.assignUrlBadge}>
-                        <Text style={styles.assignUrlBadgeTxt}>URL</Text>
-                      </View>
-                    )}
-                    {item.isCustom && (
-                      <View style={styles.customBadge}>
-                        <Text style={styles.customBadgeTxt}>Custom</Text>
-                      </View>
-                    )}
+                    <BoardBadges
+                      board={item}
+                      hasSaved={!!savedUrls[item.id]}
+                      visitStatus={visitRecord[item.id]}
+                    />
                   </View>
                 </TouchableOpacity>
               );
@@ -690,8 +688,6 @@ const styles = StyleSheet.create({
   assignRowLeft: { flex: 1 },
   assignModel: { fontSize: 15, fontWeight: '500', color: '#111' },
   assignChipset: { fontSize: 13, color: '#888', marginTop: 2 },
-  customBadge: { backgroundColor: '#FFF3CD', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginLeft: 8 },
-  customBadgeTxt: { fontSize: 11, color: '#856404', fontWeight: '700' },
   addCustomRow: {
     paddingHorizontal: 16, paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#eee',
@@ -701,11 +697,6 @@ const styles = StyleSheet.create({
   addCustomTxt: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
 
   slotChipsetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  slotUrlBadge: { backgroundColor: '#E8F5E9', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  slotUrlBadgeTxt: { fontSize: 8, color: '#2E7D32', fontWeight: '700' },
-
-  assignBadges: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  assignUrlBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  assignUrlBadgeTxt: { fontSize: 11, color: '#2E7D32', fontWeight: '700' },
+  assignBadges: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' },
 
 });
