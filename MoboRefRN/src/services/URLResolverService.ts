@@ -16,6 +16,7 @@ export function isIntelChipset(chipset: string): boolean {
 
 // Convert model name to a URL-safe hyphenated slug.
 // Handles GIGABYTE rev notation: "(rev. 1.0)" → "-rev-10"
+// Old-style ASUS "(WIFI)" in parens → treated as "(WI-FI)" so URL gets "wi-fi"
 function hyphenate(s: string): string {
   return s
     .replace(/\s*\(rev\.\s*([\d.]+)\)/i, (_, v) => '-rev-' + v.replace(/\./g, ''))
@@ -29,14 +30,22 @@ export function buildDirectProductUrl(board: Motherboard): string {
   const model = board.fullModelName;
 
   switch (board.brand) {
-    case 'GIGABYTE':
-      return `https://www.gigabyte.com/Motherboard/${hyphenate(model)}`;
+    case 'GIGABYTE': {
+      const slug = hyphenate(model);
+      // GIGABYTE URLs always include a revision suffix.
+      // If not in the model name, default to rev 1.0 (the most common first revision).
+      const hasRev = /-rev-\d/i.test(slug);
+      return `https://www.gigabyte.com/Motherboard/${slug}${hasRev ? '' : '-rev-10'}`;
+    }
 
     case 'MSI':
       return `https://www.msi.com/Motherboard/${hyphenate(model)}`;
 
     case 'ASUS': {
-      const slug = hyphenate(model).toLowerCase();
+      // Old-style "(WIFI)" with parens → URL uses "wi-fi" (hyphenated).
+      // New-style "WIFI" without parens → URL uses "wifi" (no hyphen).
+      const normalized = model.replace(/\(wifi\)/i, '(WI-FI)');
+      const slug = hyphenate(normalized).toLowerCase();
 
       // ROG slugs are inconsistent across eras — newest-gen omits -model, older
       // ones append it, WIFI II variants omit it again, and WIFI vs WI-FI varies
@@ -73,12 +82,19 @@ export function buildDirectProductUrl(board: Motherboard): string {
 
     case 'ASRock': {
       const arch = getArch(board.chipset);
-      // Strip DDR-gen suffixes (D4/D5) — ASRock omits these from URL slugs
-      // Normalize leading all-caps product names (e.g. "PHANTOM GAMING" → "Phantom Gaming")
+      // Strip DDR-gen suffixes (D4/D5) — ASRock omits these from URL slugs.
+      // Normalize leading all-caps product names (e.g. "PHANTOM GAMING" → "Phantom Gaming").
       const slug = model
         .replace(/\s+D[45]\b/i, '')
         .replace(/\/D[45]\b/i, '')
         .replace(/\b[A-Z]{4,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+
+      // "Phantom Gaming" line uses pg.asrock.com and drops the series prefix from the URL path.
+      if (/^Phantom\s+Gaming\s+/i.test(slug)) {
+        const modelPart = slug.replace(/^Phantom\s+Gaming\s+/i, '');
+        return `https://pg.asrock.com/mb/${arch}/${encodeURIComponent(modelPart)}/index.asp`;
+      }
+
       return `https://www.asrock.com/mb/${arch}/${encodeURIComponent(slug)}/index.asp`;
     }
 

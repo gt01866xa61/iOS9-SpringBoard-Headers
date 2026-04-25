@@ -123,7 +123,13 @@ export function CatalogScreen() {
             text: 'Yes, correct ✓',
             onPress: () => {
               markConfirmed(item.id);
-              saveUrl(item.id, result.openedUrl); // auto-save so future taps skip the dialog
+              // If the opened URL was a Google search, we don't know the real URL yet —
+              // ask the user to paste it in manually via SaveUrlModal.
+              if (result.openedUrl.includes('google.com')) {
+                setEditUrlTarget(item);
+              } else {
+                saveUrl(item.id, result.openedUrl);
+              }
             },
           },
           {

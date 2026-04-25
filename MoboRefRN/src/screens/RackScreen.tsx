@@ -103,7 +103,19 @@ function GridSlot({
           </View>
         ) : (
           board && (
-            <TouchableOpacity style={styles.slotDeleteBadge} onPress={() => onClear(slot)}>
+            <TouchableOpacity
+              style={styles.slotDeleteBadge}
+              onPress={() =>
+                Alert.alert(
+                  'Remove Board',
+                  `Remove "${board.fullModelName}" from this slot?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => onClear(slot) },
+                  ]
+                )
+              }
+            >
               <Text style={styles.slotDeleteBadgeTxt}>×</Text>
             </TouchableOpacity>
           )
@@ -304,7 +316,12 @@ export function RackScreen() {
               text: 'Yes, correct ✓',
               onPress: () => {
                 markConfirmed(board.id);
-                saveUrl(board.id, result.openedUrl);
+                // Opened via Google search — ask user to paste the real URL.
+                if (result.openedUrl.includes('google.com')) {
+                  setSaveModalTarget(board);
+                } else {
+                  saveUrl(board.id, result.openedUrl);
+                }
               },
             },
             { text: 'No, URL was wrong ✗', style: 'destructive', onPress: () => markWrong(board.id) },
@@ -686,7 +703,7 @@ const styles = StyleSheet.create({
   },
   selectedBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  rowDelBtn: { width: ROW_DEL_W, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' },
+  rowDelBtn: { width: ROW_DEL_W, justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch', marginLeft: 'auto' },
   rowDelTxt: { fontSize: 24, color: '#DC2626', fontWeight: '300' },
 
   addRowBtn: {
@@ -744,7 +761,7 @@ const styles = StyleSheet.create({
   },
   addCustomTxt: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
 
-  slotChipsetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  slotChipsetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' },
   assignBadges: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' },
 
 });
