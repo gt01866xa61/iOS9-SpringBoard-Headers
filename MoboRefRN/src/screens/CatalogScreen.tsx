@@ -63,7 +63,16 @@ export function CatalogScreen() {
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
     const { shouldPrompt, openedUrl } = await openOfficialPage(item);
-    if (shouldPrompt) { setClipTarget(item); setClipOpenedUrl(openedUrl); }
+    // Only prompt to save URL for custom boards — catalog boards open their
+    // real product page directly, so saving is unnecessary. Long-press still
+    // exposes a manual override if a catalog URL turns out wrong.
+    if (shouldPrompt && item.isCustom) {
+      setClipTarget(item);
+      // Don't pre-fill with a Google search URL — saving that would trap the
+      // user in the search page on every subsequent open.
+      const isSearch = /google\.com\/search/i.test(openedUrl);
+      setClipOpenedUrl(isSearch ? '' : openedUrl);
+    }
   };
 
   const handleClipSave = () => {

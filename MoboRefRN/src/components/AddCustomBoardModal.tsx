@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Motherboard } from '../models/Motherboard';
-import { buildBrandSearchUrl } from '../services/URLResolverService';
+import { buildDirectProductUrl } from '../services/URLResolverService';
 
 const KNOWN_BRANDS = ['ASUS', 'GIGABYTE', 'MSI', 'ASRock', 'Other'];
 
@@ -57,7 +57,7 @@ export function AddCustomBoardModal({ visible, onClose, onSave }: Props) {
       chipset: chipset.trim().toUpperCase(),
       fullModelName: modelName.trim(),
     };
-    const suggested = buildBrandSearchUrl(draft as Motherboard);
+    const suggested = buildDirectProductUrl(draft as Motherboard);
     setSpecUrl(suggested);
     setIsFinding(false);
   };

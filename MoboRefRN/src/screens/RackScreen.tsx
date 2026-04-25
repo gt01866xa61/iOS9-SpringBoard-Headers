@@ -277,8 +277,15 @@ export function RackScreen() {
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
-      const { shouldPrompt, openedUrl } = await openOfficialPage(slot.motherboard);
-      if (shouldPrompt) { setClipTarget(slot.motherboard); setClipOpenedUrl(openedUrl); }
+      const board = slot.motherboard;
+      const { shouldPrompt, openedUrl } = await openOfficialPage(board);
+      // Only prompt for custom boards — catalog boards open their real
+      // product page directly, so saving is unnecessary.
+      if (shouldPrompt && board.isCustom) {
+        setClipTarget(board);
+        const isSearch = /google\.com\/search/i.test(openedUrl);
+        setClipOpenedUrl(isSearch ? '' : openedUrl);
+      }
     },
     [openOfficialPage]
   );
