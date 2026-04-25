@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = 'visited_boards_v1';
+export type VisitStatus = 'confirmed' | 'wrong';
 
-let _snapshot: Set<string> = new Set();
+const STORAGE_KEY = 'visited_boards_v2';
+
+let _snapshot: Record<string, VisitStatus> = {};
 let _hydrated = false;
 const _listeners = new Set<() => void>();
 
@@ -14,7 +16,7 @@ function subscribe(cb: () => void): () => void {
   return () => { _listeners.delete(cb); };
 }
 
-function getSnapshot(): Set<string> { return _snapshot; }
+function getSnapshot(): Record<string, VisitStatus> { return _snapshot; }
 
 async function hydrate() {
   if (_hydrated) return;
@@ -22,25 +24,25 @@ async function hydrate() {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
-      _snapshot = new Set(JSON.parse(raw) as string[]);
+      _snapshot = JSON.parse(raw) as Record<string, VisitStatus>;
       emitChange();
     }
   } catch {}
 }
 
-async function markVisitedInternal(id: string) {
-  if (_snapshot.has(id)) return;
-  _snapshot = new Set([..._snapshot, id]);
+async function setStatus(id: string, status: VisitStatus) {
+  _snapshot = { ..._snapshot, [id]: status };
   emitChange();
-  try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([..._snapshot])); } catch {}
+  try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(_snapshot)); } catch {}
 }
 
 export function useVisitedBoards() {
-  const visitedIds = useSyncExternalStore(subscribe, getSnapshot);
+  const visitRecord = useSyncExternalStore(subscribe, getSnapshot);
 
   useEffect(() => { hydrate(); }, []);
 
-  const markVisited = useCallback((id: string) => { markVisitedInternal(id); }, []);
+  const markConfirmed = useCallback((id: string) => { setStatus(id, 'confirmed'); }, []);
+  const markWrong = useCallback((id: string) => { setStatus(id, 'wrong'); }, []);
 
-  return { visitedIds, markVisited };
+  return { visitRecord, markConfirmed, markWrong };
 }

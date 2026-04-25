@@ -28,7 +28,7 @@ function chipsetNum(cs: string): number {
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
   const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
-  const { visitedIds, markVisited } = useVisitedBoards();
+  const { visitRecord, markConfirmed, markWrong } = useVisitedBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
@@ -91,9 +91,10 @@ export function useCatalog() {
   }, [allBoards, selectedBrand, selectedChipset]);
 
   const openOfficialPage = useCallback(
-    async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string }> => {
+    async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string; isFirstVisit: boolean }> => {
       setIsResolvingUrl(true);
       const hasSaved = !!savedUrls[board.id];
+      const isFirstVisit = !visitRecord[board.id];
       let openedUrl = '';
       try {
         openedUrl = savedUrls[board.id] ?? (await resolve(board));
@@ -101,13 +102,12 @@ export function useCatalog() {
           dismissButtonStyle: 'done',
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
         });
-        markVisited(board.id);
       } finally {
         setIsResolvingUrl(false);
       }
-      return { shouldPrompt: !hasSaved, openedUrl };
+      return { shouldPrompt: !hasSaved, openedUrl, isFirstVisit };
     },
-    [savedUrls, markVisited]
+    [savedUrls, visitRecord]
   );
 
   const selectBrand = useCallback((brand: string) => {
@@ -139,7 +139,9 @@ export function useCatalog() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
-    visitedIds,
+    visitRecord,
+    markConfirmed,
+    markWrong,
     clearNewBoardsCount,
   };
 }

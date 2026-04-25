@@ -192,7 +192,7 @@ export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, swapSlots } = useRacks();
-  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl } = useCatalog();
+  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl, visitRecord, markConfirmed, markWrong } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
@@ -276,12 +276,22 @@ export function RackScreen() {
       if (!slot.motherboard) return;
       const board = slot.motherboard;
       const result = await openOfficialPage(board);
-      // Auto-prompt to save URL for custom boards (they often have guessed URLs)
       if (board.isCustom && result.shouldPrompt) {
         setSaveModalTarget(board);
+        return;
+      }
+      if (!board.isCustom && result.isFirstVisit) {
+        Alert.alert(
+          board.fullModelName,
+          'Did the URL open the correct tech spec page?',
+          [
+            { text: 'Yes, correct ✓', onPress: () => markConfirmed(board.id) },
+            { text: 'No, URL was wrong ✗', style: 'destructive', onPress: () => markWrong(board.id) },
+          ]
+        );
       }
     },
-    [openOfficialPage]
+    [openOfficialPage, markConfirmed, markWrong]
   );
 
   const handleSlotTap = useCallback(

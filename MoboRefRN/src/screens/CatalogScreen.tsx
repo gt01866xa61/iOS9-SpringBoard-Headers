@@ -38,7 +38,9 @@ export function CatalogScreen() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
-    visitedIds,
+    visitRecord,
+    markConfirmed,
+    markWrong,
     clearNewBoardsCount,
   } = useCatalog();
 
@@ -57,7 +59,6 @@ export function CatalogScreen() {
     });
   }, [filteredModels, searchQuery]);
 
-  // Auto-dismiss the "new boards" toast after 3s
   useEffect(() => {
     if (newBoardsCount > 0) {
       const t = setTimeout(() => clearNewBoardsCount(), 3000);
@@ -67,7 +68,6 @@ export function CatalogScreen() {
 
   const hasSavedUrls = Object.keys(savedUrls).length > 0;
 
-  // Auto-exit edit mode when last saved URL is removed
   useEffect(() => {
     if (!hasSavedUrls) setEditMode(false);
   }, [hasSavedUrls]);
@@ -75,10 +75,30 @@ export function CatalogScreen() {
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
     const result = await openOfficialPage(item);
-    // Custom boards often have wrong/guessed URLs — auto-prompt to save the
-    // verified URL after the user has navigated. Skip if already saved.
+
+    // Custom boards: auto-prompt to save the verified URL (their URLs are always guessed)
     if (item.isCustom && result.shouldPrompt) {
       setEditUrlTarget(item);
+      return;
+    }
+
+    // Non-custom, first visit: ask whether the auto-generated URL was correct
+    if (!item.isCustom && result.isFirstVisit) {
+      Alert.alert(
+        item.fullModelName,
+        'Did the URL open the correct tech spec page?',
+        [
+          {
+            text: 'Yes, correct ✓',
+            onPress: () => markConfirmed(item.id),
+          },
+          {
+            text: 'No, URL was wrong ✗',
+            style: 'destructive',
+            onPress: () => markWrong(item.id),
+          },
+        ]
+      );
     }
   };
 
@@ -114,7 +134,19 @@ export function CatalogScreen() {
 
   const renderItem = ({ item }: { item: Motherboard }) => {
     const hasSaved = !!savedUrls[item.id];
-    const hasVisited = visitedIds.has(item.id);
+    const visitStatus = visitRecord[item.id]; // 'confirmed' | 'wrong' | undefined
+
+    // Badge priority (only one shown at a time):
+    // FIXED (orange) = URL was wrong, but user manually saved the correct one → code needs fixing
+    // WRONG (red)   = URL was wrong, not yet corrected
+    // SEEN  (blue)  = URL confirmed correct on first visit
+    // URL   (green) = user proactively saved a URL (no wrong-flag context)
+    const badge =
+      visitStatus === 'wrong' && hasSaved ? 'FIXED' :
+      visitStatus === 'wrong'             ? 'WRONG' :
+      visitStatus === 'confirmed'         ? 'SEEN'  :
+      hasSaved                            ? 'URL'   : null;
+
     return (
       <TouchableOpacity
         style={styles.row}
@@ -128,11 +160,17 @@ export function CatalogScreen() {
             {item.isCustom && (
               <View style={styles.customBadge}><Text style={styles.customBadgeTxt}>Custom</Text></View>
             )}
-            {hasSaved && (
-              <View style={styles.savedBadge}><Text style={styles.savedBadgeTxt}>URL</Text></View>
+            {badge === 'FIXED' && (
+              <View style={styles.fixedBadge}><Text style={styles.fixedBadgeTxt}>FIXED</Text></View>
             )}
-            {!hasSaved && hasVisited && (
+            {badge === 'WRONG' && (
+              <View style={styles.wrongBadge}><Text style={styles.wrongBadgeTxt}>WRONG</Text></View>
+            )}
+            {badge === 'SEEN' && (
               <View style={styles.seenBadge}><Text style={styles.seenBadgeTxt}>SEEN</Text></View>
+            )}
+            {badge === 'URL' && (
+              <View style={styles.savedBadge}><Text style={styles.savedBadgeTxt}>URL</Text></View>
             )}
           </View>
           <Text style={styles.brand}>{item.brand}</Text>
@@ -248,7 +286,6 @@ export function CatalogScreen() {
         </View>
       </View>
 
-      {/* New boards toast */}
       {newBoardsCount > 0 && (
         <View style={styles.toastBanner}>
           <Text style={styles.toastTxt}>✨ {newBoardsCount} new board{newBoardsCount > 1 ? 's' : ''} added</Text>
@@ -274,7 +311,6 @@ export function CatalogScreen() {
         ListEmptyComponent={!isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null}
       />
 
-      {/* Save URL prompt — appears after browser closes */}
       <SaveUrlModal
         visible={editUrlTarget !== null}
         boardName={editUrlTarget?.fullModelName ?? ''}
@@ -365,6 +401,10 @@ const styles = StyleSheet.create({
   savedBadgeTxt: { fontSize: 10, color: '#2E7D32', fontWeight: '700' },
   seenBadge: { backgroundColor: '#DBEAFE', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   seenBadgeTxt: { fontSize: 10, color: '#1D4ED8', fontWeight: '700' },
+  fixedBadge: { backgroundColor: '#FFF7ED', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  fixedBadgeTxt: { fontSize: 10, color: '#C2410C', fontWeight: '700' },
+  wrongBadge: { backgroundColor: '#FEF2F2', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  wrongBadgeTxt: { fontSize: 10, color: '#DC2626', fontWeight: '700' },
 
   chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },
