@@ -6,6 +6,7 @@ import { resolve } from '../services/URLResolverService';
 import { fetchBoards } from '../services/RemoteBoardsService';
 import { useCustomBoards } from './useCustomBoards';
 import { useSavedUrls } from './useSavedUrls';
+import { useVisitedBoards } from './useVisitedBoards';
 
 const BRAND_ORDER = ['ASUS', 'GIGABYTE', 'MSI', 'ASRock'];
 
@@ -27,6 +28,7 @@ function chipsetNum(cs: string): number {
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
   const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
+  const { visitedIds, markVisited } = useVisitedBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
@@ -99,12 +101,13 @@ export function useCatalog() {
           dismissButtonStyle: 'done',
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
         });
+        markVisited(board.id);
       } finally {
         setIsResolvingUrl(false);
       }
       return { shouldPrompt: !hasSaved, openedUrl };
     },
-    [savedUrls]
+    [savedUrls, markVisited]
   );
 
   const selectBrand = useCallback((brand: string) => {
@@ -136,6 +139,7 @@ export function useCatalog() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
+    visitedIds,
     clearNewBoardsCount,
   };
 }

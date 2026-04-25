@@ -38,6 +38,7 @@ export function CatalogScreen() {
     savedUrls,
     saveUrl,
     removeSavedUrl,
+    visitedIds,
     clearNewBoardsCount,
   } = useCatalog();
 
@@ -108,6 +109,7 @@ export function CatalogScreen() {
 
   const renderItem = ({ item }: { item: Motherboard }) => {
     const hasSaved = !!savedUrls[item.id];
+    const hasVisited = visitedIds.has(item.id);
     return (
       <TouchableOpacity
         style={styles.row}
@@ -123,6 +125,9 @@ export function CatalogScreen() {
             )}
             {hasSaved && (
               <View style={styles.savedBadge}><Text style={styles.savedBadgeTxt}>URL</Text></View>
+            )}
+            {!hasSaved && hasVisited && (
+              <View style={styles.seenBadge}><Text style={styles.seenBadgeTxt}>SEEN</Text></View>
             )}
           </View>
           <Text style={styles.brand}>{item.brand}</Text>
@@ -353,6 +358,8 @@ const styles = StyleSheet.create({
   customBadgeTxt: { fontSize: 10, color: '#856404', fontWeight: '700' },
   savedBadge: { backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   savedBadgeTxt: { fontSize: 10, color: '#2E7D32', fontWeight: '700' },
+  seenBadge: { backgroundColor: '#DBEAFE', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  seenBadgeTxt: { fontSize: 10, color: '#1D4ED8', fontWeight: '700' },
 
   chipsetBadge: { backgroundColor: '#EFF6FF', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
   chipsetText: { fontSize: 12, color: '#2563EB', fontWeight: '700' },

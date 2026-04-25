@@ -31,16 +31,19 @@ export function SaveUrlModal({ visible, boardName, existingUrl, onSave, onClose 
   const translateY = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, { dy }) => dy > 8,
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 5,
+    onPanResponderTerminationRequest: () => false,
     onPanResponderMove: (_, { dy }) => {
       if (dy > 0) translateY.setValue(dy);
     },
     onPanResponderRelease: (_, { dy, vy }) => {
       if (dy > 80 || vy > 0.8) {
-        Animated.timing(translateY, { toValue: 600, duration: 180, useNativeDriver: true })
+        // useNativeDriver: false — must be consistent with setValue() calls above
+        Animated.timing(translateY, { toValue: 600, duration: 180, useNativeDriver: false })
           .start(() => { translateY.setValue(0); onClose(); });
       } else {
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: false }).start();
       }
     },
   })).current;
@@ -157,12 +160,12 @@ const styles = StyleSheet.create({
   },
   handleArea: {
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   handle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#D1D1D6',
+    width: 40, height: 5, borderRadius: 3,
+    backgroundColor: '#C7C7CC',
   },
   title: { fontSize: 17, fontWeight: '700', color: '#1C1C1E' },
   subtitle: { fontSize: 13, color: '#8E8E93', marginTop: -4 },
