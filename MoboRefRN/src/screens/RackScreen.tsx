@@ -102,7 +102,7 @@ function FloatingSlot({ slot, sz }: { slot: RackSlot; sz: number }) {
   const isIntel = board ? isIntelChipset(board.chipset) : true;
   return (
     <View style={[styles.slot, styles.floatSlot, { width: sz, height: sz }]}>
-      <Text style={styles.slotNum}>{slot.position + 1}</Text>
+      <Text style={styles.slotNum}>{slot.space + 1}</Text>
       {board ? (
         <>
           <Text style={styles.slotModel} numberOfLines={2}>{board.fullModelName}</Text>
@@ -120,6 +120,58 @@ function FloatingSlot({ slot, sz }: { slot: RackSlot; sz: number }) {
   );
 }
 
+// A space coordinate that has no slot framework. Edit mode shows "+" to
+// re-add a slot here. Drag mode highlights when the finger is over it so the
+// dragged slot can land directly on this empty space.
+function EmptySpace({
+  space,
+  size,
+  isEditing,
+  isHoverTarget,
+  hasSelection,
+  onAddSlot,
+  onTapWithSelection,
+}: {
+  space: number;
+  size: number;
+  isEditing: boolean;
+  isHoverTarget: boolean;
+  hasSelection: boolean;
+  onAddSlot: (space: number) => void;
+  onTapWithSelection: (space: number) => void;
+}) {
+  return (
+    <View
+      style={[
+        styles.emptySpace,
+        { width: size, height: size },
+        isHoverTarget && styles.slotHover,
+      ]}
+    >
+      <Text style={styles.emptySpaceNum}>{space + 1}</Text>
+      {isEditing ? (
+        hasSelection ? (
+          <TouchableOpacity
+            style={styles.emptySpaceTap}
+            onPress={() => onTapWithSelection(space)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.emptySpaceTapTxt}>↵</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.emptySpaceTap}
+            onPress={() => onAddSlot(space)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.emptySpaceAddTxt}>+</Text>
+          </TouchableOpacity>
+        )
+      ) : null}
+    </View>
+  );
+}
+
 function GridSlot({
   slot,
   size,
@@ -131,7 +183,7 @@ function GridSlot({
   visitStatus,
   onAssign,
   onClear,
-  onRemoveSlot,
+  onDeleteSlot,
   onTap,
   onInfo,
   onOpenUrl,
@@ -147,7 +199,7 @@ function GridSlot({
   visitStatus?: VisitStatus;
   onAssign: (s: RackSlot) => void;
   onClear: (s: RackSlot) => void;
-  onRemoveSlot: (s: RackSlot) => void;
+  onDeleteSlot: (s: RackSlot) => void;
   onTap: (s: RackSlot) => void;
   onInfo: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
@@ -174,7 +226,7 @@ function GridSlot({
           onLongPress={() => onLongPressDrag(slot)}
           delayLongPress={350}
         >
-          <Text style={styles.slotNum}>{slot.position + 1}</Text>
+          <Text style={styles.slotNum}>{slot.space + 1}</Text>
           {board ? (
             <>
               <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
@@ -190,24 +242,29 @@ function GridSlot({
           )}
         </TouchableOpacity>
 
-        {/* Top-left: red × clears the board (iPhone jiggle-delete style).
-            The slot position is preserved as a drop target. Use row − to
-            shrink the grid framework itself. */}
-        {board && !isSelected && (
+        {/* Top-left × — color depends on whether the slot holds a board.
+            RED × on a filled slot: clears the board, slot stays as a drop target.
+            GRAY × on an empty slot: deletes the slot framework and compacts —
+            slots after it shift one space forward (last space ends up empty). */}
+        {!isSelected && (
           <TouchableOpacity
-            style={styles.slotRemoveBadge}
-            onPress={() =>
-              Alert.alert(
-                'Clear Slot',
-                `Remove "${board.fullModelName}"?\nSlot position stays as a drop target.`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Clear', style: 'destructive', onPress: () => onClear(slot) },
-                ]
-              )
-            }
+            style={board ? styles.slotRemoveBadge : styles.slotDeleteBadge}
+            onPress={() => {
+              if (board) {
+                Alert.alert(
+                  'Clear Slot',
+                  `Remove "${board.fullModelName}"?\nSlot position stays as a drop target.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Clear', style: 'destructive', onPress: () => onClear(slot) },
+                  ]
+                );
+              } else {
+                onDeleteSlot(slot);
+              }
+            }}
           >
-            <Text style={styles.slotRemoveBadgeTxt}>×</Text>
+            <Text style={board ? styles.slotRemoveBadgeTxt : styles.slotDeleteBadgeTxt}>×</Text>
           </TouchableOpacity>
         )}
         {/* Top-right: ✓ marks the selected source slot for tap-to-move. */}
@@ -227,7 +284,7 @@ function GridSlot({
         activeOpacity={board ? 0.75 : 1}
         onPress={() => (board ? onInfo(slot) : onAssign(slot))}
       >
-        <Text style={styles.slotNum}>{slot.position + 1}</Text>
+        <Text style={styles.slotNum}>{slot.space + 1}</Text>
         {board ? (
           <>
             <Text style={styles.slotModel} numberOfLines={1}>{board.fullModelName}</Text>
@@ -324,7 +381,7 @@ function SwipeableCustomRow({
 export function RackScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, removeSlot, moveSlot } = useRacks();
+  const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, deleteSlot, addSlotAtSpace, moveSlot } = useRacks();
   const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl, visitRecord, markConfirmed, markWrong } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
@@ -357,6 +414,7 @@ export function RackScreen() {
   const dragSlotIdRef = useRef<string | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
   const slotsRef = useRef<RackSlot[]>([]);
+  const totalSpacesRef = useRef(0);
   const selectedRackRef = useRef<Rack | null>(null);
   const moveSlotRef = useRef(moveSlot);
   const containerRef = useRef<View>(null);
@@ -367,14 +425,16 @@ export function RackScreen() {
 
   const selectedRack = racks.find((r) => r.id === selectedRackId) ?? racks[0] ?? null;
   const size = slotSize(isEditing);
-  // Always sort by position so visual index === slot.position (required for drag math).
+  // Sort slots by space coordinate (slots may be sparse — gaps allowed).
   const slots = useMemo(
-    () => [...(selectedRack?.slots ?? [])].sort((a, b) => a.position - b.position),
+    () => [...(selectedRack?.slots ?? [])].sort((a, b) => a.space - b.space),
     [selectedRack]
   );
+  const totalSpaces = selectedRack?.totalSpaces ?? 0;
 
   // Keep refs in sync so the once-created PanResponder always sees fresh values.
   useEffect(() => { slotsRef.current = slots; }, [slots]);
+  useEffect(() => { totalSpacesRef.current = totalSpaces; }, [totalSpaces]);
   useEffect(() => { selectedRackRef.current = selectedRack; }, [selectedRack]);
   useEffect(() => { moveSlotRef.current = moveSlot; }, [moveSlot]);
 
@@ -491,19 +551,26 @@ export function RackScreen() {
   // latest handleOpenUrl (avoids stale closure when its deps change).
   useEffect(() => { handleOpenUrlRef.current = handleOpenUrl; }, [handleOpenUrl]);
 
-  const handleRemoveSlot = useCallback(
+  // Gray ×: delete the slot framework. Slots after it shift one space forward;
+  // the highest space ends up empty (still part of totalSpaces, can be filled
+  // back via the "+" button at that space).
+  const handleDeleteSlot = useCallback(
     (rackId: string, slot: RackSlot) => {
-      const label = slot.motherboard ? ` (${slot.motherboard.fullModelName})` : '';
       Alert.alert(
         'Delete Slot',
-        `Delete slot ${slot.position + 1}${label}? This cannot be undone.`,
+        `Delete slot at space ${slot.space + 1}?\nLater slots will shift forward.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: () => removeSlot(rackId, slot.id) },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteSlot(rackId, slot.id) },
         ]
       );
     },
-    [removeSlot]
+    [deleteSlot]
+  );
+
+  const handleAddSlotAtSpace = useCallback(
+    (rackId: string, space: number) => addSlotAtSpace(rackId, space),
+    [addSlotAtSpace]
   );
 
   const handleSlotTap = useCallback(
@@ -517,7 +584,18 @@ export function RackScreen() {
         setSelectedSlotId(null);
         return;
       }
-      moveSlot(selectedRack.id, selectedSlotId, slot.id);
+      // Tap-to-move: target's space is the destination.
+      moveSlot(selectedRack.id, selectedSlotId, slot.space);
+      setSelectedSlotId(null);
+    },
+    [selectedRack, selectedSlotId, moveSlot]
+  );
+
+  // Tap on an empty space (with selected source) → relocate selected slot here.
+  const handleEmptySpaceTap = useCallback(
+    (space: number) => {
+      if (!selectedRack || !selectedSlotId) return;
+      moveSlot(selectedRack.id, selectedSlotId, space);
       setSelectedSlotId(null);
     },
     [selectedRack, selectedSlotId, moveSlot]
@@ -575,18 +653,18 @@ export function RackScreen() {
         szRef.current = sz;
         gridOriginRef.current = { x: gx, y: gy };
 
-        const col = slot.position % COLS;
-        const row = Math.floor(slot.position / COLS);
+        const col = slot.space % COLS;
+        const row = Math.floor(slot.space / COLS);
         // Subtract container origin: dragPos is relative to the dragOverlay which
         // sits at position:absolute top/left 0 within the container View.
         const x = gx + PADDING + col * (sz + GAP) - cx;
         const y = gy + PADDING + row * (sz + GAP) - cy;
 
         dragSlotIdRef.current = slot.id;
-        hoverIndexRef.current = slot.position;
+        hoverIndexRef.current = slot.space;
         setDragSlotId(slot.id);
         setDragPos({ x, y });
-        setHoverIndex(slot.position);
+        setHoverIndex(slot.space);
         setSelectedSlotId(null);
       });
     });
@@ -616,26 +694,26 @@ export function RackScreen() {
         const relX = moveX - gx - PADDING;
         const relY = moveY - gy - PADDING;
         if (relX < 0 || relY < 0) return;
-        const total = slotsRef.current.length;
+        const total = totalSpacesRef.current;
         if (total === 0) return;
         const col = Math.min(Math.max(Math.floor(relX / (sz + GAP)), 0), COLS - 1);
         const row = Math.max(Math.floor(relY / (sz + GAP)), 0);
-        const idx = Math.min(row * COLS + col, total - 1);
-        if (idx !== hoverIndexRef.current) {
-          hoverIndexRef.current = idx;
-          setHoverIndex(idx);
+        const space = Math.min(row * COLS + col, total - 1);
+        if (space !== hoverIndexRef.current) {
+          hoverIndexRef.current = space;
+          setHoverIndex(space);
         }
       },
       onPanResponderRelease: () => {
         const fromId = dragSlotIdRef.current;
-        const toIdx = hoverIndexRef.current;
+        const toSpace = hoverIndexRef.current;
         const rack = selectedRackRef.current;
         const cur = slotsRef.current;
-        if (fromId && toIdx !== null && rack) {
+        if (fromId && toSpace !== null && rack) {
           const from = cur.find((s) => s.id === fromId);
-          if (from && from.position !== toIdx) {
-            const to = cur.find((s) => s.position === toIdx);
-            if (to) moveSlotRef.current(rack.id, fromId, to.id);
+          if (from && from.space !== toSpace) {
+            // moveSlot handles both empty (direct relocate) and occupied (insert) targets.
+            moveSlotRef.current(rack.id, fromId, toSpace);
           }
         }
         dragSlotIdRef.current = null;
@@ -697,7 +775,7 @@ export function RackScreen() {
               ? 'Drag to a target slot, release to drop'
               : selectedSlotId
               ? 'Tap destination slot to move here (or hold any slot to drag)'
-              : '× clears board · Tap to select+move · Hold to drag · − removes row'}
+              : '🔴× clears board · ⚫× deletes slot · + adds slot · Hold to drag · − removes row'}
           </Text>
         </View>
       )}
@@ -709,30 +787,49 @@ export function RackScreen() {
               steal the in-progress touch from the slot's TouchableOpacity right
               after long-press flips dragSlotIdRef.current to true. */}
           <View ref={gridContainerRef} collapsable={false} {...overlayPan.panHandlers}>
-            {Array.from({ length: Math.ceil(slots.length / COLS) }, (_, row) => (
+            {Array.from({ length: Math.ceil(totalSpaces / COLS) }, (_, row) => (
               <View key={row} style={styles.gridRow}>
-                {slots.slice(row * COLS, row * COLS + COLS).map((slot) => (
-                  <GridSlot
-                    key={slot.id}
-                    slot={slot}
-                    size={size}
-                    isEditing={isEditing}
-                    isSelected={slot.id === selectedSlotId}
-                    isDragging={slot.id === dragSlotId}
-                    isHoverTarget={
-                      dragSlotId !== null && slot.id !== dragSlotId && slot.position === hoverIndex
-                    }
-                    hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
-                    visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
-                    onAssign={(s) => handleAssign(selectedRack.id, s)}
-                    onClear={(s) => clearSlot(selectedRack.id, s.id)}
-                    onRemoveSlot={(s) => handleRemoveSlot(selectedRack.id, s)}
-                    onTap={handleSlotTap}
-                    onInfo={handleSlotInfo}
-                    onOpenUrl={handleOpenUrl}
-                    onLongPressDrag={handleLongPressDrag}
-                  />
-                ))}
+                {Array.from({ length: COLS }, (_, col) => {
+                  const space = row * COLS + col;
+                  if (space >= totalSpaces) return null;
+                  const slot = slots.find((s) => s.space === space);
+                  if (slot) {
+                    return (
+                      <GridSlot
+                        key={slot.id}
+                        slot={slot}
+                        size={size}
+                        isEditing={isEditing}
+                        isSelected={slot.id === selectedSlotId}
+                        isDragging={slot.id === dragSlotId}
+                        isHoverTarget={
+                          dragSlotId !== null && slot.id !== dragSlotId && slot.space === hoverIndex
+                        }
+                        hasSavedUrl={!!slot.motherboard && !!savedUrls[slot.motherboard.id]}
+                        visitStatus={slot.motherboard ? visitRecord[slot.motherboard.id] : undefined}
+                        onAssign={(s) => handleAssign(selectedRack.id, s)}
+                        onClear={(s) => clearSlot(selectedRack.id, s.id)}
+                        onDeleteSlot={(s) => handleDeleteSlot(selectedRack.id, s)}
+                        onTap={handleSlotTap}
+                        onInfo={handleSlotInfo}
+                        onOpenUrl={handleOpenUrl}
+                        onLongPressDrag={handleLongPressDrag}
+                      />
+                    );
+                  }
+                  return (
+                    <EmptySpace
+                      key={`empty-${space}`}
+                      space={space}
+                      size={size}
+                      isEditing={isEditing}
+                      isHoverTarget={dragSlotId !== null && hoverIndex === space}
+                      hasSelection={!!selectedSlotId}
+                      onAddSlot={(s) => handleAddSlotAtSpace(selectedRack.id, s)}
+                      onTapWithSelection={handleEmptySpaceTap}
+                    />
+                  );
+                })}
                 {isEditing && (
                   <TouchableOpacity
                     style={styles.rowDelBtn}
@@ -991,6 +1088,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
   },
   slotRemoveBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
+  slotDeleteBadge: {
+    position: 'absolute', top: -6, left: -6,
+    backgroundColor: '#8E8E93', borderRadius: 11,
+    width: 22, height: 22,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, shadowRadius: 2, elevation: 3,
+  },
+  slotDeleteBadgeTxt: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 18 },
   slotNum: { fontSize: 10, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
   slotModel: { fontSize: 11, fontWeight: '600', color: '#111', flex: 1, marginTop: 2 },
   slotBrand: { fontSize: 9, color: '#8E8E93', fontWeight: '500', marginTop: 1 },
@@ -1012,6 +1119,21 @@ const styles = StyleSheet.create({
 
   emptySlotHint: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptySlotTxt: { fontSize: 20, color: '#ccc' },
+
+  // Space with no slot framework — drawn as a dashed placeholder.
+  emptySpace: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderStyle: 'dashed',
+    padding: 8,
+    justifyContent: 'flex-start',
+  },
+  emptySpaceNum: { fontSize: 10, color: '#C7C7CC', fontWeight: '700' },
+  emptySpaceTap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptySpaceAddTxt: { fontSize: 32, color: '#C7C7CC', fontWeight: '300' },
+  emptySpaceTapTxt: { fontSize: 22, color: '#34C759', fontWeight: '600' },
 
   selectedBadge: {
     position: 'absolute', top: 4, right: 4,

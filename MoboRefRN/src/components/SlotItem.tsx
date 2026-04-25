@@ -19,7 +19,7 @@ export function SlotItem({ slot, onAssign, onClear, onOpenUrl }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.position}>Slot {slot.position + 1}</Text>
+      <Text style={styles.position}>Slot {slot.space + 1}</Text>
       {board ? (
         <View style={styles.boardInfo}>
           <Text style={styles.modelName} numberOfLines={2}>
