@@ -75,8 +75,8 @@ function InfoCard({
         <TouchableOpacity
           style={ic.openBtn}
           activeOpacity={0.85}
-          // Close the sheet first so the browser/alert isn't stacked on top of it.
-          onPress={() => { onClose(); setTimeout(() => onOpenUrl(slot), 180); }}
+          // Close the sheet first; wait for the slide-out animation (~350ms) before opening browser.
+          onPress={() => { onClose(); setTimeout(() => onOpenUrl(slot), 450); }}
         >
           <Text style={ic.openBtnTxt}>🔗  Open Spec Page</Text>
         </TouchableOpacity>
@@ -330,6 +330,8 @@ export function RackScreen() {
   const slotsRef = useRef<RackSlot[]>([]);
   const selectedRackRef = useRef<Rack | null>(null);
   const moveSlotRef = useRef(moveSlot);
+  const containerRef = useRef<View>(null);
+  const containerOriginRef = useRef({ x: 0, y: 0 });
   const gridContainerRef = useRef<View>(null);
   const gridOriginRef = useRef({ x: 0, y: 0 });
   const szRef = useRef(0);
@@ -491,22 +493,28 @@ export function RackScreen() {
   // Long-press → enter drag mode. We measure the grid container in window
   // coordinates so subsequent finger positions can be mapped to slot indices.
   const handleLongPressDrag = useCallback((slot: RackSlot) => {
-    gridContainerRef.current?.measureInWindow((gx, gy) => {
-      const sz = slotSize(true);
-      szRef.current = sz;
-      gridOriginRef.current = { x: gx, y: gy };
+    // Measure container first so we can convert window coords → container coords.
+    containerRef.current?.measureInWindow((cx, cy) => {
+      containerOriginRef.current = { x: cx, y: cy };
+      gridContainerRef.current?.measureInWindow((gx, gy) => {
+        const sz = slotSize(true);
+        szRef.current = sz;
+        gridOriginRef.current = { x: gx, y: gy };
 
-      const col = slot.position % COLS;
-      const row = Math.floor(slot.position / COLS);
-      const x = gx + PADDING + col * (sz + GAP);
-      const y = gy + PADDING + row * (sz + GAP);
+        const col = slot.position % COLS;
+        const row = Math.floor(slot.position / COLS);
+        // Subtract container origin: dragPos is relative to the dragOverlay which
+        // sits at position:absolute top/left 0 within the container View.
+        const x = gx + PADDING + col * (sz + GAP) - cx;
+        const y = gy + PADDING + row * (sz + GAP) - cy;
 
-      dragSlotIdRef.current = slot.id;
-      hoverIndexRef.current = slot.position;
-      setDragSlotId(slot.id);
-      setDragPos({ x, y });
-      setHoverIndex(slot.position);
-      setSelectedSlotId(null);
+        dragSlotIdRef.current = slot.id;
+        hoverIndexRef.current = slot.position;
+        setDragSlotId(slot.id);
+        setDragPos({ x, y });
+        setHoverIndex(slot.position);
+        setSelectedSlotId(null);
+      });
     });
   }, []);
 
@@ -520,14 +528,15 @@ export function RackScreen() {
       onMoveShouldSetPanResponder: () => !!dragSlotIdRef.current,
       onMoveShouldSetPanResponderCapture: () => !!dragSlotIdRef.current,
       onPanResponderGrant: (e) => {
-        // Sync the floating slot to the actual finger position the moment we take over.
         const sz = szRef.current;
         const { pageX, pageY } = e.nativeEvent;
-        setDragPos({ x: pageX - sz / 2, y: pageY - sz / 2 });
+        const { x: cx, y: cy } = containerOriginRef.current;
+        setDragPos({ x: pageX - sz / 2 - cx, y: pageY - sz / 2 - cy });
       },
       onPanResponderMove: (_, { moveX, moveY }) => {
         const sz = szRef.current;
-        setDragPos({ x: moveX - sz / 2, y: moveY - sz / 2 });
+        const { x: cx, y: cy } = containerOriginRef.current;
+        setDragPos({ x: moveX - sz / 2 - cx, y: moveY - sz / 2 - cy });
 
         const { x: gx, y: gy } = gridOriginRef.current;
         const relX = moveX - gx - PADDING;
@@ -572,7 +581,7 @@ export function RackScreen() {
   const draggedSlot = dragSlotId ? slots.find((s) => s.id === dragSlotId) ?? null : null;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={containerRef}>
       <LoadingOverlay visible={isResolvingUrl} message="Finding official page..." />
 
       {/* Rack selector strip */}
@@ -821,14 +830,16 @@ export function RackScreen() {
         />
       )}
 
-      {/* Drag overlay (only mounted while dragging) */}
-      {dragSlotId !== null && draggedSlot && (
-        <View style={styles.dragOverlay} {...overlayPan.panHandlers}>
+      {/* Drag overlay — always mounted so onMoveShouldSetPanResponderCapture
+          can steal the ongoing touch right after long-press fires. The overlay
+          is visually empty and pointer-transparent while dragSlotId is null. */}
+      <View style={styles.dragOverlay} {...overlayPan.panHandlers}>
+        {dragSlotId !== null && draggedSlot && (
           <View style={[styles.dragFloatPos, { left: dragPos.x, top: dragPos.y }]}>
             <FloatingSlot slot={draggedSlot} sz={size} />
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 }
