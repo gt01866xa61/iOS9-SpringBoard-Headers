@@ -38,8 +38,16 @@ export function buildDirectProductUrl(board: Motherboard): string {
       return `https://www.gigabyte.com/Motherboard/${slug}${hasRev ? '' : '-rev-10'}`;
     }
 
-    case 'MSI':
+    case 'MSI': {
+      // Boards from A520/B450 era and older are commonly discontinued on MSI's site —
+      // product pages 404. Fall back to Google with site: constraint instead.
+      const MSI_OLD = new Set(['A520','B450','X470','B350','A320','H310','B365','B360','H370']);
+      if (MSI_OLD.has(board.chipset.toUpperCase())) {
+        const q = `"${model}" site:msi.com`;
+        return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+      }
       return `https://www.msi.com/Motherboard/${hyphenate(model)}`;
+    }
 
     case 'ASUS': {
       // Old-style "(WIFI)" with parens → URL uses "wi-fi" (hyphenated).
