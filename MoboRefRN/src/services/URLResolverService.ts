@@ -69,7 +69,13 @@ export function buildDirectProductUrl(board: Motherboard): string {
 
     case 'ASRock': {
       const arch = getArch(board.chipset);
-      return `https://www.asrock.com/mb/${arch}/${encodeURIComponent(model)}/index.asp`;
+      // Strip DDR-gen suffixes (D4/D5) — ASRock omits these from URL slugs
+      // Normalize leading all-caps product names (e.g. "PHANTOM GAMING" → "Phantom Gaming")
+      const slug = model
+        .replace(/\s+D[45]\b/i, '')
+        .replace(/\/D[45]\b/i, '')
+        .replace(/\b[A-Z]{4,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+      return `https://www.asrock.com/mb/${arch}/${encodeURIComponent(slug)}/index.asp`;
     }
 
     default: {

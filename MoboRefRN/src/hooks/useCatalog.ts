@@ -27,8 +27,8 @@ function chipsetNum(cs: string): number {
 
 export function useCatalog() {
   const { customBoards, addCustomBoard, removeCustomBoard } = useCustomBoards();
-  const { savedUrls, saveUrl, removeUrl: removeSavedUrl } = useSavedUrls();
-  const { visitRecord, markConfirmed, markWrong, clearStatus } = useVisitedBoards();
+  const { savedUrls, saveUrl, removeUrl: removeSavedUrl, clearAll: clearAllUrls } = useSavedUrls();
+  const { visitRecord, markConfirmed, markWrong, clearStatus, clearAll: clearAllVisited } = useVisitedBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
@@ -94,7 +94,8 @@ export function useCatalog() {
     async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string; isFirstVisit: boolean }> => {
       setIsResolvingUrl(true);
       const hasSaved = !!savedUrls[board.id];
-      const isFirstVisit = !visitRecord[board.id];
+      // Re-ask on every visit when wrong (URL needs fixing); first-time for unconfirmed
+      const isFirstVisit = !visitRecord[board.id] || visitRecord[board.id] === 'wrong';
       let openedUrl = '';
       try {
         openedUrl = savedUrls[board.id] ?? (await resolve(board));
@@ -127,6 +128,11 @@ export function useCatalog() {
     [removeSavedUrl, clearStatus]
   );
 
+  const clearAllState = useCallback(() => {
+    clearAllUrls();
+    clearAllVisited();
+  }, [clearAllUrls, clearAllVisited]);
+
   return {
     brands,
     chipsets,
@@ -153,6 +159,7 @@ export function useCatalog() {
     markConfirmed,
     markWrong,
     resetBoardState,
+    clearAllState,
     clearNewBoardsCount,
   };
 }

@@ -284,18 +284,25 @@ export function RackScreen() {
         setSaveModalTarget(board);
         return;
       }
+      // Re-ask on first visit OR when WRONG (re-confirm every time)
       if (!board.isCustom && result.isFirstVisit) {
         Alert.alert(
           board.fullModelName,
           'Did the URL open the correct tech spec page?',
           [
-            { text: 'Yes, correct ✓', onPress: () => markConfirmed(board.id) },
+            {
+              text: 'Yes, correct ✓',
+              onPress: () => {
+                markConfirmed(board.id);
+                saveUrl(board.id, result.openedUrl);
+              },
+            },
             { text: 'No, URL was wrong ✗', style: 'destructive', onPress: () => markWrong(board.id) },
           ]
         );
       }
     },
-    [openOfficialPage, markConfirmed, markWrong]
+    [openOfficialPage, markConfirmed, markWrong, saveUrl]
   );
 
   const handleSlotTap = useCallback(

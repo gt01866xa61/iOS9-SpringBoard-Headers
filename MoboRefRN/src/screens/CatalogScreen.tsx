@@ -30,7 +30,6 @@ export function CatalogScreen() {
     version,
     newBoardsCount,
     error,
-    loadData,
     refresh,
     openOfficialPage,
     setSelectedBrand,
@@ -42,6 +41,7 @@ export function CatalogScreen() {
     markConfirmed,
     markWrong,
     resetBoardState,
+    clearAllState,
     clearNewBoardsCount,
   } = useCatalog();
 
@@ -50,7 +50,6 @@ export function CatalogScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // AND search: every space-separated token must appear in model+chipset+brand.
-  // Combined with existing brand/chipset pills (already applied in filteredModels).
   const searchedModels = useMemo(() => {
     const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
     if (tokens.length === 0) return filteredModels;
@@ -60,6 +59,12 @@ export function CatalogScreen() {
     });
   }, [filteredModels, searchQuery]);
 
+  // In edit mode, only show boards that have any label state.
+  const displayedModels = useMemo(() => {
+    if (!editMode) return searchedModels;
+    return searchedModels.filter((b) => !!savedUrls[b.id] || !!visitRecord[b.id]);
+  }, [editMode, searchedModels, savedUrls, visitRecord]);
+
   useEffect(() => {
     if (newBoardsCount > 0) {
       const t = setTimeout(() => clearNewBoardsCount(), 3000);
@@ -67,13 +72,35 @@ export function CatalogScreen() {
     }
   }, [newBoardsCount, clearNewBoardsCount]);
 
-  // Edit-mode visibility: any board with saved URL OR a visit status.
-  // Auto-exit when the last managed state is cleared.
   const hasAnyState = Object.keys(savedUrls).length > 0 || Object.keys(visitRecord).length > 0;
 
   useEffect(() => {
     if (!hasAnyState) setEditMode(false);
   }, [hasAnyState]);
+
+  const handleClearAll = () => {
+    const total = Object.keys(savedUrls).length + Object.keys(visitRecord).length;
+    Alert.alert(
+      'Clear All Status',
+      `Remove ALL saved URLs and visit marks for every board (${total} record${total !== 1 ? 's' : ''})?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Everything',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Confirm Delete',
+              'All board status data will be permanently deleted. This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete All', style: 'destructive', onPress: clearAllState },
+              ]
+            ),
+        },
+      ]
+    );
+  };
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
@@ -85,7 +112,7 @@ export function CatalogScreen() {
       return;
     }
 
-    // Non-custom, first visit: ask whether the auto-generated URL was correct
+    // Non-custom: ask on first visit OR when WRONG (re-confirm every time)
     if (!item.isCustom && result.isFirstVisit) {
       Alert.alert(
         item.fullModelName,
@@ -93,7 +120,10 @@ export function CatalogScreen() {
         [
           {
             text: 'Yes, correct ✓',
-            onPress: () => markConfirmed(item.id),
+            onPress: () => {
+              markConfirmed(item.id);
+              saveUrl(item.id, result.openedUrl); // auto-save so future taps skip the dialog
+            },
           },
           {
             text: 'No, URL was wrong ✗',
@@ -154,13 +184,13 @@ export function CatalogScreen() {
           <Text style={styles.brand}>{item.brand}</Text>
         </View>
 
-        {editMode && (hasSaved || visitStatus) ? (
+        {editMode ? (
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={() =>
               Alert.alert(
                 'Reset status?',
-                `Clear all marks for "${item.fullModelName}"? Saved URL and visit confirmation will be removed; the board returns to "not yet confirmed".`,
+                `Clear all marks for "${item.fullModelName}"? Saved URL and visit confirmation will be removed.`,
                 [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Reset', style: 'destructive', onPress: () => resetBoardState(item.id) },
@@ -244,11 +274,13 @@ export function CatalogScreen() {
       {/* Count + controls */}
       <View style={styles.countRow}>
         <View style={styles.countLeft}>
-          <Text style={styles.count}>{searchedModels.length} models</Text>
-          {version ? <Text style={styles.versionTxt}>· {version}</Text> : null}
+          <Text style={styles.count}>
+            {editMode ? `${displayedModels.length} labeled` : `${searchedModels.length} models`}
+          </Text>
+          {!editMode && version ? <Text style={styles.versionTxt}>· {version}</Text> : null}
         </View>
         <View style={styles.countRowRight}>
-          {(selectedBrand !== 'ALL' || selectedChipset !== 'ALL' || searchQuery !== '') && (
+          {!editMode && (selectedBrand !== 'ALL' || selectedChipset !== 'ALL' || searchQuery !== '') && (
             <TouchableOpacity onPress={() => { setSelectedBrand('ALL'); setSelectedChipset('ALL'); setSearchQuery(''); }}>
               <Text style={styles.clearFilter}>Clear ×</Text>
             </TouchableOpacity>
@@ -260,11 +292,13 @@ export function CatalogScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={refresh} disabled={isRefreshing}>
-            <Text style={[styles.refreshBtn, isRefreshing && styles.refreshBtnActive]}>
-              {isRefreshing ? '⟳' : '↻'}
-            </Text>
-          </TouchableOpacity>
+          {!editMode && (
+            <TouchableOpacity onPress={refresh} disabled={isRefreshing}>
+              <Text style={[styles.refreshBtn, isRefreshing && styles.refreshBtnActive]}>
+                {isRefreshing ? '⟳' : '↻'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -277,20 +311,29 @@ export function CatalogScreen() {
       {editMode && (
         <View style={styles.editBanner}>
           <Text style={styles.editBannerTxt}>
-            Tap "Remove" to reset a board's status (clears URL + SEEN/WRONG/FIXED marks)
+            Tap "Remove" to reset a board's status (clears URL + all marks)
           </Text>
+          <TouchableOpacity onPress={handleClearAll} style={styles.clearAllBtn}>
+            <Text style={styles.clearAllBtnTxt}>Clear All</Text>
+          </TouchableOpacity>
         </View>
       )}
 
       <FlatList
-        data={searchedModels}
+        data={displayedModels}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} />}
-        ListEmptyComponent={!isLoading ? <Text style={styles.emptyText}>No models found.</Text> : null}
+        ListEmptyComponent={
+          !isLoading ? (
+            <Text style={styles.emptyText}>
+              {editMode ? 'No boards with status labels.' : 'No models found.'}
+            </Text>
+          ) : null
+        }
       />
 
       <SaveUrlModal
@@ -362,8 +405,15 @@ const styles = StyleSheet.create({
   editBanner: {
     marginHorizontal: 16, marginBottom: 4,
     backgroundColor: '#FFF9E6', borderRadius: 8, padding: 10,
+    gap: 8,
   },
   editBannerTxt: { fontSize: 11, color: '#856404', textAlign: 'center' },
+  clearAllBtn: {
+    alignSelf: 'center',
+    backgroundColor: '#FEE2E2', borderRadius: 6,
+    paddingHorizontal: 14, paddingVertical: 5,
+  },
+  clearAllBtnTxt: { fontSize: 12, color: '#DC2626', fontWeight: '700' },
 
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   row: {

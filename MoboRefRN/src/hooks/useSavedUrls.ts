@@ -38,5 +38,10 @@ export function useSavedUrls() {
     broadcast(next);
   }, []);
 
-  return { savedUrls, saveUrl, removeUrl };
+  const clearAll = useCallback(async () => {
+    await SUS.clearAllUrls();
+    broadcast({});
+  }, []);
+
+  return { savedUrls, saveUrl, removeUrl, clearAll };
 }

@@ -18,3 +18,7 @@ export async function removeUrl(boardId: string): Promise<void> {
   delete current[boardId];
   await AsyncStorage.setItem(KEY, JSON.stringify(current));
 }
+
+export async function clearAllUrls(): Promise<void> {
+  await AsyncStorage.removeItem(KEY);
+}
