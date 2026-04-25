@@ -33,15 +33,24 @@ export function buildDirectProductUrl(board: Motherboard): string {
 
     case 'ASUS': {
       const slug = hyphenate(model).toLowerCase();
+
+      // ROG products live on a separate subdomain (rog.asus.com), NOT www.asus.com
+      // e.g. https://rog.asus.com/motherboards/rog-maximus/rog-maximus-z890-apex/
+      if (/^rog\s+strix/i.test(model))     return `https://rog.asus.com/motherboards/rog-strix/${slug}/`;
+      if (/^rog\s+maximus/i.test(model))   return `https://rog.asus.com/motherboards/rog-maximus/${slug}/`;
+      if (/^rog\s+crosshair/i.test(model)) return `https://rog.asus.com/motherboards/rog-crosshair/${slug}/`;
+      if (/^rog/i.test(model))             return `https://rog.asus.com/motherboards/${slug}/`;
+
+      // CSM (commercial-stable) variants live under /csm/ regardless of PRIME/PRO prefix
+      if (/-csm$/i.test(model)) {
+        return `https://www.asus.com/motherboards-components/motherboards/csm/${slug}/`;
+      }
+
       const category =
-          /^rog\s+strix/i.test(model)    ? 'rog-strix'
-        : /^rog\s+maximus/i.test(model)  ? 'rog-maximus'
-        : /^rog\s+crosshair/i.test(model) ? 'rog-crosshair'
-        : /^rog/i.test(model)            ? 'rog'
-        : /^tuf/i.test(model)            ? 'tuf-gaming'
-        : /^proart/i.test(model)         ? 'proart'
-        : /^prime/i.test(model)          ? 'prime'
-        :                                  'all-series';
+          /^tuf/i.test(model)    ? 'tuf-gaming'
+        : /^proart/i.test(model) ? 'proart'
+        : /^prime/i.test(model)  ? 'prime'
+        :                          'all-series';
       return `https://www.asus.com/motherboards-components/motherboards/${category}/${slug}/`;
     }
 
