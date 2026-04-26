@@ -6,7 +6,6 @@ const RAW_URL =
   'https://raw.githubusercontent.com/gt01866xa61/iOS9-SpringBoard-Headers/claude/build-iphone-app-3HKVs/MoboRefRN/boards.json';
 
 const CACHE_KEY = 'remote_boards_v2';
-const TTL = 24 * 60 * 60 * 1000; // 24h
 
 interface BoardsFile {
   version: string;
@@ -42,15 +41,9 @@ async function writeCache(data: BoardsFile): Promise<void> {
 
 export async function fetchBoards(forceRefresh = false): Promise<FetchResult> {
   const cache = await readCache();
-  const now = Date.now();
-  const isFresh = cache && now - cache.fetchedAt < TTL;
-
-  if (!forceRefresh && isFresh && cache) {
-    return { boards: cache.data.boards, version: cache.data.version, newCount: 0, fromCache: true };
-  }
 
   try {
-    const res = await axios.get<BoardsFile>(RAW_URL, { timeout: 10000 });
+    const res = await axios.get<BoardsFile>(RAW_URL, { timeout: 5000 });
     const fresh = res.data;
     const prevCount = cache?.data.boards.length ?? 0;
     const newCount = Math.max(0, fresh.boards.length - prevCount);
