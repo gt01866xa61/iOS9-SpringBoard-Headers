@@ -376,37 +376,43 @@
       "id": "gigabyte::x870e::x870e_aorus_master",
       "brand": "GIGABYTE",
       "chipset": "X870E",
-      "fullModelName": "X870E AORUS MASTER"
+      "fullModelName": "X870E AORUS MASTER",
+      "officialSupportUrl": "https://www.gigabyte.com/Motherboard/X870E-AORUS-MASTER"
     },
     {
       "id": "gigabyte::x870e::x870e_aorus_xtreme_ai_top",
       "brand": "GIGABYTE",
       "chipset": "X870E",
-      "fullModelName": "X870E AORUS XTREME AI TOP"
+      "fullModelName": "X870E AORUS XTREME AI TOP",
+      "officialSupportUrl": "https://www.gigabyte.com/Motherboard/X870E-AORUS-XTREME-AI-TOP-rev-1x"
     },
     {
       "id": "gigabyte::x870::x870_aorus_elite_wifi7",
       "brand": "GIGABYTE",
       "chipset": "X870",
-      "fullModelName": "X870 AORUS ELITE WIFI7"
+      "fullModelName": "X870 AORUS ELITE WIFI7",
+      "officialSupportUrl": "https://www.gigabyte.com/Motherboard/X870-AORUS-ELITE-WIFI7-rev-10-11"
     },
     {
       "id": "gigabyte::x870::x870_gaming_x_wifi7",
       "brand": "GIGABYTE",
       "chipset": "X870",
-      "fullModelName": "X870 GAMING X WIFI7"
+      "fullModelName": "X870 GAMING X WIFI7",
+      "officialSupportUrl": "https://www.gigabyte.com/Motherboard/X870-GAMING-X-WIFI7-rev-1x"
     },
     {
       "id": "msi::x870e::meg_x870e_ace",
       "brand": "MSI",
       "chipset": "X870E",
-      "fullModelName": "MEG X870E ACE"
+      "fullModelName": "MEG X870E ACE MAX",
+      "officialSupportUrl": "https://www.msi.com/Motherboard/MEG-X870E-ACE-MAX"
     },
     {
       "id": "msi::x870e::meg_x870e_godlike",
       "brand": "MSI",
       "chipset": "X870E",
-      "fullModelName": "MEG X870E GODLIKE"
+      "fullModelName": "MEG X870E GODLIKE",
+      "officialSupportUrl": "https://www.msi.com/Motherboard/MEG-X870E-GODLIKE"
     },
     {
       "id": "msi::x870e::mpg_x870e_carbon_wifi",
