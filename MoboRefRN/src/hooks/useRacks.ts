@@ -97,13 +97,7 @@ export function useRacks() {
       persist(
         racks.map((r) => {
           if (r.id !== rackId) return r;
-          const slot = r.slots.find((s) => s.id === slotId);
-          if (!slot) return r;
-          const S = slot.space;
-          const remaining = r.slots
-            .filter((s) => s.id !== slotId)
-            .map((s) => (s.space > S ? { ...s, space: s.space - 1 } : s));
-          return { ...r, slots: remaining };
+          return { ...r, slots: r.slots.filter((s) => s.id !== slotId) };
         })
       );
     },

@@ -529,7 +529,7 @@ export function RackScreen() {
     (rackId: string, slot: RackSlot) => {
       Alert.alert(
         'Delete Slot',
-        `Delete slot at space ${slot.space + 1}?\nLater slots will shift forward.`,
+        `Remove slot at position ${slot.space + 1}?\nThe space will remain empty.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Delete', style: 'destructive', onPress: () => deleteSlot(rackId, slot.id) },
