@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +16,6 @@ import { useVisitedBoards } from '../hooks/useVisitedBoards';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Browser'>;
 
-// Ensure the URL has an http/https scheme so WebView doesn't treat it as a file path.
 function normalizeUrl(raw: string): string {
   const t = raw.trim();
   return /^https?:\/\//i.test(t) ? t : `https://${t}`;
@@ -29,6 +29,8 @@ export function BrowserScreen({ route, navigation }: Props) {
   const webViewRef = useRef<WebView>(null);
 
   const safeUrl = normalizeUrl(initialUrl);
+  // sourceUrl drives the WebView; updating it causes the WebView to navigate.
+  const [sourceUrl, setSourceUrl] = useState(safeUrl);
   const [currentUrl, setCurrentUrl] = useState(safeUrl);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,17 +66,31 @@ export function BrowserScreen({ route, navigation }: Props) {
     setSaved(true);
   }, [board.id, currentUrl, saveUrl, markConfirmed]);
 
+  const handleManualUrl = useCallback(() => {
+    Alert.prompt(
+      '手動輸入網址',
+      '貼上或輸入規格頁面的完整 URL',
+      (text) => {
+        if (!text?.trim()) return;
+        const url = normalizeUrl(text.trim());
+        setSourceUrl(url);
+        setCurrentUrl(url);
+        setLoadError(null);
+        setIsLoading(true);
+      },
+      'plain-text',
+      currentUrl,
+    );
+  }, [currentUrl]);
+
   const displayHost = (() => {
-    try {
-      return new URL(currentUrl).hostname;
-    } catch {
-      return currentUrl;
-    }
+    try { return new URL(currentUrl).hostname; }
+    catch { return currentUrl; }
   })();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Top bar */}
+      {/* Top bar — sits ABOVE the overlay layer so it's always tappable */}
       <View style={styles.bar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn} hitSlop={8}>
           <Text style={styles.closeTxt}>✕</Text>
@@ -100,43 +116,48 @@ export function BrowserScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      {/* WebView */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: safeUrl }}
-        onNavigationStateChange={handleNavigationStateChange}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={() => setIsLoading(false)}
-        onError={handleError}
-        onHttpError={handleHttpError}
-        style={styles.webview}
-      />
+      {/* WebView area — overlays live here, never extend into the top bar */}
+      <View style={styles.webviewArea}>
+        <WebView
+          ref={webViewRef}
+          source={{ uri: sourceUrl }}
+          onNavigationStateChange={handleNavigationStateChange}
+          onLoadStart={handleLoadStart}
+          onLoadEnd={() => setIsLoading(false)}
+          onError={handleError}
+          onHttpError={handleHttpError}
+          style={styles.webview}
+        />
 
-      {isLoading && !loadError && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      )}
-
-      {loadError && (
-        <View style={styles.errorOverlay}>
-          <Text style={styles.errorIcon}>🌐</Text>
-          <Text style={styles.errorTitle}>無法載入頁面</Text>
-          <Text style={styles.errorDesc}>{loadError}</Text>
-          <Text style={styles.errorUrl} numberOfLines={2}>{currentUrl}</Text>
-          <View style={styles.errorBtns}>
-            <TouchableOpacity
-              style={styles.retryBtn}
-              onPress={() => { setLoadError(null); setIsLoading(true); webViewRef.current?.reload(); }}
-            >
-              <Text style={styles.retryTxt}>重試</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Text style={styles.backTxt}>關閉</Text>
-            </TouchableOpacity>
+        {isLoading && !loadError && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#007AFF" />
           </View>
-        </View>
-      )}
+        )}
+
+        {loadError && (
+          <View style={styles.errorOverlay}>
+            <Text style={styles.errorIcon}>🌐</Text>
+            <Text style={styles.errorTitle}>無法載入頁面</Text>
+            <Text style={styles.errorDesc}>{loadError}</Text>
+            <Text style={styles.errorUrl} numberOfLines={2}>{currentUrl}</Text>
+            <View style={styles.errorBtns}>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={() => { setLoadError(null); setIsLoading(true); webViewRef.current?.reload(); }}
+              >
+                <Text style={styles.retryTxt}>重試</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.manualBtn} onPress={handleManualUrl}>
+                <Text style={styles.manualTxt}>手動輸入</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                <Text style={styles.backTxt}>關閉</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -156,27 +177,17 @@ const styles = StyleSheet.create({
   },
   closeBtn: { padding: 4 },
   closeTxt: { fontSize: 16, color: '#8E8E93', fontWeight: '600' },
-
   urlTxt: { flex: 1, fontSize: 13, color: '#3C3C43', textAlign: 'center' },
 
-  stopBtn: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+  stopBtn: { backgroundColor: '#F2F2F7', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   stopTxt: { fontSize: 12, color: '#FF3B30', fontWeight: '700' },
 
-  saveBtn: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+  saveBtn: { backgroundColor: '#007AFF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   saveBtnDone: { backgroundColor: '#34C759' },
   saveTxt: { fontSize: 12, color: '#fff', fontWeight: '700' },
   saveTxtDone: { color: '#fff' },
 
+  webviewArea: { flex: 1 },
   webview: { flex: 1 },
 
   loadingOverlay: {
@@ -191,16 +202,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F2F2F7',
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
     gap: 10,
   },
   errorIcon: { fontSize: 48 },
   errorTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E' },
   errorDesc: { fontSize: 13, color: '#8E8E93', textAlign: 'center' },
   errorUrl: { fontSize: 11, color: '#AEAEB2', textAlign: 'center', marginTop: 4 },
-  errorBtns: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  retryBtn: { backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
-  retryTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  backBtn: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
-  backTxt: { color: '#1C1C1E', fontWeight: '600', fontSize: 15 },
+  errorBtns: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  retryBtn: { backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  retryTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  manualBtn: { backgroundColor: '#FF9F0A', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  manualTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  backBtn: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  backTxt: { color: '#1C1C1E', fontWeight: '600', fontSize: 14 },
 });
