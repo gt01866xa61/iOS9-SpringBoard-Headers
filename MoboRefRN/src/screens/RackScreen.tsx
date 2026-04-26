@@ -1149,7 +1149,7 @@ const styles = StyleSheet.create({
   assignTitle: { fontSize: 18, fontWeight: '700' },
   cancelLink: { color: '#007AFF', fontSize: 16 },
   searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
-  searchInput: { backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
+  searchInput: { flex: 1, backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
   swipeContainer: { overflow: 'hidden' },
   deleteAction: {
     position: 'absolute', right: 0, top: 0, bottom: 0,
