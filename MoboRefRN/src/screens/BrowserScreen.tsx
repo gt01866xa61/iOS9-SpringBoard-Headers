@@ -15,6 +15,12 @@ import { useVisitedBoards } from '../hooks/useVisitedBoards';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Browser'>;
 
+// Ensure the URL has an http/https scheme so WebView doesn't treat it as a file path.
+function normalizeUrl(raw: string): string {
+  const t = raw.trim();
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+}
+
 export function BrowserScreen({ route, navigation }: Props) {
   const { board, initialUrl } = route.params;
   const insets = useSafeAreaInsets();
@@ -22,7 +28,8 @@ export function BrowserScreen({ route, navigation }: Props) {
   const { markConfirmed } = useVisitedBoards();
   const webViewRef = useRef<WebView>(null);
 
-  const [currentUrl, setCurrentUrl] = useState(initialUrl);
+  const safeUrl = normalizeUrl(initialUrl);
+  const [currentUrl, setCurrentUrl] = useState(safeUrl);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -44,6 +51,11 @@ export function BrowserScreen({ route, navigation }: Props) {
   const handleHttpError = useCallback((e: WebViewHttpErrorEvent) => {
     setIsLoading(false);
     setLoadError(`頁面回傳錯誤 (HTTP ${e.nativeEvent.statusCode})`);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    webViewRef.current?.stopLoading();
+    setIsLoading(false);
   }, []);
 
   const handleSave = useCallback(() => {
@@ -70,22 +82,28 @@ export function BrowserScreen({ route, navigation }: Props) {
 
         <Text style={styles.urlTxt} numberOfLines={1}>{displayHost}</Text>
 
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={saved}
-          style={[styles.saveBtn, saved && styles.saveBtnDone]}
-          hitSlop={8}
-        >
-          <Text style={[styles.saveTxt, saved && styles.saveTxtDone]}>
-            {saved ? '✓ Saved' : '📌 Save as Spec'}
-          </Text>
-        </TouchableOpacity>
+        {isLoading && !loadError ? (
+          <TouchableOpacity onPress={handleStop} style={styles.stopBtn} hitSlop={8}>
+            <Text style={styles.stopTxt}>⏹ 停止</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saved}
+            style={[styles.saveBtn, saved && styles.saveBtnDone]}
+            hitSlop={8}
+          >
+            <Text style={[styles.saveTxt, saved && styles.saveTxtDone]}>
+              {saved ? '✓ Saved' : '📌 Save as Spec'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* WebView */}
       <WebView
         ref={webViewRef}
-        source={{ uri: initialUrl }}
+        source={{ uri: safeUrl }}
         onNavigationStateChange={handleNavigationStateChange}
         onLoadStart={handleLoadStart}
         onLoadEnd={() => setIsLoading(false)}
@@ -140,6 +158,14 @@ const styles = StyleSheet.create({
   closeTxt: { fontSize: 16, color: '#8E8E93', fontWeight: '600' },
 
   urlTxt: { flex: 1, fontSize: 13, color: '#3C3C43', textAlign: 'center' },
+
+  stopBtn: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  stopTxt: { fontSize: 12, color: '#FF3B30', fontWeight: '700' },
 
   saveBtn: {
     backgroundColor: '#007AFF',
