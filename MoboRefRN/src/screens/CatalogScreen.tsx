@@ -404,10 +404,10 @@ const styles = StyleSheet.create({
   brand: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
 
   chipsetBadge: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
-  chipsetBadgeIntel: { backgroundColor: '#EFF6FF' },
+  chipsetBadgeIntel: { backgroundColor: '#BFDBFE' },
   chipsetBadgeAmd: { backgroundColor: '#F8CBAD' },
   chipsetText: { fontSize: 12, fontWeight: '700' },
-  chipsetTextIntel: { color: '#2563EB' },
+  chipsetTextIntel: { color: '#1E3A8A' },
   chipsetTextAmd: { color: '#8B3A1B' },
 
   deleteBtn: { backgroundColor: '#FEE2E2', borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5 },

@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
-  slotChipsetIntel: { color: '#2563EB', backgroundColor: '#EFF6FF' },
+  slotChipsetIntel: { color: '#1E3A8A', backgroundColor: '#BFDBFE' },
   slotChipsetAmd: { color: '#8B3A1B', backgroundColor: '#F8CBAD' },
   slotBtns: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   btnPage: { backgroundColor: '#007AFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
