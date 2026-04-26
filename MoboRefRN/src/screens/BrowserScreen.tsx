@@ -13,6 +13,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useSavedUrls } from '../hooks/useSavedUrls';
 import { useVisitedBoards } from '../hooks/useVisitedBoards';
+import { buildBrandSearchUrl } from '../services/URLResolverService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Browser'>;
 
@@ -25,7 +26,7 @@ export function BrowserScreen({ route, navigation }: Props) {
   const { board, initialUrl } = route.params;
   const insets = useSafeAreaInsets();
   const { saveUrl } = useSavedUrls();
-  const { markConfirmed } = useVisitedBoards();
+  const { markConfirmed, markWrong } = useVisitedBoards();
   const webViewRef = useRef<WebView>(null);
 
   const safeUrl = normalizeUrl(initialUrl);
@@ -35,6 +36,9 @@ export function BrowserScreen({ route, navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // True when user acknowledged the original URL was wrong (via Google or manual input).
+  // Causes 📌 to write FIXED badge instead of SEEN.
+  const [isWrongPath, setIsWrongPath] = useState(false);
 
   const handleNavigationStateChange = useCallback((state: WebViewNavigation) => {
     if (state.url) setCurrentUrl(state.url);
@@ -62,9 +66,23 @@ export function BrowserScreen({ route, navigation }: Props) {
 
   const handleSave = useCallback(() => {
     saveUrl(board.id, currentUrl);
-    markConfirmed(board.id);
+    if (isWrongPath) {
+      markWrong(board.id);    // hasSaved=true + wrong → FIXED badge
+    } else {
+      markConfirmed(board.id); // hasSaved=true + confirmed → SEEN badge
+    }
     setSaved(true);
-  }, [board.id, currentUrl, saveUrl, markConfirmed]);
+  }, [board.id, currentUrl, isWrongPath, saveUrl, markWrong, markConfirmed]);
+
+  // Auto-search using board model name + brand site — user taps nothing except the button.
+  const handleGoogleSearch = useCallback(() => {
+    const url = buildBrandSearchUrl(board);
+    setIsWrongPath(true);
+    setSourceUrl(url);
+    setCurrentUrl(url);
+    setLoadError(null);
+    setIsLoading(true);
+  }, [board]);
 
   const handleManualUrl = useCallback(() => {
     Alert.prompt(
@@ -73,6 +91,7 @@ export function BrowserScreen({ route, navigation }: Props) {
       (text) => {
         if (!text?.trim()) return;
         const url = normalizeUrl(text.trim());
+        setIsWrongPath(true);
         setSourceUrl(url);
         setCurrentUrl(url);
         setLoadError(null);
@@ -148,6 +167,9 @@ export function BrowserScreen({ route, navigation }: Props) {
               >
                 <Text style={styles.retryTxt}>重試</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSearch}>
+                <Text style={styles.googleTxt}>🔍 Google 搜尋</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.manualBtn} onPress={handleManualUrl}>
                 <Text style={styles.manualTxt}>手動輸入</Text>
               </TouchableOpacity>
@@ -212,6 +234,8 @@ const styles = StyleSheet.create({
   errorBtns: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' },
   retryBtn: { backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
   retryTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  googleBtn: { backgroundColor: '#34C759', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  googleTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
   manualBtn: { backgroundColor: '#FF9F0A', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
   manualTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
   backBtn: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
