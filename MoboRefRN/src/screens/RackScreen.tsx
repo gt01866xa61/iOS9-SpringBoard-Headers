@@ -98,12 +98,12 @@ function InfoCard({
 }
 
 // Drag visual: a copy of the slot that follows the finger.
-function FloatingSlot({ slot, sz }: { slot: RackSlot; sz: number }) {
+function FloatingSlot({ slot, sz, slotIndex }: { slot: RackSlot; sz: number; slotIndex: number }) {
   const board = slot.motherboard;
   const isIntel = board ? isIntelChipset(board.chipset) : true;
   return (
     <View style={[styles.slot, styles.floatSlot, { width: sz, height: sz }]}>
-      <Text style={styles.slotNum}>{slot.space + 1}</Text>
+      <Text style={styles.slotNum}>{slotIndex}</Text>
       {board ? (
         <>
           <Text style={styles.slotModel} numberOfLines={2}>{board.fullModelName}</Text>
@@ -149,7 +149,6 @@ function EmptySpace({
         isHoverTarget && styles.slotHover,
       ]}
     >
-      <Text style={styles.emptySpaceNum}>{space + 1}</Text>
       {isEditing ? (
         hasSelection ? (
           <TouchableOpacity
@@ -189,6 +188,7 @@ function GridSlot({
   onInfo,
   onOpenUrl,
   onLongPressDrag,
+  slotIndex,
 }: {
   slot: RackSlot;
   size: number;
@@ -205,6 +205,7 @@ function GridSlot({
   onInfo: (s: RackSlot) => void;
   onOpenUrl: (s: RackSlot) => void;
   onLongPressDrag: (s: RackSlot) => void;
+  slotIndex: number;
 }) {
   const board = slot.motherboard;
   const chipsetIsIntel = board ? isIntelChipset(board.chipset) : true;
@@ -227,7 +228,7 @@ function GridSlot({
           onLongPress={() => onLongPressDrag(slot)}
           delayLongPress={350}
         >
-          <Text style={styles.slotNum}>{slot.space + 1}</Text>
+          <Text style={styles.slotNum}>{slotIndex}</Text>
           {board ? (
             <>
               <Text style={styles.slotModel} numberOfLines={3}>{board.fullModelName}</Text>
@@ -285,7 +286,7 @@ function GridSlot({
         activeOpacity={board ? 0.75 : 1}
         onPress={() => (board ? onInfo(slot) : onAssign(slot))}
       >
-        <Text style={styles.slotNum}>{slot.space + 1}</Text>
+        <Text style={styles.slotNum}>{slotIndex}</Text>
         {board ? (
           <>
             <Text style={styles.slotModel} numberOfLines={1}>{board.fullModelName}</Text>
@@ -431,6 +432,11 @@ export function RackScreen() {
     () => [...(selectedRack?.slots ?? [])].sort((a, b) => a.space - b.space),
     [selectedRack]
   );
+  const slotIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    slots.forEach((s, i) => map.set(s.id, i + 1));
+    return map;
+  }, [slots]);
   const totalSpaces = selectedRack?.totalSpaces ?? 0;
 
   // Keep refs in sync so the once-created PanResponder always sees fresh values.
@@ -777,6 +783,7 @@ export function RackScreen() {
                         onInfo={handleSlotInfo}
                         onOpenUrl={handleOpenUrl}
                         onLongPressDrag={handleLongPressDrag}
+                        slotIndex={slotIndexMap.get(slot.id) ?? slot.space + 1}
                       />
                     );
                   }
@@ -976,7 +983,7 @@ export function RackScreen() {
       {dragSlotId !== null && draggedSlot && (
         <View style={styles.dragOverlay} pointerEvents="none">
           <View style={[styles.dragFloatPos, { left: dragPos.x, top: dragPos.y }]}>
-            <FloatingSlot slot={draggedSlot} sz={size} />
+            <FloatingSlot slot={draggedSlot} sz={size} slotIndex={slotIndexMap.get(draggedSlot.id) ?? draggedSlot.space + 1} />
           </View>
         </View>
       )}
