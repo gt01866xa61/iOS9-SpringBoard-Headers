@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import * as WebBrowser from 'expo-web-browser';
 import { Motherboard } from '../models/Motherboard';
 import { STATIC_BOARDS } from '../data/StaticBoardData';
 import { resolve } from '../services/URLResolverService';
@@ -31,8 +30,6 @@ export function useCatalog() {
   const { visitRecord, markConfirmed, markWrong, clearStatus, clearAll: clearAllVisited } = useVisitedBoards();
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedChipset, setSelectedChipset] = useState<string>('ALL');
-  const [isResolvingUrl, setIsResolvingUrl] = useState(false);
-
   // Remote boards state
   const [remoteBoards, setRemoteBoards] = useState<Motherboard[]>(STATIC_BOARDS);
   const [version, setVersion] = useState<string>('');
@@ -90,25 +87,11 @@ export function useCatalog() {
     });
   }, [allBoards, selectedBrand, selectedChipset]);
 
-  const openOfficialPage = useCallback(
-    async (board: Motherboard): Promise<{ shouldPrompt: boolean; openedUrl: string; isFirstVisit: boolean }> => {
-      const hasSaved = !!savedUrls[board.id];
-      // Re-ask on every visit when wrong (URL needs fixing); first-time for unconfirmed
-      const isFirstVisit = !visitRecord[board.id] || visitRecord[board.id] === 'wrong';
-
-      // Resolve the URL synchronously (string manipulation only) — no overlay needed.
-      // CRITICAL: do NOT show the LoadingOverlay Modal while calling openBrowserAsync;
-      // iOS rejects stacking two modals, so the browser never opens and the spinner
-      // hangs forever. Resolve fast, then let the browser's own sheet take over.
-      const openedUrl = savedUrls[board.id] ?? (await resolve(board));
-      await WebBrowser.openBrowserAsync(openedUrl, {
-        dismissButtonStyle: 'done',
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-      });
-
-      return { shouldPrompt: !hasSaved, openedUrl, isFirstVisit };
+  const resolvePageUrl = useCallback(
+    async (board: Motherboard): Promise<string> => {
+      return savedUrls[board.id] ?? (await resolve(board));
     },
-    [savedUrls, visitRecord]
+    [savedUrls]
   );
 
   const selectBrand = useCallback((brand: string) => {
@@ -140,14 +123,13 @@ export function useCatalog() {
     selectedBrand,
     selectedChipset,
     isLoading: false,
-    isResolvingUrl,
     isRefreshing,
     version,
     newBoardsCount,
     error,
     loadData,
     refresh,
-    openOfficialPage,
+    resolvePageUrl,
     setSelectedBrand: selectBrand,
     setSelectedChipset,
     addCustomBoard,

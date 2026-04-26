@@ -20,14 +20,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useRacks } from '../hooks/useRacks';
 import { useCatalog } from '../hooks/useCatalog';
-import { LoadingOverlay } from '../components/LoadingOverlay';
 import { AddCustomBoardModal } from '../components/AddCustomBoardModal';
 import { SaveUrlModal } from '../components/SaveUrlModal';
 import { BoardBadges } from '../components/BoardBadges';
 import { Rack, RackSlot } from '../models/Rack';
 import { Motherboard } from '../models/Motherboard';
 import { VisitStatus } from '../hooks/useVisitedBoards';
-import { isIntelChipset } from '../services/URLResolverService';
+import { isIntelChipset, resolve } from '../services/URLResolverService';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 
 const COLS = 3;
 const GAP = 8;
@@ -379,10 +380,10 @@ function SwipeableCustomRow({
 }
 
 export function RackScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { racks, addRack, removeRack, assignMotherboard, clearSlot, expandRack, removeRow, deleteSlot, addSlotAtSpace, moveSlot } = useRacks();
-  const { filteredModels, isResolvingUrl, openOfficialPage, addCustomBoard, removeCustomBoard, savedUrls, saveUrl, visitRecord, markConfirmed, markWrong } = useCatalog();
+  const { filteredModels, addCustomBoard, removeCustomBoard, savedUrls, saveUrl, visitRecord } = useCatalog();
 
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [addRackVisible, setAddRackVisible] = useState(false);
@@ -501,50 +502,14 @@ export function RackScreen() {
     setPendingSlot(null);
   };
 
-  // Guard: prevent two concurrent openOfficialPage calls — iOS rejects stacking
-  // multiple SFSafariViewController presentations and both would hang.
-  const isBrowserOpenRef = useRef(false);
-
   const handleOpenUrl = useCallback(
     async (slot: RackSlot) => {
       if (!slot.motherboard) return;
-      if (isBrowserOpenRef.current) return;
-      isBrowserOpenRef.current = true;
       const board = slot.motherboard;
-      let result: Awaited<ReturnType<typeof openOfficialPage>>;
-      try {
-        result = await openOfficialPage(board);
-      } finally {
-        isBrowserOpenRef.current = false;
-      }
-      if (board.isCustom && result.shouldPrompt) {
-        setSaveModalTarget(board);
-        return;
-      }
-      // Re-ask on first visit OR when WRONG (re-confirm every time)
-      if (!board.isCustom && result.isFirstVisit) {
-        Alert.alert(
-          board.fullModelName,
-          'Did the URL open the correct tech spec page?',
-          [
-            {
-              text: 'Yes, correct ✓',
-              onPress: () => {
-                markConfirmed(board.id);
-                // Opened via Google search — ask user to paste the real URL.
-                if (result.openedUrl.includes('google.com')) {
-                  setSaveModalTarget(board);
-                } else {
-                  saveUrl(board.id, result.openedUrl);
-                }
-              },
-            },
-            { text: 'No, URL was wrong ✗', style: 'destructive', onPress: () => markWrong(board.id) },
-          ]
-        );
-      }
+      const url = savedUrls[board.id] ?? (await resolve(board));
+      navigation.navigate('Browser', { board, initialUrl: url });
     },
-    [openOfficialPage, markConfirmed, markWrong, saveUrl]
+    [navigation, savedUrls]
   );
 
   // Keep the forward-declared ref in sync so handleInfoDismiss reads the
@@ -734,8 +699,6 @@ export function RackScreen() {
 
   return (
     <View style={styles.container} ref={containerRef}>
-      <LoadingOverlay visible={isResolvingUrl} message="Finding official page..." />
-
       {/* Rack selector strip */}
       <ScrollView
         horizontal

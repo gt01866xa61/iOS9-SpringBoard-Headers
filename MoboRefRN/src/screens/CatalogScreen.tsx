@@ -11,14 +11,18 @@ import {
   ScrollView,
   Keyboard,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCatalog } from '../hooks/useCatalog';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { SaveUrlModal } from '../components/SaveUrlModal';
 import { BoardBadges } from '../components/BoardBadges';
 import { Motherboard } from '../models/Motherboard';
 import { isIntelChipset } from '../services/URLResolverService';
+import { RootStackParamList } from '../navigation/types';
 
 export function CatalogScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     brands,
     chipsets,
@@ -26,21 +30,18 @@ export function CatalogScreen() {
     selectedBrand,
     selectedChipset,
     isLoading,
-    isResolvingUrl,
     isRefreshing,
     version,
     newBoardsCount,
     error,
     refresh,
-    openOfficialPage,
+    resolvePageUrl,
     setSelectedBrand,
     setSelectedChipset,
     removeCustomBoard,
     savedUrls,
     saveUrl,
     visitRecord,
-    markConfirmed,
-    markWrong,
     resetBoardState,
     clearAllState,
     clearNewBoardsCount,
@@ -105,41 +106,8 @@ export function CatalogScreen() {
 
   const handlePress = async (item: Motherboard) => {
     if (editMode) return;
-    const result = await openOfficialPage(item);
-
-    // Custom boards: auto-prompt to save the verified URL (their URLs are always guessed)
-    if (item.isCustom && result.shouldPrompt) {
-      setEditUrlTarget(item);
-      return;
-    }
-
-    // Non-custom: ask on first visit OR when WRONG (re-confirm every time)
-    if (!item.isCustom && result.isFirstVisit) {
-      Alert.alert(
-        item.fullModelName,
-        'Did the URL open the correct tech spec page?',
-        [
-          {
-            text: 'Yes, correct ✓',
-            onPress: () => {
-              markConfirmed(item.id);
-              // If the opened URL was a Google search, we don't know the real URL yet —
-              // ask the user to paste it in manually via SaveUrlModal.
-              if (result.openedUrl.includes('google.com')) {
-                setEditUrlTarget(item);
-              } else {
-                saveUrl(item.id, result.openedUrl);
-              }
-            },
-          },
-          {
-            text: 'No, URL was wrong ✗',
-            style: 'destructive',
-            onPress: () => markWrong(item.id),
-          },
-        ]
-      );
-    }
+    const url = await resolvePageUrl(item);
+    navigation.navigate('Browser', { board: item, initialUrl: url });
   };
 
   const handleLongPress = (item: Motherboard) => {
@@ -221,7 +189,6 @@ export function CatalogScreen() {
   return (
     <View style={styles.container}>
       <LoadingOverlay visible={isLoading} message="Loading catalog..." />
-      <LoadingOverlay visible={isResolvingUrl} message="Opening page..." />
 
       {/* Brand pills */}
       <View style={styles.filterSection}>
