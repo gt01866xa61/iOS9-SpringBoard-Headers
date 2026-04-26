@@ -883,13 +883,17 @@ export function RackScreen() {
               placeholder="Search (use spaces for AND, e.g. '650 wifi')"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
               autoCorrect={false}
               autoFocus={false}
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
               blurOnSubmit
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchClearBtn} hitSlop={8}>
+                <Text style={styles.searchClearTxt}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <FlatList
             data={searchedModels}
@@ -1148,8 +1152,10 @@ const styles = StyleSheet.create({
   },
   assignTitle: { fontSize: 18, fontWeight: '700' },
   cancelLink: { color: '#007AFF', fontSize: 16 },
-  searchBox: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
+  searchBox: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#eee' },
   searchInput: { flex: 1, backgroundColor: '#f2f2f7', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
+  searchClearBtn: { marginLeft: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#D1D1D6', justifyContent: 'center', alignItems: 'center' },
+  searchClearTxt: { fontSize: 12, color: '#fff', fontWeight: '700' },
   swipeContainer: { overflow: 'hidden' },
   deleteAction: {
     position: 'absolute', right: 0, top: 0, bottom: 0,
