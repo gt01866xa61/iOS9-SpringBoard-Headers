@@ -31,12 +31,6 @@ export function buildDirectProductUrl(board: Motherboard): string {
 
   switch (board.brand) {
     case 'GIGABYTE': {
-      // Z890 product pages consistently 404 with the slug pattern — use Google instead.
-      const GIGABYTE_GOOGLE_FALLBACK = new Set(['Z890']);
-      if (GIGABYTE_GOOGLE_FALLBACK.has(board.chipset.toUpperCase())) {
-        const q = `"${model}" site:gigabyte.com`;
-        return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-      }
       const slug = hyphenate(model);
       // GIGABYTE URLs always include a revision suffix.
       // If not in the model name, default to rev 1.0 (the most common first revision).
