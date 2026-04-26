@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import WebView, { WebViewNavigation } from 'react-native-webview';
+import WebView, { WebViewNavigation, WebViewErrorEvent, WebViewHttpErrorEvent } from 'react-native-webview';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useSavedUrls } from '../hooks/useSavedUrls';
@@ -20,13 +20,30 @@ export function BrowserScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { saveUrl } = useSavedUrls();
   const { markConfirmed } = useVisitedBoards();
+  const webViewRef = useRef<WebView>(null);
 
   const [currentUrl, setCurrentUrl] = useState(initialUrl);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const handleNavigationStateChange = useCallback((state: WebViewNavigation) => {
     if (state.url) setCurrentUrl(state.url);
+  }, []);
+
+  const handleLoadStart = useCallback(() => {
+    setIsLoading(true);
+    setLoadError(null);
+  }, []);
+
+  const handleError = useCallback((e: WebViewErrorEvent) => {
+    setIsLoading(false);
+    setLoadError(e.nativeEvent.description || '無法載入頁面');
+  }, []);
+
+  const handleHttpError = useCallback((e: WebViewHttpErrorEvent) => {
+    setIsLoading(false);
+    setLoadError(`頁面回傳錯誤 (HTTP ${e.nativeEvent.statusCode})`);
   }, []);
 
   const handleSave = useCallback(() => {
@@ -67,16 +84,39 @@ export function BrowserScreen({ route, navigation }: Props) {
 
       {/* WebView */}
       <WebView
+        ref={webViewRef}
         source={{ uri: initialUrl }}
         onNavigationStateChange={handleNavigationStateChange}
-        onLoadStart={() => setIsLoading(true)}
+        onLoadStart={handleLoadStart}
         onLoadEnd={() => setIsLoading(false)}
+        onError={handleError}
+        onHttpError={handleHttpError}
         style={styles.webview}
       />
 
-      {isLoading && (
+      {isLoading && !loadError && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
+
+      {loadError && (
+        <View style={styles.errorOverlay}>
+          <Text style={styles.errorIcon}>🌐</Text>
+          <Text style={styles.errorTitle}>無法載入頁面</Text>
+          <Text style={styles.errorDesc}>{loadError}</Text>
+          <Text style={styles.errorUrl} numberOfLines={2}>{currentUrl}</Text>
+          <View style={styles.errorBtns}>
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={() => { setLoadError(null); setIsLoading(true); webViewRef.current?.reload(); }}
+            >
+              <Text style={styles.retryTxt}>重試</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.backTxt}>關閉</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -119,4 +159,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
+
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 32,
+    gap: 10,
+  },
+  errorIcon: { fontSize: 48 },
+  errorTitle: { fontSize: 18, fontWeight: '700', color: '#1C1C1E' },
+  errorDesc: { fontSize: 13, color: '#8E8E93', textAlign: 'center' },
+  errorUrl: { fontSize: 11, color: '#AEAEB2', textAlign: 'center', marginTop: 4 },
+  errorBtns: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  retryBtn: { backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
+  retryTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  backBtn: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
+  backTxt: { color: '#1C1C1E', fontWeight: '600', fontSize: 15 },
 });
