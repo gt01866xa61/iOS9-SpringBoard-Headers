@@ -61,8 +61,13 @@ export function buildDirectProductUrl(board: Motherboard): string {
       // ROG boards fall back to Google site:rog.asus.com (1 extra click, but
       // always reaches the right page; user can long-press to save direct URL).
       if (/^rog/i.test(model)) {
-        const NEWEST = new Set(['Z890','B860','H810','X870E','X870','B850','B840']);
-        if (NEWEST.has(board.chipset.toUpperCase())) {
+        // rog.asus.com uses the same /motherboards/<series>/<slug>/ structure
+        // for current-gen Intel 800/700 and AMD 800/600 series.
+        const DIRECT_URL_OK = new Set([
+          'Z890','B860','H810','Z790','B760','H770',
+          'X870E','X870','B850','B840','X670E','X670','B650E','B650',
+        ]);
+        if (DIRECT_URL_OK.has(board.chipset.toUpperCase())) {
           const subdir =
               /^rog\s+strix/i.test(model)     ? 'rog-strix'
             : /^rog\s+maximus/i.test(model)   ? 'rog-maximus'
