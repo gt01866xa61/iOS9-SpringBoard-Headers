@@ -73,7 +73,20 @@ export function buildDirectProductUrl(board: Motherboard): string {
             : /^rog\s+maximus/i.test(model)   ? 'rog-maximus'
             : /^rog\s+crosshair/i.test(model) ? 'rog-crosshair'
             :                                   '';
-          const path = subdir ? `${subdir}/${slug}` : slug;
+
+          // Z790-era ROG product pages append "-model" to base SKU slugs.
+          // Variant SKUs (II / ENCORE / BTF / DARK / EVA / GLACIAL / WIFI 7)
+          // already carry their own distinguishing suffix and skip "-model".
+          const Z790_ERA = new Set(['Z790','B760','H770']);
+          let finalSlug = slug;
+          if (Z790_ERA.has(board.chipset.toUpperCase())) {
+            const isVariant =
+              /\b(ii|iii|encore|btf|dark|eva|glacial)\b/i.test(model) ||
+              /wifi\s*7\b/i.test(model);
+            if (!isVariant) finalSlug = `${slug}-model`;
+          }
+
+          const path = subdir ? `${subdir}/${finalSlug}` : finalSlug;
           return `https://rog.asus.com/motherboards/${path}/`;
         }
         const q = `"${model}" site:rog.asus.com`;
