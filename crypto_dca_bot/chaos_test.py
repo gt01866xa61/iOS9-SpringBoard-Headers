@@ -1,21 +1,27 @@
-"""Chaos / failure-injection tests for Phase 1 and Phase 2.
+"""Chaos / failure-injection tests for Phase 1 + Phase 2 + Phase 3.
 
-Verifies that the safety nets in notifier and exchange_api hold under bad
-conditions. Run after test_phase1.py and test_phase2.py succeed.
+Verifies that the safety nets in notifier / exchange_api / trader hold
+under bad conditions. Run after test_phase{1,2,3}.py succeed.
 
 Tests automated here:
   Phase 1 (notifier):
-    [1/7] Bad token        -> notifier.send() returns False, no crash
-    [2/7] Bad chat_id      -> Telegram "chat not found", returns False
-    [3/7] Missing CHAT_ID  -> TelegramNotifier() raises RuntimeError
+    [1/11] Bad token        -> notifier.send() returns False, no crash
+    [2/11] Bad chat_id      -> Telegram "chat not found", returns False
+    [3/11] Missing CHAT_ID  -> TelegramNotifier() raises RuntimeError
 
   Phase 2 (exchange_api):
-    [4/7] Bad API key      -> get_balance() raises ccxt.AuthenticationError
-    [5/7] Bad symbol       -> get_price() returns None, NO Telegram sent
-    [6/7] No-key balance   -> get_balance() raises RuntimeError
+    [4/11] Bad API key      -> get_balance() raises ccxt.AuthenticationError
+    [5/11] Bad symbol       -> get_price() returns None, NO Telegram sent
+    [6/11] No-key balance   -> get_balance() raises RuntimeError
+
+  Phase 3 (trader, all local checks — no real Binance calls):
+    [8/11]  Symbol off whitelist -> place_market_buy raises ValueError
+    [9/11]  Below min notional   -> place_market_buy raises ValueError
+    [10/11] Above max single buy -> place_market_buy raises ValueError
+    [11/11] Daily cap exceeded   -> ValueError + state file unchanged + cleaned
 
 Semi-manual:
-    [7/7] Wrong IP whitelist -> SKIP unless you've prepared per the README.
+    [7/11] Wrong IP whitelist -> SKIP unless you've prepared per the README.
                                 When prepared, raises ccxt.AuthenticationError
                                 (Binance code -2015; verified empirically).
 
@@ -25,13 +31,16 @@ Manual (not part of this script):
 
 Usage:
     python chaos_test.py
-    python chaos_test.py --run-wrong-ip   # opt-in to [7/7] (still needs setup)
+    python chaos_test.py --run-wrong-ip   # opt-in to [7/11] (still needs setup)
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
@@ -42,6 +51,12 @@ import ccxt  # noqa: E402  (must load env first)
 from exchange_api import BinanceExchange  # noqa: E402
 from logger import get_logger  # noqa: E402
 from notifier import TelegramNotifier  # noqa: E402
+from trader import (  # noqa: E402
+    BinanceTrader,
+    DAILY_CAP_USDT,
+    MAX_SINGLE_BUY_USDT,
+    STATE_FILE,
+)
 
 log = get_logger("dca_bot.chaos")
 
@@ -73,7 +88,7 @@ def _expect_raises(label: str, exc_type: type, fn) -> str:
 
 
 def chaos_bad_token() -> str:
-    print("[1/7] Bad token (Telegram should return 401/404, log + return False)")
+    print("[1/11] Bad token (Telegram should return 401/404, log + return False)")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "1942404023")
     notifier = TelegramNotifier(
         token="0000000000:ChAoS_invalid_token_for_testing_xxxxx",
@@ -84,7 +99,7 @@ def chaos_bad_token() -> str:
 
 
 def chaos_bad_chat_id() -> str:
-    print("[2/7] Bad chat_id (Telegram should return 400 'chat not found')")
+    print("[2/11] Bad chat_id (Telegram should return 400 'chat not found')")
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         print("  SKIP  TELEGRAM_BOT_TOKEN not set in .env")
@@ -95,7 +110,7 @@ def chaos_bad_chat_id() -> str:
 
 
 def chaos_missing_chat_id_env() -> str:
-    print("[3/7] Missing CHAT_ID env (TelegramNotifier should raise RuntimeError)")
+    print("[3/11] Missing CHAT_ID env (TelegramNotifier should raise RuntimeError)")
     saved = os.environ.pop("TELEGRAM_CHAT_ID", None)
     try:
         return _expect_raises(
@@ -109,7 +124,7 @@ def chaos_missing_chat_id_env() -> str:
 
 
 def chaos_bad_api_key() -> str:
-    print("[4/7] Bad API key (get_balance should raise ccxt.AuthenticationError)")
+    print("[4/11] Bad API key (get_balance should raise ccxt.AuthenticationError)")
     return _expect_raises(
         "bad API key",
         ccxt.AuthenticationError,
@@ -122,7 +137,7 @@ def chaos_bad_api_key() -> str:
 
 
 def chaos_bad_symbol() -> str:
-    print("[5/7] Bad symbol (get_price should return None, NO Telegram sent)")
+    print("[5/11] Bad symbol (get_price should return None, NO Telegram sent)")
     saved_key = os.environ.pop("BINANCE_API_KEY", None)
     saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
     try:
@@ -141,7 +156,7 @@ def chaos_bad_symbol() -> str:
 
 
 def chaos_no_key_get_balance() -> str:
-    print("[6/7] No-key get_balance (should raise RuntimeError)")
+    print("[6/11] No-key get_balance (should raise RuntimeError)")
     saved_key = os.environ.pop("BINANCE_API_KEY", None)
     saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
     try:
@@ -158,7 +173,7 @@ def chaos_no_key_get_balance() -> str:
 
 
 def chaos_wrong_ip_whitelist(opted_in: bool) -> str:
-    print("[7/7] Wrong IP whitelist (semi-manual)")
+    print("[7/11] Wrong IP whitelist (semi-manual)")
     if not opted_in:
         print("  SKIP  半手動測試。請參考 README 的「Wrong IP 半手動測試流程」段：")
         print("        1. 先到 Binance 後台把 API key 白名單暫改成 1.2.3.4")
@@ -172,11 +187,92 @@ def chaos_wrong_ip_whitelist(opted_in: bool) -> str:
     )
 
 
+def _without_env_keys(fn):
+    """Helper: pop BINANCE_* env keys, run fn, restore. Mirrors [5/11] [6/11]."""
+    saved_key = os.environ.pop("BINANCE_API_KEY", None)
+    saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
+    try:
+        return fn()
+    finally:
+        if saved_key is not None:
+            os.environ["BINANCE_API_KEY"] = saved_key
+        if saved_secret is not None:
+            os.environ["BINANCE_API_SECRET"] = saved_secret
+
+
+def chaos_symbol_not_in_whitelist() -> str:
+    print("[8/11] Symbol off whitelist (place_market_buy should raise ValueError)")
+    return _without_env_keys(lambda: _expect_raises(
+        "symbol not in whitelist",
+        ValueError,
+        lambda: BinanceTrader(notify_on_error=False).place_market_buy(
+            "DOGE/USDT", 11.0,
+        ),
+    ))
+
+
+def chaos_below_min_notional() -> str:
+    print("[9/11] Below min notional (place_market_buy should raise ValueError)")
+    return _without_env_keys(lambda: _expect_raises(
+        "below min notional",
+        ValueError,
+        lambda: BinanceTrader(notify_on_error=False).place_market_buy(
+            "BTC/USDT", 1.0,
+        ),
+    ))
+
+
+def chaos_exceed_max_single_buy() -> str:
+    print("[10/11] Above max single buy (place_market_buy should raise ValueError)")
+    return _without_env_keys(lambda: _expect_raises(
+        "exceed max single buy",
+        ValueError,
+        lambda: BinanceTrader(notify_on_error=False).place_market_buy(
+            "BTC/USDT", MAX_SINGLE_BUY_USDT + 5.0,
+        ),
+    ))
+
+
+def chaos_exceed_daily_cap() -> str:
+    print("[11/11] Daily cap exceeded (state should be untouched, file cleaned)")
+    today = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d")
+    pre_spent = DAILY_CAP_USDT - 1.0
+    pre_state = {"date": today, "spent_usdt": pre_spent}
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(pre_state), encoding="utf-8")
+    saved_key = os.environ.pop("BINANCE_API_KEY", None)
+    saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
+    try:
+        try:
+            BinanceTrader(notify_on_error=False).place_market_buy("BTC/USDT", 5.0)
+            print("  FAIL  daily cap: should have raised ValueError")
+            return _FAIL
+        except ValueError as exc:
+            if "daily cap exceeded" not in str(exc):
+                print(f"  FAIL  daily cap: wrong msg: {exc}")
+                return _FAIL
+            after = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            if float(after.get("spent_usdt", 0)) != pre_spent:
+                print(f"  FAIL  daily cap: state mutated to {after}")
+                return _FAIL
+            print(f"  PASS  daily cap: blocked, state preserved at {pre_spent}")
+            return _PASS
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FAIL  daily cap: unexpected {type(exc).__name__}: {exc}")
+            return _FAIL
+    finally:
+        STATE_FILE.unlink(missing_ok=True)
+        if saved_key is not None:
+            os.environ["BINANCE_API_KEY"] = saved_key
+        if saved_secret is not None:
+            os.environ["BINANCE_API_SECRET"] = saved_secret
+
+
 def main() -> int:
     opted_in_wrong_ip = "--run-wrong-ip" in sys.argv
 
     print("Chaos tests starting\n")
-    log.info("chaos_test starting (Phase 1 + Phase 2)")
+    log.info("chaos_test starting (Phase 1 + Phase 2 + Phase 3)")
 
     results = [
         chaos_bad_token(),
@@ -186,6 +282,10 @@ def main() -> int:
         chaos_bad_symbol(),
         chaos_no_key_get_balance(),
         chaos_wrong_ip_whitelist(opted_in_wrong_ip),
+        chaos_symbol_not_in_whitelist(),
+        chaos_below_min_notional(),
+        chaos_exceed_max_single_buy(),
+        chaos_exceed_daily_cap(),
     ]
 
     print()

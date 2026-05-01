@@ -44,6 +44,7 @@ class BinanceExchange:
             "options": {
                 "defaultType": "spot",
                 "adjustForTimeDifference": True,
+                "createMarketBuyOrderRequiresPrice": False,
             },
         })
 

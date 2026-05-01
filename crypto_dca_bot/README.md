@@ -8,8 +8,8 @@ Exchange: **Binance** (via `ccxt`). Notifications: **Telegram Bot**.
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
 | 1 | Logger + Telegram notifier bootstrap | ✅ Done |
-| 2 | `exchange_api.py` — ccxt price + balance (read-only) | ✅ Implemented — awaiting user validation |
-| 3 | `trader.py` — buy with safety checks | Pending |
+| 2 | `exchange_api.py` — ccxt price + balance (read-only) | ✅ Done |
+| 3 | `trader.py` — market buy with multi-layer safety + daily cap | ✅ Implemented — awaiting user validation |
 | 4 | `main.py` — schedule loop + high-water alerts | Pending |
 
 ## Phase 1 setup
@@ -130,13 +130,95 @@ be done by hand because it requires temporarily breaking the whitelist.
    ```bash
    python chaos_test.py --run-wrong-ip
    ```
-5. `[7/7]` should print `PASS wrong IP whitelist: raised AuthenticationError`.
+5. `[7/11]` should print `PASS wrong IP whitelist: raised AuthenticationError`.
 6. **Critical**: go back to Binance API Management and **restore the
    whitelist to your real IP**. Otherwise `test_phase2.py` and the
    future production bot will keep failing with `AuthenticationError`.
 
 > ⚠️ Don't skip step 6. Forgetting to restore the IP is the most common
 > way this test breaks future runs.
+
+## Phase 3 setup
+
+### 1. Upgrade your existing Binance API key (do NOT create a new one)
+
+Edit the `dca_bot_phase2_readonly` key (User Center → API Management →
+edit). Add **one** new permission on top of Reading:
+
+- ✅ Enable Reading (keep)
+- ✅ **Enable Spot & Margin Trading** (new)
+
+**Never enable**:
+- ❌ Enable Futures
+- ❌ Enable Withdrawals (never, ever — this would let a leaked key drain funds)
+- ❌ Permits Universal Transfer
+- ❌ Enable Internal Transfer
+
+**Keep the IP whitelist** — it is now your last line of defense against a
+leaked key actually placing orders. Optionally rename the key to
+`dca_bot_phase3_trade` as a visual reminder it has been upgraded. The
+secret stays the same; `.env` doesn't need editing.
+
+### 2. Fund USDT for testing
+
+Transfer ~30-50 USDT into Spot Wallet (validation buys 11 USDT, the rest
+gives the daily-cap mechanism room to breathe).
+
+### 3. Run Phase 3 validation (real $11 BTC purchase)
+
+```bash
+python test_phase3.py
+```
+
+#### Expected result
+
+- Terminal prints `Phase 3 驗證通過` and a fill summary line.
+- Telegram receives **two** messages:
+  - `📤 準備下單 11.00 USDT 買 BTC/USDT` (pre-trade audit)
+  - `✅ 成交 ... USDT → ... BTC @ ...` (post-trade)
+- `bot.log` contains `Pre-trade: ...` and `Order filled: ...` lines.
+- `state/daily_state.json` is created with `{"date": "<today>", "spent_usdt": ~11.0}`.
+- Binance backend Order History shows one FILLED market buy for BTC/USDT.
+
+### 4. Run Phase 3 chaos tests
+
+```bash
+python chaos_test.py
+```
+
+Expected: **10 passed, 0 failed, 1 skipped (total 11)**. The skip is
+`[7/11]` (semi-manual wrong-IP, same as Phase 2). New Phase 3 cases all
+fail-fast at local safety checks **without hitting Binance**:
+
+- `[8/11]` Symbol off whitelist → `ValueError`
+- `[9/11]` Below min notional → `ValueError`
+- `[10/11]` Above max single buy → `ValueError`
+- `[11/11]` Daily cap exceeded → `ValueError`, state file untouched + cleaned
+
+Telegram receives **no messages** during chaos. The state file does not
+remain after chaos exits (cleaned up by `[11/11]`'s `finally`).
+
+### Phase 3 safety knobs (in `trader.py`)
+
+| Constant | Default | Meaning |
+|---|---|---|
+| `SYMBOL_WHITELIST` | `{BTC/USDT, ETH/USDT}` | Only these symbols can be bought |
+| `DAILY_CAP_USDT` | `50.0` | Hard ceiling on total USDT spent per Asia/Taipei calendar day |
+| `MAX_SINGLE_BUY_USDT` | `25.0` | Hard ceiling on a single order |
+| `MIN_SINGLE_BUY_USDT` | `10.0` | Strategy floor; final min = `max(this, Binance min notional)` |
+| `BALANCE_SAFETY_MULTIPLIER` | `1.01` | Required balance = quote × this (1% buffer for fees + slippage) |
+
+The daily counter persists in `crypto_dca_bot/state/daily_state.json`,
+written atomically (tmp file + `os.replace`) so a process crash mid-write
+cannot corrupt it. Cross-day reset is keyed off Asia/Taipei date.
+
+### Single-process discipline
+
+Phase 3/4 assume **only one process touches `daily_state.json` at a time**.
+There is no file lock. If you accidentally run `test_phase3.py` while a
+Phase 4 cron tick is also placing an order, the daily cap can be bypassed
+once — bounded loss is `MAX_SINGLE_BUY_USDT` (25 USDT) for that single
+event. Phase 5 will add cross-platform locking if needed.
 
 ## Security
 
@@ -157,7 +239,11 @@ crypto_dca_bot/
 ├── logger.py          # rotating file + stdout logger (Asia/Taipei TZ)
 ├── notifier.py        # TelegramNotifier (token-redacted, lazy factory)
 ├── exchange_api.py    # BinanceExchange (ccxt; price + balance, read-only)
+├── trader.py          # BinanceTrader (market buy + safety + daily cap)
+├── state/             # runtime daily-cap counter (gitignored content)
+│   └── .gitkeep
 ├── test_phase1.py     # Phase 1 validation
 ├── test_phase2.py     # Phase 2 validation
-└── chaos_test.py      # 7 failure-injection tests (1 semi-manual)
+├── test_phase3.py     # Phase 3 validation (real $11 BTC buy)
+└── chaos_test.py      # 11 failure-injection tests (1 semi-manual)
 ```

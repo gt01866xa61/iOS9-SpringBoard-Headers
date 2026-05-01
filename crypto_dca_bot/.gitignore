@@ -6,3 +6,7 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# Phase 3 daily-cap state: track the directory but exclude runtime writes
+state/*
+!state/.gitkeep
