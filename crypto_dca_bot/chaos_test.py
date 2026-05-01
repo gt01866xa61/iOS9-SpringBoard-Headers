@@ -16,7 +16,8 @@ Tests automated here:
 
 Semi-manual:
     [7/7] Wrong IP whitelist -> SKIP unless you've prepared per the README.
-                                When prepared, raises ccxt.PermissionDenied.
+                                When prepared, raises ccxt.AuthenticationError
+                                (Binance code -2015; verified empirically).
 
 Manual (not part of this script):
   - Unplug network, run test_phase1.py: must log ERROR and exit cleanly.
@@ -122,13 +123,21 @@ def chaos_bad_api_key() -> str:
 
 def chaos_bad_symbol() -> str:
     print("[5/7] Bad symbol (get_price should return None, NO Telegram sent)")
-    exchange = BinanceExchange(notify_on_error=False)
-    result = exchange.get_price("FOOBAR/USDT")
-    if result is None:
-        print("  PASS  bad symbol: get_price() returned None")
-        return _PASS
-    print(f"  FAIL  bad symbol: expected None, got {result!r}")
-    return _FAIL
+    saved_key = os.environ.pop("BINANCE_API_KEY", None)
+    saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
+    try:
+        exchange = BinanceExchange(notify_on_error=False)
+        result = exchange.get_price("FOOBAR/USDT")
+        if result is None:
+            print("  PASS  bad symbol: get_price() returned None")
+            return _PASS
+        print(f"  FAIL  bad symbol: expected None, got {result!r}")
+        return _FAIL
+    finally:
+        if saved_key is not None:
+            os.environ["BINANCE_API_KEY"] = saved_key
+        if saved_secret is not None:
+            os.environ["BINANCE_API_SECRET"] = saved_secret
 
 
 def chaos_no_key_get_balance() -> str:
@@ -158,7 +167,7 @@ def chaos_wrong_ip_whitelist(opted_in: bool) -> str:
         return _SKIP
     return _expect_raises(
         "wrong IP whitelist",
-        ccxt.PermissionDenied,
+        ccxt.AuthenticationError,
         lambda: BinanceExchange(notify_on_error=False).get_balance("USDT"),
     )
 

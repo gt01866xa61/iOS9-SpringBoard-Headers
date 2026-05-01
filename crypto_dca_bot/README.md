@@ -114,8 +114,14 @@ receives **no messages** during chaos (all tests use `notify_on_error=False`).
 ### Wrong-IP semi-manual test flow `[7/7]`
 
 This verifies that an IP-whitelisted key correctly raises
-`ccxt.PermissionDenied` when called from a non-whitelisted IP. It must be
-done by hand because it requires temporarily breaking the whitelist.
+`ccxt.AuthenticationError` when called from a non-whitelisted IP. It must
+be done by hand because it requires temporarily breaking the whitelist.
+
+> Empirical note: Binance returns error code `-2015` ("Invalid API-key, IP,
+> or permissions for action") for IP whitelist violations, which `ccxt`
+> maps to `AuthenticationError` (not `PermissionDenied`). Both classes are
+> handled identically in `exchange_api._call` (log + notify + raise), so
+> the production safety net is unaffected.
 
 1. Go to Binance → API Management → edit your `dca_bot_phase2_readonly` key.
 2. **Change the IP whitelist to a fake IP** (e.g. `1.2.3.4`). Save.
@@ -124,10 +130,10 @@ done by hand because it requires temporarily breaking the whitelist.
    ```bash
    python chaos_test.py --run-wrong-ip
    ```
-5. `[7/7]` should print `PASS bad IP: raised PermissionDenied`.
+5. `[7/7]` should print `PASS wrong IP whitelist: raised AuthenticationError`.
 6. **Critical**: go back to Binance API Management and **restore the
    whitelist to your real IP**. Otherwise `test_phase2.py` and the
-   future production bot will keep failing with `PermissionDenied`.
+   future production bot will keep failing with `AuthenticationError`.
 
 > ⚠️ Don't skip step 6. Forgetting to restore the IP is the most common
 > way this test breaks future runs.
