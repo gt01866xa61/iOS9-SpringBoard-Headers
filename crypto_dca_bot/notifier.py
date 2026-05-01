@@ -33,25 +33,36 @@ class TelegramNotifier:
         payload = {
             "chat_id": self._chat_id,
             "text": f"[{level}] {timestamp}\n{message}",
-            "parse_mode": "HTML",
             "disable_web_page_preview": True,
         }
         url = _TELEGRAM_API.format(token=self._token)
         try:
             resp = requests.post(url, json=payload, timeout=_TIMEOUT_SECONDS)
-            resp.raise_for_status()
-            body = resp.json()
-            if not body.get("ok"):
-                self._log.error("Telegram API returned ok=false: %s", body)
-                return False
-            self._log.info("Telegram notification sent (level=%s)", level)
-            return True
         except requests.RequestException as exc:
-            self._log.error("Telegram notification failed: %s", exc)
+            safe = str(exc).replace(self._token, "[REDACTED]")
+            self._log.error("Telegram request failed: %s", safe)
             return False
-        except ValueError as exc:
-            self._log.error("Telegram response JSON decode failed: %s", exc)
+
+        try:
+            body = resp.json()
+        except ValueError:
+            self._log.error(
+                "Telegram returned non-JSON (HTTP %s): %s",
+                resp.status_code, resp.text[:300],
+            )
             return False
+
+        if not body.get("ok"):
+            self._log.error(
+                "Telegram API error (HTTP %s, code=%s): %s",
+                resp.status_code,
+                body.get("error_code"),
+                body.get("description"),
+            )
+            return False
+
+        self._log.info("Telegram notification sent (level=%s)", level)
+        return True
 
 
 _notifier: Optional[TelegramNotifier] = None
