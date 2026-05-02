@@ -236,7 +236,12 @@ def chaos_exceed_max_single_buy() -> str:
 def chaos_exceed_daily_cap() -> str:
     print("[11/11] Daily cap exceeded (state should be untouched, file cleaned)")
     today = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d")
-    pre_spent = DAILY_CAP_USDT - 1.0
+    # pre_spent + buy_amount must exceed DAILY_CAP_USDT to trigger step 5,
+    # AND buy_amount must be in [MIN_SINGLE_BUY_USDT, MAX_SINGLE_BUY_USDT]
+    # so step 2 doesn't reject it first. With DAILY_CAP=50, MIN_BUY=10,
+    # MAX_BUY=25: pre_spent=45 + buy=10 → 55 > 50 → step 5 fires correctly.
+    pre_spent = DAILY_CAP_USDT - 5.0
+    buy_amount = 10.0
     pre_state = {"date": today, "spent_usdt": pre_spent}
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATE_FILE.write_text(json.dumps(pre_state), encoding="utf-8")
@@ -244,7 +249,9 @@ def chaos_exceed_daily_cap() -> str:
     saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
     try:
         try:
-            BinanceTrader(notify_on_error=False).place_market_buy("BTC/USDT", 5.0)
+            BinanceTrader(notify_on_error=False).place_market_buy(
+                "BTC/USDT", buy_amount,
+            )
             print("  FAIL  daily cap: should have raised ValueError")
             return _FAIL
         except ValueError as exc:

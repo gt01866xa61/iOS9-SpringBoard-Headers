@@ -136,10 +136,25 @@ class BinanceTrader(BinanceExchange):
     def _get_min_notional(self, symbol: str) -> float:
         """Read MIN_NOTIONAL filter from Binance market info, fallback 5.0.
 
-        Narrow except: only catch data-shape exceptions. ccxt network/auth
-        errors propagate so the fail-loud path (Phase 2 design) still works
-        for IP-whitelist / auth issues here.
+        ccxt's `client.market(symbol)` is a local lookup that requires
+        markets to be loaded — `load_markets()` does NOT happen automatically
+        here (only `fetch_ticker` / `fetch_balance` etc. trigger it
+        internally). Route the load through `self._call` so AuthenticationError
+        / PermissionDenied propagate fail-loud while transient errors
+        (NetworkError / ExchangeError) fall back to 5.0 via the markets-
+        still-empty path.
+
+        Narrow data-shape catch: KeyError / TypeError / AttributeError /
+        ValueError. ccxt errors at `market()` are unexpected once markets
+        are loaded; if they occur, propagate.
         """
+        if not self._client.markets:
+            self._call("load_markets", lambda: self._client.load_markets())
+        if not self._client.markets:
+            self._log.warning(
+                "markets not loaded for %s; fallback to 5.0", symbol,
+            )
+            return 5.0
         try:
             market = self._client.market(symbol)
             min_cost = market.get("limits", {}).get("cost", {}).get("min")
