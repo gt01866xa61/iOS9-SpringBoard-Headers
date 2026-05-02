@@ -81,7 +81,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Pre-flight: print config summary, exit before sending Telegram or starting schedule",
+        help="Pre-flight: print config + live USDT/BTC/ETH free balances, exit before starting schedule (no 🟢 上線 Telegram)",
     )
     args = parser.parse_args()
 
@@ -92,6 +92,18 @@ def main() -> int:
         print(f"DAILY_CAP_USDT: {config.DAILY_CAP_USDT}")
         print(f"SYMBOLS_ROTATION: {config.SYMBOLS_ROTATION}")
         print(f"Today's symbol: {_today_symbol()}")
+
+        for asset in ("USDT", "BTC", "ETH"):
+            try:
+                bal = trader.get_balance(asset)
+            except Exception as exc:  # noqa: BLE001
+                print(f"Balance {asset}: FAILED — {type(exc).__name__}: {exc}")
+                return 1
+            if bal is None:
+                print(f"Balance {asset}: FAILED — get_balance returned None")
+                return 1
+            print(f"Balance {asset} free: {bal:.8f}")
+
         print("Pre-flight OK")
         return 0
 
