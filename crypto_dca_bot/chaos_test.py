@@ -234,7 +234,7 @@ def chaos_exceed_max_single_buy() -> str:
 
 
 def chaos_exceed_daily_cap() -> str:
-    print("[11/11] Daily cap exceeded (state should be untouched, file cleaned)")
+    print("[11/11] Daily cap exceeded (real state backed up + restored)")
     today = datetime.now(TAIPEI_TZ).strftime("%Y-%m-%d")
     # pre_spent + buy_amount must exceed DAILY_CAP_USDT to trigger step 5,
     # AND buy_amount must be in [MIN_SINGLE_BUY_USDT, MAX_SINGLE_BUY_USDT]
@@ -244,6 +244,11 @@ def chaos_exceed_daily_cap() -> str:
     buy_amount = 10.0
     pre_state = {"date": today, "spent_usdt": pre_spent}
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    # Back up any real production state so chaos doesn't clobber the real
+    # daily counter when this runs after a successful test_phase3.py.
+    backup_bytes = STATE_FILE.read_bytes() if STATE_FILE.exists() else None
+
     STATE_FILE.write_text(json.dumps(pre_state), encoding="utf-8")
     saved_key = os.environ.pop("BINANCE_API_KEY", None)
     saved_secret = os.environ.pop("BINANCE_API_SECRET", None)
@@ -268,7 +273,11 @@ def chaos_exceed_daily_cap() -> str:
             print(f"  FAIL  daily cap: unexpected {type(exc).__name__}: {exc}")
             return _FAIL
     finally:
-        STATE_FILE.unlink(missing_ok=True)
+        # Restore real state if we had one; otherwise remove the chaos fake.
+        if backup_bytes is not None:
+            STATE_FILE.write_bytes(backup_bytes)
+        else:
+            STATE_FILE.unlink(missing_ok=True)
         if saved_key is not None:
             os.environ["BINANCE_API_KEY"] = saved_key
         if saved_secret is not None:
