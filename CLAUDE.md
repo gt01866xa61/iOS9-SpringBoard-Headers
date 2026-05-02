@@ -8,6 +8,7 @@
 
 - 每完成一個邏輯單元（一個函式、一個 bug fix、一個小功能）立刻 `git add` + `git commit` + `git push`，**不累積**。
 - 每次 commit 後在 `PROGRESS.md` 追加一行：`YYYY-MM-DD HH:MM (Asia/Taipei) | <commit hash 前 7 碼> | <一句話描述>`，新項目放表格頂端（倒序）。
+- **例外**：`PROGRESS.md` 維護類 commit（backfill、排版修正等 meta-commit）不自記，避免無限遞迴。只有純功能 commit 才記。
 - 每個 session 開始先跑 `git status` + `git log --oneline -10` 對齊狀態。
 - 每個 session 結束前確認所有改動已 push。
 - 遇到 API 400 / context error / 任何異常**立刻停手回報**，不要硬跑或 retry。
