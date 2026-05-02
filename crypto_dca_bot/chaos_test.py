@@ -40,7 +40,6 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
@@ -56,6 +55,7 @@ from trader import (  # noqa: E402
     DAILY_CAP_USDT,
     MAX_SINGLE_BUY_USDT,
     STATE_FILE,
+    TAIPEI_TZ,
 )
 
 log = get_logger("dca_bot.chaos")
@@ -235,7 +235,7 @@ def chaos_exceed_max_single_buy() -> str:
 
 def chaos_exceed_daily_cap() -> str:
     print("[11/11] Daily cap exceeded (state should be untouched, file cleaned)")
-    today = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d")
+    today = datetime.now(TAIPEI_TZ).strftime("%Y-%m-%d")
     # pre_spent + buy_amount must exceed DAILY_CAP_USDT to trigger step 5,
     # AND buy_amount must be in [MIN_SINGLE_BUY_USDT, MAX_SINGLE_BUY_USDT]
     # so step 2 doesn't reject it first. With DAILY_CAP=50, MIN_BUY=10,

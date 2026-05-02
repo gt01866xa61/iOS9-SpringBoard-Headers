@@ -16,10 +16,9 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Optional, TypeVar
-from zoneinfo import ZoneInfo
 
 import ccxt
 
@@ -32,6 +31,12 @@ MAX_SINGLE_BUY_USDT: float = 25.0
 MIN_SINGLE_BUY_USDT: float = 10.0
 BALANCE_SAFETY_MULTIPLIER: float = 1.01
 STATE_FILE: Path = Path(__file__).resolve().parent / "state" / "daily_state.json"
+
+# Fixed UTC+8 (matches logger._TAIPEI). Asia/Taipei has no DST since 1979,
+# so a fixed offset is functionally identical to ZoneInfo("Asia/Taipei")
+# without requiring the tzdata package on Windows (Python 3.9+ on Windows
+# ships zoneinfo but no IANA database).
+TAIPEI_TZ = timezone(timedelta(hours=8), name="Asia/Taipei")
 
 _RATE_LIMIT_RETRY_SLEEP_S = 2.0
 
@@ -167,7 +172,7 @@ class BinanceTrader(BinanceExchange):
             return 5.0
 
     def _today_taipei(self) -> str:
-        return datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d")
+        return datetime.now(TAIPEI_TZ).strftime("%Y-%m-%d")
 
     def _load_daily_state(self) -> dict:
         try:
