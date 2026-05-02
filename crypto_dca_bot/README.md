@@ -298,6 +298,30 @@ over 3 days of `12:00` production runs.
 
 #### Stage 3: cross-day validation (~14h, ~30 min active)
 
+##### Pre-flight (run before D1 23:25)
+
+1. **Sync repo**: `git pull` on the production host.
+2. **Verify `.env`**: `crypto_dca_bot/.env` exists and has all four keys filled —
+   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `BINANCE_API_KEY`, `BINANCE_API_SECRET`.
+3. **Smoke-test imports + config**:
+   ```bash
+   python main.py --check
+   ```
+   Expected: prints config summary, last line `Pre-flight OK`, **no Telegram sent,
+   no schedule started**. If this fails, all downstream steps are blocked.
+4. **Re-verify IP whitelist on the Phase 3 trade-permission key** (the read-only
+   verification in Phase 2 does not cover the upgraded key). Follow the wrong-IP
+   semi-manual flow in the Phase 2 section: change whitelist to `1.2.3.4` on
+   Binance, wait 30 s, then:
+   ```bash
+   python chaos_test.py --run-wrong-ip
+   ```
+   Expected: `[7/15] PASS wrong IP whitelist: raised AuthenticationError`.
+   **Critical**: restore the real IP whitelist immediately after — forgetting
+   this will break the Stage 3 23:55 tick.
+
+##### Steps
+
 1. **Day 1 23:30** — set `DCA_TIME = "23:55"` in `config.py`, then:
    ```bash
    python main.py
@@ -314,6 +338,44 @@ over 3 days of `12:00` production runs.
 5. **Day 2 06:00** — first heartbeat fires; verify `💓 Bot 存活` arrives.
 6. **Day 2 morning** — audit: `bot.log` + `state/daily_state.json` +
    `data/prices.sqlite` + Binance Order History.
+
+##### Contingency: 單筆失敗時的決策樹
+
+Stage 3 has 2 ticks (D1 23:55 BTC, D2 00:05 ETH). Market buys are irreversible
+— "rollback" means stop + audit, never auto-replay.
+
+**Per-tick failure mode → action**
+
+- 🚨 `ccxt.AuthenticationError` (Binance `-2015`: bad key / IP mismatch /
+  missing permission) → **HARD STOP**. Ctrl+C bot, audit Binance API key.
+  Stage 3 abort + reschedule.
+- 💰 `ccxt.InsufficientFunds` → **HARD STOP**. Top up Spot wallet to ≥ 12 USDT.
+  If still before the next tick, restart bot; otherwise abort.
+- 🌐 `ccxt.NetworkError` / timeout → **LET RIDE**. `schedule` does not retry
+  mid-day; the next opportunity is the other day's tick. If that also fails,
+  abort.
+- ❌ Local `ValueError` (symbol whitelist / notional / cap) → **HARD STOP**.
+  This is a config bug, not a market issue. Investigate `config.py` +
+  `trader.py` constants before restarting.
+- ❓ Unknown exception → check `bot.log`; **STOP** by default.
+
+**Cross-day reset glitch (the thing Stage 3 actually verifies)**
+
+- At ~D2 00:00 (before tick), `state/daily_state.json` should still be
+  `{"date": <D1>, "spent_usdt": 5.5}`.
+- After D2 00:05 tick, state should be `{"date": <D2>, "spent_usdt": 5.5}` —
+  **not** `11.0`, **not** the D1 date.
+- If state shows `spent_usdt = 11.0` or a stale date →
+  `trader._check_daily_cap` is broken. **HARD STOP**. Do not proceed to
+  Stage 4 until fixed.
+
+**Notes**
+
+- CircuitBreaker will not trip in Stage 3 (only 2 ticks; threshold is 5
+  consecutive failures). Don't rely on it for safety.
+- Telegram silence ≠ trade silence. Always cross-check Binance Order History.
+- Manual state edits: write a tmp file then `os.replace` (mirrors
+  `trader._write_state` atomicity) — never edit `daily_state.json` in place.
 
 USDT consumed: ~11.
 
