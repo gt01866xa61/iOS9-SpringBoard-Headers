@@ -5,23 +5,29 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import config
 from circuit_breaker import CircuitBreaker
 from logger import get_logger
 from notifier import get_notifier
-from trader import BinanceTrader, STATE_FILE
+from trader import BinanceTrader, STATE_FILE, TAIPEI_TZ
 
 
 def send_heartbeat(trader: BinanceTrader, breaker: CircuitBreaker) -> None:
     log = get_logger()
     notifier = get_notifier()
 
-    # Read today's DCA progress (narrow except — fail-loud on unexpected)
+    # Read today's DCA progress (narrow except — fail-loud on unexpected).
+    # Cross-day guard: if state.date != today, treat today as 0 — avoids
+    # showing yesterday's number in the morning before today's DCA fires.
+    # trader._check_daily_cap will reset the file at the next buy.
     today_spent = 0.0
+    today = datetime.now(TAIPEI_TZ).strftime("%Y-%m-%d")
     try:
         daily = json.loads(STATE_FILE.read_text(encoding="utf-8"))
-        today_spent = float(daily.get("spent_usdt", 0.0))
+        if daily.get("date") == today:
+            today_spent = float(daily.get("spent_usdt", 0.0))
     except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         log.warning("daily_state read failed in heartbeat: %s", exc)
 

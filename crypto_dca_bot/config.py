@@ -13,7 +13,7 @@ DRY_RUN: bool = False  # True = 不打 API、不寫 daily_state，只 log + Tele
 
 # === DCA 參數 ===
 DCA_AMOUNT_USDT: float = 5.5
-SYMBOLS_ROTATION: tuple[str, ...] = ("BTC/USDT", "ETH/USDT")  # day % 2 奇偶輪流
+SYMBOLS_ROTATION: tuple[str, ...] = ("ETH/USDT", "BTC/USDT")  # day % 2: 偶=ETH, 奇=BTC (plan D3)
 DCA_TIME: str = "12:00"  # 24hr，本機時區（必須 Asia/Taipei）；驗證階段改 "23:55"
 
 # === 安全網（覆蓋 trader.py 預設） ===
