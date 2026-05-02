@@ -298,27 +298,94 @@ over 3 days of `12:00` production runs.
 
 #### Stage 3: cross-day validation (~14h, ~30 min active)
 
-##### Pre-flight (run before D1 23:25)
+##### Pre-flight (run before D1 23:25 — 11 items, all must be green)
 
-1. **Sync repo**: `git pull` on the production host.
-2. **Verify `.env`**: `crypto_dca_bot/.env` exists and has all four keys filled —
-   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `BINANCE_API_KEY`, `BINANCE_API_SECRET`.
-3. **Smoke-test imports + config**:
+> Production host = Windows. Commands assume an active venv. Cheapest checks
+> first; abort the run if any item fails — do not wave it through.
+
+**Host environment**
+
+1. **Repo sync**:
+   ```bash
+   git pull
+   ```
+2. **Host timezone** must be Asia/Taipei (UTC+8) — `schedule` uses local clock:
+   ```powershell
+   Get-TimeZone
+   ```
+   Expected: `Id : Taipei Standard Time`, `BaseUtcOffset : 08:00:00`.
+3. **Sleep / hibernate disabled** for 23:55–00:05 cross-day window:
+   ```powershell
+   powercfg /a
+   ```
+   Set Power Plan → Sleep → "Never" on AC. A sleep mid-window kills the
+   23:55 tick or the cross-day reset.
+4. **`.env` keys** — `crypto_dca_bot/.env` exists with all four filled:
+   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `BINANCE_API_KEY`,
+   `BINANCE_API_SECRET`.
+5. **Dependency versions** (`ccxt` and `schedule` are the highest-risk):
+   ```bash
+   pip freeze | findstr /R "^ccxt== ^schedule=="
+   ```
+   Compare against the versions used in your last green chaos run; any
+   mismatch → reinstall before proceeding. `requirements.txt` uses `>=`
+   so silent upgrades are possible.
+6. **`bot.log` headroom** < 4 MB:
+   ```bash
+   dir crypto_dca_bot\bot.log
+   ```
+   `RotatingFileHandler` rotates at 5 MB. ≥ 4 MB → archive + truncate so
+   Stage 3 doesn't straddle a rotation boundary.
+7. **No stale `state/daily_state.json`**:
+   ```bash
+   type crypto_dca_bot\state\daily_state.json
+   ```
+   Acceptable: file does not exist, OR `{"date": "<today>", "spent_usdt": 0.0}`.
+   Anything else (yesterday's date, non-zero spend from an aborted run) →
+   delete the file before starting.
+
+**Application sanity**
+
+8. **Telegram path**:
+   ```bash
+   python test_phase1.py
+   ```
+   Expected: terminal `Phase 1 驗證通過`, Telegram receives
+   `Bot 初始化成功 ✅`.
+9. **Pre-flight smoke + balance reconciliation**:
    ```bash
    python main.py --check
    ```
-   Expected: prints config summary, last line `Pre-flight OK`, **no Telegram sent,
-   no schedule started**. If this fails, all downstream steps are blocked.
-4. **Re-verify IP whitelist on the Phase 3 trade-permission key** (the read-only
-   verification in Phase 2 does not cover the upgraded key). Follow the wrong-IP
-   semi-manual flow in the Phase 2 section: change whitelist to `1.2.3.4` on
-   Binance, wait 30 s, then:
-   ```bash
-   python chaos_test.py --run-wrong-ip
-   ```
-   Expected: `[7/15] PASS wrong IP whitelist: raised AuthenticationError`.
-   **Critical**: restore the real IP whitelist immediately after — forgetting
-   this will break the Stage 3 23:55 tick.
+   Prints config + live `USDT / BTC / ETH` free balances + `Pre-flight OK`.
+   Sends no `🟢 上線` Telegram and starts no schedule. **Cross-check the
+   three balances against a fresh Binance App screenshot** — any
+   discrepancy means wrong account / wrong key / out-of-date snapshot.
+
+**Chaos re-verify**
+
+10. **Wrong-IP whitelist on the Phase 3 trade-permission key** (the Phase 2
+    pass was on the read-only key; the upgraded key has not been verified):
+    on Binance, change the whitelist to `1.2.3.4`, wait 30 s, then:
+    ```bash
+    python chaos_test.py --run-wrong-ip
+    ```
+    Expected: `[7/15] PASS wrong IP whitelist: raised AuthenticationError`.
+    **Critical**: restore the real IP whitelist immediately after —
+    forgetting this kills the 23:55 tick.
+11. **Dry-run graceful shutdown** end-to-end (validates `🛑 下線` Telegram
+    actually fires; chaos `[15/15]` only checks the event flag, not the
+    Telegram path):
+    ```cmd
+    set DRY_RUN=1
+    python main.py
+    ```
+    Wait for `🟢 Bot 上線` Telegram, then **Ctrl+C**. Expected: terminal
+    logs `Signal 2 received, graceful shutdown initiated`, Telegram
+    receives `🛑 Bot 下線`, `state/daily_state.json` unchanged. Then
+    clear the env var before the real Stage 3 launch:
+    ```cmd
+    set DRY_RUN=
+    ```
 
 ##### Steps
 
