@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import os
 import signal
 import sys
@@ -76,6 +77,24 @@ def _signal_handler(sig, frame) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Crypto DCA bot main loop")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Pre-flight: print config summary, exit before sending Telegram or starting schedule",
+    )
+    args = parser.parse_args()
+
+    if args.check:
+        print(f"DRY_RUN: {config.DRY_RUN}")
+        print(f"DCA_AMOUNT_USDT: {config.DCA_AMOUNT_USDT}")
+        print(f"DCA_TIME: {config.DCA_TIME}")
+        print(f"DAILY_CAP_USDT: {config.DAILY_CAP_USDT}")
+        print(f"SYMBOLS_ROTATION: {config.SYMBOLS_ROTATION}")
+        print(f"Today's symbol: {_today_symbol()}")
+        print("Pre-flight OK")
+        return 0
+
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
