@@ -10,3 +10,7 @@ venv/
 # Phase 3 daily-cap state: track the directory but exclude runtime writes
 state/*
 !state/.gitkeep
+
+# Phase 4 runtime data: track the directory but exclude SQLite + state writes
+data/*
+!data/.gitkeep

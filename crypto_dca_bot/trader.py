@@ -26,7 +26,10 @@ from exchange_api import BinanceExchange
 from notifier import get_notifier
 
 SYMBOL_WHITELIST: frozenset[str] = frozenset({"BTC/USDT", "ETH/USDT"})
-DAILY_CAP_USDT: float = 50.0
+try:
+    from config import DAILY_CAP_USDT
+except ImportError:
+    DAILY_CAP_USDT = 50.0  # Phase 3 fallback when config.py absent
 MAX_SINGLE_BUY_USDT: float = 25.0
 MIN_SINGLE_BUY_USDT: float = 10.0
 BALANCE_SAFETY_MULTIPLIER: float = 1.01

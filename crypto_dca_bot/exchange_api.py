@@ -18,6 +18,13 @@ from notifier import get_notifier
 _DEFAULT_TIMEOUT_MS = 10_000
 _RATE_LIMIT_RETRY_SLEEP_S = 2.0
 
+try:
+    from config import PRICES_DB
+    from price_recorder import PriceRecorder
+    _recorder: Optional["PriceRecorder"] = PriceRecorder(PRICES_DB)
+except ImportError:
+    _recorder = None  # Phase 3 fallback when config/price_recorder absent
+
 T = TypeVar("T")
 
 
@@ -61,6 +68,8 @@ class BinanceExchange:
             return None
         price = float(last)
         self._log.info("Price %s = %s", symbol, price)
+        if _recorder is not None:
+            _recorder.record(symbol, price)
         return price
 
     def get_balance(self, asset: str = "USDT") -> Optional[float]:
