@@ -31,7 +31,7 @@ try:
 except ImportError:
     DAILY_CAP_USDT = 50.0  # Phase 3 fallback when config.py absent
 MAX_SINGLE_BUY_USDT: float = 25.0
-MIN_SINGLE_BUY_USDT: float = 10.0
+MIN_SINGLE_BUY_USDT: float = 5.0
 BALANCE_SAFETY_MULTIPLIER: float = 1.01
 STATE_FILE: Path = Path(__file__).resolve().parent / "state" / "daily_state.json"
 
