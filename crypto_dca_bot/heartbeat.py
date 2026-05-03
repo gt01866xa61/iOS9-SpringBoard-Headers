@@ -31,8 +31,14 @@ def send_heartbeat(trader: BinanceTrader, breaker: CircuitBreaker) -> None:
     except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         log.warning("daily_state read failed in heartbeat: %s", exc)
 
-    # Read balances (sentinels on failure so heartbeat still sends)
-    usdt = btc = eth = btc_p = eth_p = -1.0
+    # Read balances (None on failure so heartbeat still sends a partial msg).
+    # Old code used -1.0 as sentinel and (-1.0)*(-1.0) silently inflated total
+    # by 2 USDT for each failed leg; switch to None + explicit guard below.
+    usdt: float | None = None
+    btc: float | None = None
+    eth: float | None = None
+    btc_p: float | None = None
+    eth_p: float | None = None
     try:
         usdt = trader.get_balance("USDT") or 0.0
         btc = trader.get_balance("BTC") or 0.0
@@ -42,16 +48,23 @@ def send_heartbeat(trader: BinanceTrader, breaker: CircuitBreaker) -> None:
     except Exception as exc:  # noqa: BLE001
         log.warning("heartbeat balance/price read failed: %s", exc)
 
-    total_value = usdt + btc * btc_p + eth * eth_p if usdt >= 0 else -1.0
+    if None in (usdt, btc, eth, btc_p, eth_p):
+        total_str = "unknown — fetch failed"
+    else:
+        total_str = f"${usdt + btc * btc_p + eth * eth_p:.2f}"
+
+    usdt_str = "?" if usdt is None else f"{usdt:.2f}"
+    btc_str = "?" if btc is None else f"{btc:.8f}"
+    eth_str = "?" if eth is None else f"{eth:.6f}"
 
     msg = (
         f"💓 Bot 存活\n"
         f"今日已花: {today_spent:.2f} / {config.DAILY_CAP_USDT} USDT\n"
-        f"USDT: {usdt:.2f}\n"
-        f"BTC: {btc:.8f}\n"
-        f"ETH: {eth:.6f}\n"
-        f"總估值: ${total_value:.2f}\n"
+        f"USDT: {usdt_str}\n"
+        f"BTC: {btc_str}\n"
+        f"ETH: {eth_str}\n"
+        f"總估值: {total_str}\n"
         f"連敗計數: {breaker.failures}/{config.MAX_CONSECUTIVE_FAILURES}"
     )
     notifier.send(msg)
-    log.info("heartbeat sent (total=%.2f, failures=%d)", total_value, breaker.failures)
+    log.info("heartbeat sent (total=%s, failures=%d)", total_str, breaker.failures)
