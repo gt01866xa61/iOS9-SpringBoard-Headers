@@ -206,7 +206,7 @@ result (14 passed, 1 skipped, total 15).
 | `SYMBOL_WHITELIST` | `{BTC/USDT, ETH/USDT}` | Only these symbols can be bought |
 | `DAILY_CAP_USDT` | `50.0` | Hard ceiling on total USDT spent per Asia/Taipei calendar day |
 | `MAX_SINGLE_BUY_USDT` | `25.0` | Hard ceiling on a single order |
-| `MIN_SINGLE_BUY_USDT` | `10.0` | Strategy floor; final min = `max(this, Binance min notional)` |
+| `MIN_SINGLE_BUY_USDT` | `5.0` | Strategy floor; final min = `max(this, Binance min notional)` |
 | `BALANCE_SAFETY_MULTIPLIER` | `1.01` | Required balance = quote × this (1% buffer for fees + slippage) |
 
 The daily counter persists in `crypto_dca_bot/state/daily_state.json`,
