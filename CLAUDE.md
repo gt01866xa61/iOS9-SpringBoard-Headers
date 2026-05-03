@@ -15,7 +15,7 @@
 
 ## 3. 當前 live 驗證進度
 
-- [ ] Stage 3 跨日驗證：Day1 23:55 BTC 5.5 USDT + Day2 00:05 ETH 5.5 USDT
+- [ ] Stage 3 跨日驗證：Day1 23:55 BTC 5.5 USDT + Day2 00:15 ETH 5.5 USDT
 - [ ] Stage 4 三天 production trial：每天 12:00 一筆，總計 ~16.5 USDT
 - 預計 5/3 23:25 開工
 

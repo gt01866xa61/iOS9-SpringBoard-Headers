@@ -314,7 +314,7 @@ over 3 days of `12:00` production runs.
    Get-TimeZone
    ```
    Expected: `Id : Taipei Standard Time`, `BaseUtcOffset : 08:00:00`.
-3. **Sleep / hibernate disabled** for 23:55–00:05 cross-day window:
+3. **Sleep / hibernate disabled** for 23:55–00:15 cross-day window:
    ```powershell
    powercfg /a
    ```
@@ -396,10 +396,13 @@ over 3 days of `12:00` production runs.
    You should receive `🟢 Bot 上線`.
 2. **Day 1 23:55** — auto-triggers BTC 5.5 USDT buy (pre-trade + post-trade
    notifications, two messages).
-3. **Day 2 00:05** — change `DCA_TIME = "00:05"` in `config.py`, **Ctrl+C**
+3. **Day 2 00:15** — change `DCA_TIME = "00:15"` in `config.py`, **Ctrl+C**
    the bot (you should receive `🛑 Bot 下線` — this verifies the OS signal
-   path), then `python main.py` again.
-4. The 00:05 tick auto-triggers ETH 5.5 USDT buy. `state/daily_state.json`
+   path), then `python main.py` again. The window from D2 ~00:00 (Ctrl+C)
+   to 00:15 (next tick) is **15 minutes** — comfortable margin for edit +
+   restart; cross-day reset still validates as long as the second buy
+   lands on a new calendar date.
+4. The 00:15 tick auto-triggers ETH 5.5 USDT buy. `state/daily_state.json`
    resets to today + accumulates from `0.0 → 5.5` (proof that cross-day
    reset works in production).
 5. **Day 2 06:00** — first heartbeat fires; verify `💓 Bot 存活` arrives.
@@ -408,7 +411,7 @@ over 3 days of `12:00` production runs.
 
 ##### Contingency: 單筆失敗時的決策樹
 
-Stage 3 has 2 ticks (D1 23:55 BTC, D2 00:05 ETH). Market buys are irreversible
+Stage 3 has 2 ticks (D1 23:55 BTC, D2 00:15 ETH). Market buys are irreversible
 — "rollback" means stop + audit, never auto-replay.
 
 **Per-tick failure mode → action**
@@ -430,7 +433,7 @@ Stage 3 has 2 ticks (D1 23:55 BTC, D2 00:05 ETH). Market buys are irreversible
 
 - At ~D2 00:00 (before tick), `state/daily_state.json` should still be
   `{"date": <D1>, "spent_usdt": 5.5}`.
-- After D2 00:05 tick, state should be `{"date": <D2>, "spent_usdt": 5.5}` —
+- After D2 00:15 tick, state should be `{"date": <D2>, "spent_usdt": 5.5}` —
   **not** `11.0`, **not** the D1 date.
 - If state shows `spent_usdt = 11.0` or a stale date →
   `trader._check_daily_cap` is broken. **HARD STOP**. Do not proceed to
