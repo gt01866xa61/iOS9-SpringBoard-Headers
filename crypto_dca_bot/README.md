@@ -477,7 +477,7 @@ USDT consumed: ~16.5. Remaining buffer: ~10.5 of the original 38.
 |---|---|---|
 | `DRY_RUN` | `False` | If `True`, log + Telegram only — never call exchange write APIs |
 | `DCA_AMOUNT_USDT` | `5.5` | USDT spent per scheduled buy |
-| `SYMBOLS_ROTATION` | `("BTC/USDT", "ETH/USDT")` | `day % 2` selects today's symbol |
+| `SYMBOLS_ROTATION` | `("ETH/USDT", "BTC/USDT")` | `day % 2` selects today's symbol (tuple order is significant: even days → index 0 = ETH, odd days → BTC) |
 | `DCA_TIME` | `"12:00"` | Local-clock time of daily buy (host must be Asia/Taipei) |
 | `DAILY_CAP_USDT` | `12.0` | Overrides `trader.DAILY_CAP_USDT` (Phase 3 default 50) |
 | `HEARTBEAT_HOURS` | `6` | Interval between `💓 Bot 存活` posts |
