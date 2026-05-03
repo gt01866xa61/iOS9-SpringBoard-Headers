@@ -28,3 +28,52 @@ HIGH_WATER_MARK_USDT: float = 100.0  # 持倉總估值達此推播
 DATA_DIR: Path = Path(__file__).resolve().parent / "data"
 PRICES_DB: Path = DATA_DIR / "prices.sqlite"
 RUNTIME_STATE: Path = DATA_DIR / "runtime_state.json"
+
+
+def validate() -> None:
+    """啟動時 fail-fast，避免 Stage 3 那種 trader.MIN/MAX 與 config 不一致悄悄
+    跑到 23:55 才炸的情境。
+
+    trader 的常數懶 import：trader.py 模組載入時會 import 本模組的
+    DAILY_CAP_USDT，反向 import 必須延後到本函式被呼叫時（此時兩邊都已就緒）。
+    """
+    from trader import (
+        MAX_SINGLE_BUY_USDT,
+        MIN_SINGLE_BUY_USDT,
+        SYMBOL_WHITELIST,
+    )
+
+    errors: list[str] = []
+
+    if not (MIN_SINGLE_BUY_USDT <= DCA_AMOUNT_USDT <= MAX_SINGLE_BUY_USDT):
+        errors.append(
+            f"DCA_AMOUNT_USDT {DCA_AMOUNT_USDT} not in "
+            f"[{MIN_SINGLE_BUY_USDT}, {MAX_SINGLE_BUY_USDT}] "
+            f"(trader.MIN_SINGLE_BUY_USDT, trader.MAX_SINGLE_BUY_USDT)"
+        )
+
+    if DCA_AMOUNT_USDT > DAILY_CAP_USDT:
+        errors.append(
+            f"DCA_AMOUNT_USDT {DCA_AMOUNT_USDT} > DAILY_CAP_USDT {DAILY_CAP_USDT} "
+            f"(single buy would always trip daily cap)"
+        )
+
+    bad_symbols = [s for s in SYMBOLS_ROTATION if s not in SYMBOL_WHITELIST]
+    if bad_symbols:
+        errors.append(
+            f"SYMBOLS_ROTATION contains symbol(s) not in trader.SYMBOL_WHITELIST: "
+            f"{bad_symbols} (allowed: {sorted(SYMBOL_WHITELIST)})"
+        )
+
+    if HEARTBEAT_HOURS <= 0:
+        errors.append(f"HEARTBEAT_HOURS must be > 0, got {HEARTBEAT_HOURS}")
+
+    if MAX_CONSECUTIVE_FAILURES <= 0:
+        errors.append(
+            f"MAX_CONSECUTIVE_FAILURES must be > 0, got {MAX_CONSECUTIVE_FAILURES}"
+        )
+
+    if errors:
+        raise RuntimeError(
+            "config.validate() failed:\n  - " + "\n  - ".join(errors)
+        )

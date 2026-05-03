@@ -85,6 +85,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Fail-fast on misconfig before any Telegram / schedule side-effects.
+    config.validate()
+
     if args.check:
         print(f"DRY_RUN: {config.DRY_RUN}")
         print(f"DCA_AMOUNT_USDT: {config.DCA_AMOUNT_USDT}")
