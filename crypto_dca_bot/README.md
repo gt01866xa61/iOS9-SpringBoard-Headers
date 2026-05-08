@@ -10,7 +10,7 @@ Exchange: **Binance** (via `ccxt`). Notifications: **Telegram Bot**.
 | 1 | Logger + Telegram notifier bootstrap | ✅ Done |
 | 2 | `exchange_api.py` — ccxt price + balance (read-only) | ✅ Done |
 | 3 | `trader.py` — market buy with multi-layer safety + daily cap | ✅ Done |
-| 4 | `main.py` — schedule loop + circuit breaker + heartbeat + dry-run | ✅ Implemented — awaiting user validation |
+| 4 | `main.py` — schedule loop + circuit breaker + heartbeat + dry-run | ✅ Validated |
 
 ## Phase 1 setup
 
