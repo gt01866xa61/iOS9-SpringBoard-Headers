@@ -1,5 +1,9 @@
 # Crypto Smart DCA Bot
 
+> **Status (2026-05-09)**: V1 已結案、停止運行 — Stage 4 trial 全綠驗證完成 2026-05-08（commit `346108e`），V1 bot 不再執行。
+> 本 README 為 **V1 歷史紀錄 + V2 沿用模組參考**。
+> **V2 active work** → `research/v2_roadmap.md`（builder mode 蓋房子,V2-A/B/S/T/E/D 框架）。
+
 A 24/7 crypto DCA + holdings-monitor bot.
 Exchange: **Binance** (via `ccxt`). Notifications: **Telegram Bot**.
 
