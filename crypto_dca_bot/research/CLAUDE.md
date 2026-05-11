@@ -2,15 +2,24 @@
 
 ## What this folder is
 
-V2 策略研究工作區。V1(Phase 4 DCA bot)2026-05-08 結案 — Stage 4 trial 全綠驗證完成。現在進入 V2-Q 階段(策略候選評估),決定是否要做 V2(有 edge 的策略)還是讓 V1 繼續當被動儲蓄機。
+V2 量化交易平台研究工作區。**V1(Phase 4 DCA bot)2026-05-08 結案,Stage 4 後停止運行**(不繼續跑當儲蓄機 — 使用者已有手動長期部位,V1 重疊無意義)。
 
-## V2 啟動三題(必答完才進 V2-R)
+V2 = 多市場 / 多策略 / 動態切換 24h 量化交易平台(Builder mode 蓋房子模式)。完整 roadmap 見 `v2_roadmap.md`,2026-05-09 重大 pivot 決策見 `decisions.md`。
 
-1. **Pionex 罐頭機器人能不能做你想的策略?** 能 → V2 取消,沒必要重造輪子。
-2. **列 3 個具體策略構想**(進出場條件、頻率、預期 win rate)。
-3. **每個策略的 edge 假設**(為什麼還在?為什麼別人沒吃光?)
+## V2 工作框架(取代舊的 V2-Q 三題)
 
-不能答這 3 題 = V2 別開,V1 跑著當儲蓄機,完全可以接受。
+V2 分 6 階段,依序執行:
+
+| Phase | 做的事 |
+|---|---|
+| V2-A | Architecture(架構)— 畫設計圖,平台骨架 / 模組接口 / 資料流 |
+| V2-B | Backtest 引擎 — 多策略可插拔回測 |
+| V2-S1..N | Strategy 1..N codify(策略實作)|
+| V2-T1..N | Strategy 驗證(walk-forward + paper trading)|
+| V2-E | Ensemble 動態策略選擇 |
+| V2-D | Deploy(真錢小額 → 漸進放大)|
+
+每階段獨立 deliverable(可交付產出)。**V2-T 階段必跑 M1-M5 validation standards**(stress-test / walk-forward / lock / paper trade / paper-vs-backtest 並排,見 `v2_roadmap.md`)。
 
 ## 我(Claude)的角色
 
@@ -26,20 +35,18 @@ V2 策略研究工作區。V1(Phase 4 DCA bot)2026-05-08 結案 — Stage 4 tria
 - 拍板每個策略 go / no-go
 - 在 Codex / Gemini / Claude 之間 route(路由)任務
 
-## 工作節奏(W0 + V2-Q phase)
-
-- Day 1-2:策略構想 + Codex/Gemini 第一輪反饋
-- Day 3:整體評估,V2-R 是否啟動
-- 每個重大決定寫進 `decisions.md`
-
 ## V2 邊界(預設不變)
 
-- 不充值,先用現有 ~13 USDT 緩衝
+- 不充值,先用現有 ~13 USDT 緩衝(夠到 V2-D step 4 tiny live 50-100 USDT)
 - 不上 leverage(槓桿)/ 衍生品
-- 不重寫 V1,V1 繼續當 baseline(基準)
+- V1 code 保留當技術資產(`exchange_api.py` / `trader.py` / `notifier.py` / `circuit_breaker.py` / `heartbeat.py` / `price_recorder.py` / `chaos_test.py` 將被 V2 沿用),但 V1 **不再運行**,**也不會被 wrap 成 V2 策略模組**
+- 第一階段嚴格鎖 BTC/ETH,後續才擴 Gold / Oil / NDX
 
 ## 重要 reference
 
-- V1 progress: `../README.md`(Phase 1-4 設計)
+- V2 builder roadmap: `v2_roadmap.md`(長期指引)
+- 重大決定 log: `decisions.md`(倒序)
+- V1 progress: `../README.md`(Phase 1-4 設計,歷史參考)
 - V1 commit history: `../../PROGRESS.md`
 - 工作流規則: `../../CLAUDE.md`(全局協作守則)
+- 過時的 V2-Q 三題框架: `archive/v2_questions.md`(歷史 snapshot,僅供參考)
