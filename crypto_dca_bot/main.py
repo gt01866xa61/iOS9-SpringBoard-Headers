@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import os
 import signal
 import sys
@@ -24,7 +25,12 @@ from heartbeat import send_heartbeat  # noqa: E402
 from high_water_mark import check_hwm  # noqa: E402
 from logger import get_logger  # noqa: E402
 from notifier import get_notifier  # noqa: E402
-from trader import BinanceTrader, TAIPEI_TZ  # noqa: E402
+from trader import (  # noqa: E402
+    BinanceTrader,
+    MAX_SINGLE_BUY_USDT,
+    MIN_SINGLE_BUY_USDT,
+    TAIPEI_TZ,
+)
 
 log = get_logger()
 notifier = get_notifier()
@@ -76,6 +82,66 @@ def _signal_handler(sig, frame) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Crypto DCA bot main loop")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Pre-flight: print config + live USDT/BTC/ETH free balances, exit before starting schedule (no 🟢 上線 Telegram)",
+    )
+    parser.add_argument(
+        "--deep-check",
+        action="store_true",
+        help="Like --check, plus call trader._get_min_notional() for each SYMBOLS_ROTATION symbol — proves the [2] range check inside place_market_buy will pass at 23:55 without actually placing an order.",
+    )
+    args = parser.parse_args()
+
+    # Fail-fast on misconfig before any Telegram / schedule side-effects.
+    config.validate()
+
+    if args.check or args.deep_check:
+        print(f"DRY_RUN: {config.DRY_RUN}")
+        print(f"DCA_AMOUNT_USDT: {config.DCA_AMOUNT_USDT}")
+        print(f"DCA_TIME: {config.DCA_TIME}")
+        print(f"DAILY_CAP_USDT: {config.DAILY_CAP_USDT}")
+        print(f"SYMBOLS_ROTATION: {config.SYMBOLS_ROTATION}")
+        print(f"Today's symbol: {_today_symbol()}")
+
+        for asset in ("USDT", "BTC", "ETH"):
+            try:
+                bal = trader.get_balance(asset)
+            except Exception as exc:  # noqa: BLE001
+                print(f"Balance {asset}: FAILED — {type(exc).__name__}: {exc}")
+                return 1
+            if bal is None:
+                print(f"Balance {asset}: FAILED — get_balance returned None")
+                return 1
+            print(f"Balance {asset} free: {bal:.8f}")
+
+        if args.deep_check:
+            for symbol in config.SYMBOLS_ROTATION:
+                try:
+                    min_notional = trader._get_min_notional(symbol)
+                except Exception as exc:  # noqa: BLE001
+                    print(
+                        f"_get_min_notional({symbol}): FAILED — "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                    return 1
+                effective_min = max(MIN_SINGLE_BUY_USDT, min_notional)
+                ok = effective_min <= config.DCA_AMOUNT_USDT <= MAX_SINGLE_BUY_USDT
+                print(
+                    f"{symbol}: min_notional={min_notional:.4f}, "
+                    f"effective_min={effective_min:.4f}, "
+                    f"DCA={config.DCA_AMOUNT_USDT} in "
+                    f"[{effective_min:.4f}, {MAX_SINGLE_BUY_USDT:.2f}] → "
+                    f"{'OK' if ok else 'FAIL'}"
+                )
+                if not ok:
+                    return 1
+
+        print("Pre-flight OK")
+        return 0
+
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
