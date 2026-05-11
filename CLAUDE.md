@@ -1,8 +1,15 @@
 # CLAUDE.md
 
-## 1. 先讀 README
+## 1. 先讀 V2 roadmap + research context
 
-開始任何工作前，請先讀 `crypto_dca_bot/README.md` 取得完整專案脈絡與 Phase 進度。本檔只補 README 沒涵蓋的協作規則，不重複內容。
+開始任何工作前，請按順序讀：
+
+1. `crypto_dca_bot/research/v2_roadmap.md` — V2 builder roadmap（**目前主動工作區**）
+2. `crypto_dca_bot/research/CLAUDE.md` — V2 研究脈絡 + multi-CLI（Claude / Codex / Gemini）分工
+3. `crypto_dca_bot/research/decisions.md` — 重大決策紀錄（倒序，最新在最上）
+4. `crypto_dca_bot/README.md` — V1 Phase 1-4 歷史紀錄（**V1 已結案**，V2 沿用模組參考用）
+
+本檔只補上述沒涵蓋的協作規則，不重複內容。
 
 ## 2. 工作流程鐵律
 
@@ -13,11 +20,11 @@
 - 每個 session 結束前確認所有改動已 push。
 - 遇到 API 400 / context error / 任何異常**立刻停手回報**，不要硬跑或 retry。
 
-## 3. 當前 live 驗證進度
+## 3. 當前 phase
 
-- [ ] Stage 3 跨日驗證：Day1 23:55 BTC 5.5 USDT + Day2 00:15 ETH 5.5 USDT
-- [ ] Stage 4 三天 production trial：每天 12:00 一筆，總計 ~16.5 USDT
-- 預計 5/3 23:25 開工
+- **V1（Phase 4 DCA bot）2026-05-08 結案，已停止運行**（Stage 4 trial 全綠驗證完成，commit `346108e`；不重啟、不當儲蓄機）
+- **V2 builder pivot 2026-05-09**：framework 從 V2-Q/R/D（問題驅動）改成 V2-A/B/S/T/E/D（builder 蓋房子模式，詳見 `crypto_dca_bot/research/v2_roadmap.md`）
+- **目前位置:V2-A 架構設計第一輪**（**不寫 code**，先把平台骨架討論清楚）
 
 ## 4. Repo 借殼提示
 
