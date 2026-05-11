@@ -4,6 +4,26 @@ Active project: a React Native / Expo iOS app for managing motherboard
 catalogs and physical "racks" of test boards. Don't touch the legacy
 `SpringBoard.framework/` headers — those are unrelated archive material.
 
+**📋 Phase 2 (current) full plan**: `MoboRefRN/docs/PHASE2-PLAN.md` —
+read this if you're a Stream A or Stream B session.
+
+## Roadmap
+
+```
+Phase 1 ✅ COMPLETE  — Motherboard catalog + Rack management + iPhone live
+Phase 2  ← active   — Platform Layer: CPU integration + DRAM compat lookup
+Phase 3  TBD        — DUT Layer: AGI in-house DRAM / SSD module SKU library
+Phase 4  TBD        — Validation Matrix: platform × DUT × results
+Phase 5  TBD        — Reporting & Export
+```
+
+Phase 2 runs two parallel streams on dedicated worktrees:
+- Stream A (`claude/phase2-cpu`, worktree `D:\Projects\MoboRef-cpu`) — CPU catalog
+- Stream B (`claude/phase2-dram`, worktree `D:\Projects\MoboRef-dram`) — DRAM compat lookup
+
+See `MoboRefRN/docs/PHASE2-PLAN.md` §4 / §5 for per-stream scope, §6 file
+ownership table, §9 merge order.
+
 ## Project paths
 
 - **App root**: `MoboRefRN/`
@@ -129,6 +149,47 @@ App users press the `↻` button (Catalog tab header) to fetch the new file.
 - Don't add error handling for impossible cases; trust framework guarantees
 - Match existing iOS UI conventions (system blue `#007AFF`, red `#FF3B30`,
   rounded corners, sheet-style modals)
+
+## Parallel-stream SOP (Phase 2 onward)
+
+Rules — don't break these without reading `MoboRefRN/docs/PHASE2-PLAN.md` §3.2 first:
+
+1. One Phase at a time has at most 2 active worktrees.
+2. Each stream's owned file list is fixed in advance (see plan §6). Don't touch
+   files outside your stream's column.
+3. Metro port: Stream A uses 8081, Stream B uses 8082 (`npx expo start --port 8082`).
+4. Merge order is fixed: Stream A first → Stream B rebases main → Stream B
+   merges → final stub→real cleanup PR.
+5. `app.json` `bundleIdentifier` / `name` changes stay on the stream branch and
+   are **excluded when merging to `claude/build-iphone-app-3HKVs`** (keep the
+   main `MoboRef` identity).
+6. `ios/` is gitignored; each worktree runs `npx expo prebuild` independently
+   on the Mac mini.
+
+## Out-of-network testing (Expo Go tunnel)
+
+When the user pushes code from outside the home network and wants to see it
+on their iPhone immediately:
+
+- Home machine (Mac mini or Windows) stays on, doesn't sleep, runs
+  `npx expo start --tunnel --port 8081` (Stream A) or `--port 8082` (Stream B)
+  from the respective worktree.
+- iPhone Expo Go scans the tunnel QR.
+- Limitation: JS-only changes only. Native module bumps require Xcode rebuild.
+
+## Merge strategy (Phase 2)
+
+Strict order — see `MoboRefRN/docs/PHASE2-PLAN.md` §9 for full detail:
+
+1. Prep commit (✅ done) seeded `CPU.ts`, `Motherboard.ts` skeleton, this
+   CLAUDE.md update, and `docs/PHASE2-PLAN.md` on `claude/build-iphone-app-3HKVs`.
+2. Stream A finishes + verifies (plan §11.A) → merge to main, **excluding
+   `MoboRefRN/app.json`**.
+3. Stream B rebases onto updated main. Expected: 1-2 line conflict in
+   `Motherboard.ts` (keep both A's `socket?` and B's `dramCompat?`).
+4. Stream B merges, same `app.json` exclusion.
+5. Stub→real cleanup PR: delete `data/MockCPUsForDram.ts`, switch
+   `DramCompatLookup.tsx` to read from `useCPUs()` instead of the mock.
 
 ## Out of scope
 
