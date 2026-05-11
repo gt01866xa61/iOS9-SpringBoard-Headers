@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,6 +17,12 @@ import { useVisitedBoards } from '../hooks/useVisitedBoards';
 import { buildBrandSearchUrl } from '../services/URLResolverService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Browser'>;
+
+// WKWebView's default UA inside a non-Safari app omits the "Version/x.x" and
+// "Safari/x.x" suffixes. CloudFront WAFs (used by asus.com etc.) flag that as
+// non-browser and return 403. Spoofing a full Safari UA bypasses those rules.
+const SAFARI_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
 function normalizeUrl(raw: string): string {
   const t = raw.trim();
@@ -84,6 +91,12 @@ export function BrowserScreen({ route, navigation }: Props) {
     setIsLoading(true);
   }, [board]);
 
+  const handleOpenInSafari = useCallback(() => {
+    Linking.openURL(currentUrl).catch(() => {
+      Alert.alert('無法開啟', '無法在 Safari 中開啟此網址');
+    });
+  }, [currentUrl]);
+
   const handleManualUrl = useCallback(() => {
     Alert.prompt(
       '手動輸入網址',
@@ -140,6 +153,7 @@ export function BrowserScreen({ route, navigation }: Props) {
         <WebView
           ref={webViewRef}
           source={{ uri: sourceUrl }}
+          userAgent={SAFARI_UA}
           onNavigationStateChange={handleNavigationStateChange}
           onLoadStart={handleLoadStart}
           onLoadEnd={() => setIsLoading(false)}
@@ -169,6 +183,9 @@ export function BrowserScreen({ route, navigation }: Props) {
               </TouchableOpacity>
               <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSearch}>
                 <Text style={styles.googleTxt}>🔍 Google 搜尋</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.safariBtn} onPress={handleOpenInSafari}>
+                <Text style={styles.safariTxt}>🧭 在 Safari 中開啟</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.manualBtn} onPress={handleManualUrl}>
                 <Text style={styles.manualTxt}>手動輸入</Text>
@@ -236,6 +253,8 @@ const styles = StyleSheet.create({
   retryTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
   googleBtn: { backgroundColor: '#34C759', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
   googleTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  safariBtn: { backgroundColor: '#5856D6', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  safariTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
   manualBtn: { backgroundColor: '#FF9F0A', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
   manualTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
   backBtn: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
