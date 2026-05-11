@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-05-12 — V2-A Round 1(Strategy Interface 規範)
+
+V2-A 第一輪鎖死 Strategy interface frame-level 三件事:
+
+- **Axis 6 Instrument 模型**:雙 interface — `SymbolStrategy`(per-symbol / pair 部位意圖)+ `PortfolioStrategy`(portfolio-level risk overlay)。Per bar 執行順序鎖死 SymbolStrategy → PortfolioStrategy。
+- **Axis 4 Output 形狀**:SymbolStrategy = target % long-only `[0, 1]` per symbol(% of strategy's allocated capital);PortfolioStrategy = per-symbol cap multiplier `[0, 1]`。
+- **Axis 1 抽象層次**:Class + 外部可 snapshot state + 嚴格 dataclass / pydantic state schema。params(策略邏輯參數)跟 state(run-time 內部變數)分離。
+
+V2 邊界 implication:SymbolStrategy output domain `[0, 1]` spot-only long-only 鎖死 → **Mean-reversion(BTC/ETH ratio)自動降級成 rebalance flavor**(ratio 偏高 → 減 BTC 配重加 ETH,非真 spread trade)。Round 1 拍板**起步策略池中 Mean-reversion 換掉**,候選名單 round 2 詳論(volatility regime / on-chain / calendar / funding skew / cross-exchange premium 等)。Trend-following 跟 Macro overlay 不受影響。
+
+Round 1 完整 ledger 見 `v2a/round1.md`(P0 拍板 + interface 骨架預覽 + 執行管線 + 範圍外 P1 子題 + open questions)。
+
+下一輪 V2-A Round 2 重點:策略池候選 finalize、P1 子題(lifecycle methods / param schema / data spec)、PortfolioStrategy always-on 鎖 + 疊合演算法。
+
+---
+
 ## 2026-05-09 — V2 Builder Pivot(框架重寫)
 
 V1 結案後使用者揭露真實意圖:**不是 problem-solver 模式**(沒明確痛點),而是 **builder 模式**(想創造大型量化平台)。原本的 V2-Q/R/D(問題驅動)框架不適用,**整套重寫成 V2-A/B/S/T/E/D**(蓋房子模式)。
