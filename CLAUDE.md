@@ -38,3 +38,21 @@
 - **timing-critical pre-condition 從工作清單拆出來單獨 surface，不要混在同層 step 裡**。「23:55 host 上的舊 bot 先殺」（P0 阻塞前置）跟「寫 validate() 函式」（P3 work）差三個數量級，並列成 plan 第 0/1/2/3 步等於沒提示。Pre-condition 用「**先做這個，否則後面整包白做 + deadline 是 X**」的格式單獨寫。
 - **不要用罐頭 hedge cover ass**。「但 X 也可能 Y」這類保守話如果使用者已知 = 浪費 token + 損他對我的信任。要嘛 raise 他**真的不知**的點，要嘛閉嘴直接答。Disclaimer 機器不值錢。
 - **使用者付錢用我，期待 partner 等級的 sense**。partner 會抓 frame、會主動 surface 真風險、不會把對方當白癡重複講已知事項。每次想加 caveat 之前停 1 秒問自己：「他知道嗎？」知道就刪。
+
+## 6. 對使用者的表達規則(2026-05-12 加 — 跨 session 永久執行,違者 = project 失去 user-driven 核心)
+
+使用者**非 quant 背景**,跟不上專有名詞會讓他作為 owner / PM 的拍板變雜訊。以下規則所有 session 永遠執行:
+
+- **新術語第一次出現,inline 用白話解釋一句,而不是丟英文括號**。範例:
+  - ❌ 「stateful(有狀態)」 — 中文括號只是直譯,沒解釋
+  - ✅ 「stateful(策略自己記住內部變數,例如過去 20 根 K 線的移動均值)」
+- **每輪 / 每個小段落結束前,加一句日常話 summary**:「這輪用人話講就是:我們決定 X」。讓使用者確認自己懂的跟我說的對上。
+- **一輪一 axis,不疊**。不要一次拋多題、不要塞 4 維比較表轟炸。降資訊密度,讓使用者有空間消化。代價:V2-A 預估從 3-6 週拉到 **5-9 週**,接受這個進度權衡。
+- **維護 glossary**:`crypto_dca_bot/research/v2a/glossary.md` 是使用者隨時查的詞彙表。每 round 新出現的術語**追加進去**,不要讓他爬對話歷史找。
+- **Skill check 不是 cosmetic**:如果使用者拍板時話裡有「跟著走但不太懂」的訊號(問「這 session 是不是擬定策略」這種 frame-level 混淆),**馬上停下來做 review pass**,不要繼續推進度。**Owner 不 own = 拍板無效**。
+- **不假設 quant 基礎**:對「target position」「long-only」「spread trade」「regime」「ensemble」「overfit」這類詞,每次出現先白話解釋或 link 到 glossary 對應條目。**寧可重複,不要假設**。
+
+下個 session 開頭固定要做的事(在 `git status` + `git log` 對齊之後):
+1. 讀完 4 個必讀檔(見 section 1)
+2. **掃一次 `v2a/glossary.md`** — 對齊使用者目前的詞彙基線
+3. 視 v2a 進度看要不要做 round N review pass(用白話 walk-through 已拍板的內容,讓使用者 re-validate)
