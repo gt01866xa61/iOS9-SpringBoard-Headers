@@ -2,6 +2,7 @@
 
 > 2026-05-12(Asia/Taipei)— V2-A 第一輪。鎖死 Strategy interface 的 frame-level 決定(雙 interface 形狀、output 形狀、抽象層次),讓 round 2+ 進細節時不會回頭翻地基。
 > 上層 frame 見 `../v2_roadmap.md` V2-A section,本檔是 round-by-round ledger。
+> **狀態:三軸經 2026-05-17 白話 review pass 全數 re-validate 通過,Round 1 正式定案。**
 
 ---
 

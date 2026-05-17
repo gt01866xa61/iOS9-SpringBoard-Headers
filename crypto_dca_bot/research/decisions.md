@@ -20,6 +20,8 @@ Round 1 review pass(用白話 walk-through 三軸讓使用者 re-validate)過程
 - 「簡單」不只指策略數量,每個策略內部也要簡單:參數理想 < 5 個、邏輯一句話講得清
 - 理由:複雜派玩法需規模才成立(文藝復興等級資源),個人玩家頭號死因是複雜度爆炸而非分散不足
 
+**Round 1 三軸正式定案:** 雙 interface / output 形狀 / class+snapshot+strict schema 三軸經白話 review pass(用買菜阿姨聽得懂的話逐軸 walk-through、使用者 re-validate)全數通過,Round 1 結束,進 Round 2。
+
 完整領域脈絡(6 共識 + 3 爭議 + 雙方論據)見 `v2a/domain_landscape.md`。Round 1 衍生事項(over-trading 執行層政策、Gap 3/4)見 `v2a/round1.md`。
 
 ---
