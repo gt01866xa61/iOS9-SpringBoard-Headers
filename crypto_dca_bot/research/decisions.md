@@ -6,7 +6,7 @@
 
 ---
 
-## 2026-05-12 — V2-A Round 1 review pass:Validation Standards 擴 M6/M7 + 簡單派定調
+## 2026-05-17 — V2-A Round 1 review pass:Validation Standards 擴 M6/M7 + 簡單派定調
 
 Round 1 review pass(用白話 walk-through 三軸讓使用者 re-validate)過程中浮現的結構性決策:
 

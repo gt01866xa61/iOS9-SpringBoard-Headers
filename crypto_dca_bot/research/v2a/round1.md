@@ -122,7 +122,7 @@ P1 子題:
 
 ---
 
-## Round 1 review pass 衍生事項(2026-05-12)
+## Round 1 review pass 衍生事項(2026-05-17)
 
 Review pass(白話 walk-through 三軸讓使用者 re-validate)過程中浮現:
 
