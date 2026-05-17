@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-05-12 — V2-A Round 1 review pass:Validation Standards 擴 M6/M7 + 簡單派定調
+
+Round 1 review pass(用白話 walk-through 三軸讓使用者 re-validate)過程中浮現的結構性決策:
+
+**Validation Standards 從 M1-M5 擴成 M1-M7**(寫進 `v2_roadmap.md`):
+- **M6:Position sizing 必須 risk-based** — 對應核心共識「風險管理 > 預測」。部位大小不得用固定比例,預設 volatility targeting;V2-B/T 階段須證明 risk-based 版 max drawdown 優於 naive 版。
+- **M7:策略退役機制** — 對應核心共識「edge 會衰退」。M1-M6 是上線前關卡,M7 是上線後持續監控:滾動 Sharpe 連續 2 窗低於 backtest 50%、或 live 回撤超 backtest 1.5 倍 → 退役。
+- 來源:對照量化交易 6 條核心共識做 gap 分析,Gap 1(sizing)/ Gap 2(退役)被判定跟 M1-M5 同級重要,升級進 roadmap。M6/M7 門檻數字為初版,V2-D 前校準。
+
+**簡單 vs 複雜爭議定調:簡單派**(使用者委託 Claude 專業判斷):
+- V2 實際策略數目標 anchor 在 **3 個**,roadmap 的「3-7」中 7 當理論上限不當目標
+- 「簡單」不只指策略數量,每個策略內部也要簡單:參數理想 < 5 個、邏輯一句話講得清
+- 理由:複雜派玩法需規模才成立(文藝復興等級資源),個人玩家頭號死因是複雜度爆炸而非分散不足
+
+完整領域脈絡(6 共識 + 3 爭議 + 雙方論據)見 `v2a/domain_landscape.md`。Round 1 衍生事項(over-trading 執行層政策、Gap 3/4)見 `v2a/round1.md`。
+
+---
+
 ## 2026-05-12 — V2-A Round 1(Strategy Interface 規範)
 
 V2-A 第一輪鎖死 Strategy interface frame-level 三件事:

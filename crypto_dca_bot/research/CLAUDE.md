@@ -19,7 +19,7 @@ V2 分 6 階段,依序執行:
 | V2-E | Ensemble 動態策略選擇 |
 | V2-D | Deploy(真錢小額 → 漸進放大)|
 
-每階段獨立 deliverable(可交付產出)。**V2-T 階段必跑 M1-M5 validation standards**(stress-test / walk-forward / lock / paper trade / paper-vs-backtest 並排,見 `v2_roadmap.md`)。
+每階段獨立 deliverable(可交付產出)。**V2-T 階段必跑 M1-M7 validation standards**(stress-test / walk-forward / lock / paper trade / paper-vs-backtest / risk-based sizing / 上線後退役監控,見 `v2_roadmap.md`)。
 
 ## 我(Claude)的角色
 

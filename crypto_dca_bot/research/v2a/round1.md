@@ -122,6 +122,18 @@ P1 子題:
 
 ---
 
+## Round 1 review pass 衍生事項(2026-05-12)
+
+Review pass(白話 walk-through 三軸讓使用者 re-validate)過程中浮現:
+
+1. **Over-trading(過度交易)顧慮 → 執行層政策**:使用者 raise 川普推文 / TACO 類噪音會洗手續費。結論:雙 interface 架構不翻案,問題在「執行層」(target → 實際下單的轉換)。需加冷卻工具(dead-band 不動區 / cooling period 冷卻期 / regime-aware 降頻)。**留 round 3「資料流 / 執行管線」攻。**
+2. **6 共識 gap 分析的 4 個 gap**:
+   - **Gap 1(sizing 方法論)→ 已升級為 M6**(寫進 `v2_roadmap.md` Validation Standards)
+   - **Gap 2(策略退役機制)→ 已升級為 M7**(寫進 `v2_roadmap.md` Validation Standards)
+   - **Gap 3(最低 edge 門檻)**:M1-M7 是驗證流程標準,缺「edge 要多大才值得上線」的數字。留 V2-B 階段拍。
+   - **Gap 4(回測成本模型)**:滑點 / 衝擊成本怎麼在回測模擬,roadmap 無規格。留 V2-B 階段拍。
+3. **領域 landscape + 簡單派定調**:見 `v2a/domain_landscape.md`。
+
 ## 下一輪(Round 2)
 
 重點(順序待 round 2 開頭跟使用者確認):
