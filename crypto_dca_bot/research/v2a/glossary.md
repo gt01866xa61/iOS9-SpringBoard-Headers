@@ -133,6 +133,37 @@ PortfolioStrategy 的輸出。每個 symbol 一個介於 0-1 的數,表示「最
 ### Sizing(下單量計算)
 從「target %」算到「實際下單量(USDT 或 BTC 數)」的過程。要考慮現有部位、可用資金、最小下單量、手續費。Engine 負責,不是策略的事。
 
+### Perpetual futures(永續合約)
+沒有到期日的衍生品合約。為了讓永續價格不偏離現貨價,交易所每 8 小時收一筆「funding rate(資金費率)」讓多空互付。**V2 邊界鎖不交易永續**,但可以**只把永續的資料當訊號用**(funding rate skew 策略就是這樣)。
+
+### Funding rate(資金費率)
+永續合約每 8 小時(Binance 是 00 / 08 / 16 UTC 結算)多空互付的費率,單位是「每 8h 的 %」。
+- 永續價 > 現貨價(多頭擁擠)→ funding 是正 → 多方付給空方
+- 永續價 < 現貨價(空頭擁擠)→ funding 是負 → 空方付給多方
+
+例:funding = 0.01% / 8h ≈ 年化 11% carry。
+
+### Funding rate skew(資金費率偏度)
+持續高 funding(例如連 7 天滾動平均 > 0.03% / 8h)≈ 多頭部位過度擁擠,歷史上常出現在動能末端、修正前。**Round 2 拍板策略池 #2**:funding 持續高 → 縮 BTC/ETH 現貨多單;funding 持續低/負 → 滿倉。
+
+### Short squeeze(空頭擠壓)
+價格急漲時空頭被迫平倉(買回標的)→ 推升價格 → 更多空頭被迫平倉的連鎖。期間 funding 通常極端負。
+
+### BTC halving(BTC 減半) / Halving cycle(減半週期)
+BTC 每挖 21 萬個區塊(約 4 年)區塊獎勵減半,歷史四次:2012-11-28 / 2016-07-09 / 2020-05-11 / 2024-04-19。歷史上減半後 12-24 個月通常出現週期高點。**這是 BTC 特有結構,ETH 無此事**(但市場常把 BTC 拉著 ETH 同步動)。Round 2 評估後,calendar 策略不當主策略(N=2 樣本問題),保留 PortfolioStrategy 子訊號候選。
+
+### Rolling average(滾動平均)
+固定窗口長度的移動平均。例:過去 21 個 8h funding 期間的平均 = 過去 7 天 funding 平均。每多一筆新資料,窗口往前推一格、最舊那筆掉出去。常用來把雜訊濾掉、看趨勢。
+
+### Linear interpolation(線性插值)
+兩端有固定值、中間按比例算。例:funding 在 `low_threshold` (0.005%) 時 target = 1.0,在 `high_threshold` (0.03%) 時 target = 0.0,中間 funding 0.02% 時 target = (0.03 - 0.02) / (0.03 - 0.005) = 0.4。比 if-else 階梯式平滑,部位變動較連續、訊號雜訊較不易引爆下單。
+
+### Dead band(不動區)
+訊號變動小於某門檻時部位不動,只有跨過門檻才調整。例:`dead_band = 0.002%`,funding 從 0.010% 漂到 0.011% 不動,漂到 0.013% 才動。用來防止訊號雜訊頻繁觸發下單(over-trade、燒手續費)。Round 1 review pass 衍生的「執行層 cooling tool」雛形之一。
+
+### Catch a falling knife(抓刀)
+標的急跌時進場,結果跌勢延續被套牢的情境。中文交易俗語「接刀」。Funding rate skew 在崩盤期極端負 funding 滿倉時就有抓刀風險。
+
 ---
 
 ## 3. 統計 / 驗證 / 績效

@@ -118,6 +118,7 @@ P1 子題:
    - Funding rate skew(永續 funding 高 → 多頭擁擠 → 反向訊號)
    - Cross-exchange premium(Binance vs Coinbase price gap)
    - Volume / liquidity regime(高量伴隨價格 → 趨勢確認)
+   - **→ Resolved 2026-05-21:選 Funding rate skew(D),Calendar(C)退為 PortfolioStrategy 子訊號候選。完整 6 維對照見 `round2.md`。**
 2. **PortfolioStrategy always-on 嗎**:macro overlay 是 risk-layer,直覺 always-on(meta-layer 不能關掉)。但 always-on 鎖會限制 V2-E meta-layer 設計空間。V2-A round 後段或 V2-E round 1 拍。
 3. **多個 PortfolioStrategy 怎麼疊**:VIX overlay `{"BTC": 1.0, "ETH": 0.3}` + drawdown brake `{"BTC": 0.5, "ETH": 0.5}` → effective cap = `min(各 cap)` 還是 `prod(各 cap)`?min 比較保守、語意清晰;prod 對應「多個獨立 risk score 累積」。
 

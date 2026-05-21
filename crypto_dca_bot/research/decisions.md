@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-05-21 — V2-A Round 2 (Part 1):策略池 #2 拍 Funding rate skew
+
+Round 2 第一題(策略池 #2 替代 mean-reversion)拍板。
+
+**選 D:Funding rate skew(永續資金費率偏度)** 為起步策略池 #2。
+**C(BTC halving cycle / calendar)退為 PortfolioStrategy 子訊號候選**,V2-E ensemble 階段再評估。
+
+**拍板理由 — 驗證流程可通,不是賺率高:**
+- D vs C 6 維對照(訊號 / 參數 / 資料 / M1-M7 / 失效 / correlation 推導,見 `v2a/round2.md`)
+- C 結構性問題:高品質 BTC/ETH 資料只覆蓋 2 次 halving(2020-05 / 2024-04),N=2 違反 M2 walk-forward + M4 paper 60 日 + M5 paper-vs-backtest 的「足夠樣本」前提 — 不是調參能解決
+- D 資料 Binance Futures `/fapi/v1/fundingRate` 2019-09 起,M1 五段崩盤全覆蓋,M1-M7 結構性可驗
+
+**核心設計**:funding 持續高(永續多頭擁擠) → 縮 spot 多單;funding 持續低/負 → 滿倉。5 個 params(`lookback_periods` / `low_threshold` / `high_threshold` / `dead_band` / `symbol_list`),邏輯一句話。**不交易永續、只把 funding 當訊號**,符合 V2 邊界(只玩 spot)。
+
+**對 trend correlation 預估**:**-0.1 ~ +0.2**(邏輯反向 — trend 賺動能持續、D 在動能過熱時減倉)。**Caveat**:邏輯推導非實測,若 EMA crossover lag 跟 funding 升溫時間軸接近,實測可能 0.3+。**M1 五段崩盤是 reality check 關鍵**,V2-B 跑出結果再校準。
+
+**起步策略池(round 2 後狀態):**
+
+| # | Style | 角色 |
+|---|---|---|
+| 1 | Trend-following | SymbolStrategy |
+| 2 | **Funding rate skew** | SymbolStrategy |
+| 3 | Macro overlay | PortfolioStrategy |
+
+Round 2 完整 ledger 見 `v2a/round2.md`。下一題:P1 細節(lifecycle methods / param schema / data spec)。
+
+---
+
 ## 2026-05-17 — V2-A Round 1 review pass:Validation Standards 擴 M6/M7 + 簡單派定調
 
 Round 1 review pass(用白話 walk-through 三軸讓使用者 re-validate)過程中浮現的結構性決策:
