@@ -51,13 +51,32 @@ class TrendState:
 V2 預設 bar-based,event-driven 留 round 2/3 視需要再開。
 
 ### Lifecycle method(生命週期方法)
-策略 instance 從生到死會經歷的階段對應的方法。常見:
-- `__init__` / `initialize`:策略剛被建立時,給 state 初始值
-- `on_bar`:每根 K 線收盤觸發
-- `reset`:walk-forward 重訓時清空 state
-- `on_session_end`:每天 / 每週結束時做總結
+策略 class 必須(或可選)實作的方法,engine 在固定時機呼叫。Round 2 #2A 拍板 **4 必 + 1 可選**:
 
-Round 2 會細討論完整 lifecycle method 列表。
+| Method | 必要? | 何時被叫 | 用途 |
+|---|---|---|---|
+| `__init__(params)` | 必 | 建立時,只一次 | 接 params + 合法性檢查 |
+| `required_data()` | 必 | 註冊時,只一次 | 跟 engine 宣告需要什麼資料 |
+| `initialize(snapshot)` | 必(可空 `pass`) | 第一根 bar 前,只一次 | 暖機:prime indicators |
+| `on_bar(snapshot)` | 必 | 每根 bar | 核心邏輯 → 回 target |
+| `reset()` | 可選 | walk-forward 切窗口前 | 清空狀態 |
+
+類比:React 元件規定 `render()` 必要、`componentDidMount()` 可選。Engine 負責叫,你負責寫內容。
+
+### No-op(空實作)
+方法明寫但內容空,只有 `pass`。例:無狀態策略不需要暖機,但 lifecycle 鎖 `initialize` 必要 → 明寫 `def initialize(self, snapshot): pass`。代價極小,換 contract 明確 + framework 可插 instrumentation。
+
+### Boilerplate(樣板碼)
+為了滿足 framework / 介面而要重複寫的固定樣板程式碼。例如:每個策略都要寫 `def __init__(self, params): self.params = params`。Boilerplate 多 = 開發負擔大,framework 設計要在「規範明確」跟「樣板量少」之間 trade-off。
+
+### Instrumentation(儀器化 / 插樁)
+在程式關鍵點插入記錄程式碼(計時、log state、發 metric),讓系統可以被觀察與診斷。例:Framework 在每個策略的 `initialize` 前後計時、log state snapshot → 可看出哪個策略暖機特別慢、哪個 state 不正常。Lifecycle 必要 method 越明確,插 instrumentation 越容易。
+
+### Prime indicators(暖機指標)
+策略要算的技術指標(EMA / 滾動平均 / RSI 等)通常需要 N 根歷史資料才能算出第一個值。例:rolling_21 funding 平均要 21 個 funding 期間才有第一個輸出。暖機(prime)= 在策略開始決策前,先把歷史餵進去算到指標就緒狀態。
+
+### Walk-forward window(walk-forward 窗口)
+M2 walk-forward 驗證每次切到下個 IS(訓練)/ OOS(測試)窗口時,需要把策略 state 清掉(因為新窗口可能是不同 regime,舊 state 帶過去會洩漏)。這就是 `reset()` 存在的時機。
 
 ### Pipeline(管線)
 資料 / 訊號從一頭流到另一頭的處理鏈。V2 執行管線(per bar)=

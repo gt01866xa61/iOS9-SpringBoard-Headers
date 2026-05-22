@@ -138,9 +138,32 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 
 ---
 
-## #2 P1 細節子題 — TODO
+## #2 P1 細節子題 — IN PROGRESS
 
-候選順序(round 1 預留):lifecycle methods → param schema → data spec。下一回合開始時跟使用者確認順序。
+> 子軸:**A. 必要 vs 可選** → DONE 2026-05-22 / B. 觸發頻率粒度 → TODO / C. 狀態 lifecycle 細節 → TODO / D. 錯誤路徑 → TODO
+
+### #2A Lifecycle method 必要 vs 可選(2026-05-22)
+
+**拍板:4 必要 + 1 可選**
+
+| Method | 必要? | 何時被叫 | 用途 |
+|---|---|---|---|
+| `__init__(params)` | **必要** | 策略建立時,只一次 | 接 params + 合法性檢查 |
+| `required_data() → DataSpec` | **必要** | 註冊時,只一次 | 跟 engine 宣告需要什麼資料(粒度 / 長度 / symbol) |
+| `initialize(snapshot)` | **必要**(可空 `pass`) | 第一根 bar 前,只一次 | 暖機:load 歷史 prime indicators |
+| `on_bar(snapshot) → output` | **必要** | 每根 bar | 核心邏輯:看快照 → 回 target |
+| `reset()` | **可選**(default = framework 丟舊 instance、用同 params new 新的) | walk-forward 切窗口前 | 清空所有內部狀態 |
+
+**為什麼 initialize 鎖為必要而非可選**:即使 no-op (`pass`),明寫的好處:
+1. Framework 可在 initialize 前後關鍵點插 instrumentation(timing / state snapshot / telemetry)
+2. Contract 對策略開發者更明確 — 「暖機」是一等公民概念,不藏在 `__init__` 裡偷做
+3. 實際策略池 0 代價:funding skew 要 prime 21 期 rolling buffer、trend 要 prime EMA、macro overlay 要 load 30 天 VIX/DXY history,3 條都需要 initialize
+
+**為什麼 reset 留可選**:多數策略不會在意 — engine 直接丟舊 instance、用同 params new 新的等價於 reset。只有特殊需求(例如:策略內部有 expensive cache 想保留結構但 reset 內容)才 override。
+
+**下一子軸 #2B**:`on_bar` 的「bar」到底是什麼粒度?BTC K 線是 1h、funding 是 8h、macro 資料是日線,multi-timeframe 怎麼合進同一個 on_bar 觸發?
+
+---
 
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
