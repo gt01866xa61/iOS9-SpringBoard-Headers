@@ -78,6 +78,24 @@ V2 預設 bar-based,event-driven 留 round 2/3 視需要再開。
 ### Walk-forward window(walk-forward 窗口)
 M2 walk-forward 驗證每次切到下個 IS(訓練)/ OOS(測試)窗口時,需要把策略 state 清掉(因為新窗口可能是不同 regime,舊 state 帶過去會洩漏)。這就是 `reset()` 存在的時機。
 
+### Event-driven(事件驅動)
+Engine 等「事件」(新資料到達)發生時才行動,而非按固定時鐘輪詢所有策略。Round 2 #2B 拍板:V2 engine event-driven、每筆新資料只 fire 有 subscribe 的策略。相對概念是 polling(輪詢)/ synchronous bar tick(同步打點)— 每最細粒度 bar 觸發所有策略,V2 不採用。
+
+### Dispatch table(派發表)
+Engine 內部一張表,記錄「哪個 data source 來新資料 → 該 fire 哪些策略」。策略註冊時透過 `required_data()` 宣告需要什麼資料 + 哪些事件作觸發,engine 寫進 dispatch table。Event-driven 架構的核心資料結構。
+
+### Last known value(最新已知值)
+策略被 fire 時 snapshot 中的非主觸發 field,一律取「最新已知值」(可能來自前一個事件、可能是幾分鐘前的 last close)。不等資料同步、不空缺、可能 stale。每個 field 帶 `timestamp` 讓策略自己判斷 staleness 容忍度。
+
+### Stale data(過時資料)
+資料雖有值但時戳太舊,不一定可信。例:macro overlay 用 VIX 但 VIX feed 死了 3 天,snapshot 仍能拿到 last known value(3 天前的 VIX),但策略要決定是否信任。每個策略對 staleness 的容忍門檻不同 — 由策略內部或 framework convention 處理。
+
+### Event log(事件記錄)
+Engine 把所有 lifecycle event(initialize / on_bar / reset)+ 跨策略觸發時序寫進一條統一的時間序記錄。Debug / 回放 / paper-vs-backtest 對照都靠它當 single source of truth(單一真實來源)。V2 把它掛在 `initialize` 的 instrumentation hook(#2A 鎖板的副產品)。
+
+### Subscribe(訂閱)
+策略宣告「我關心哪些 data event 作觸發」的動作。Pub/sub(發布-訂閱)模式裡的訂閱端。Funding skew subscribe `funding_rate_8h`,trend subscribe `kline_1h`,macro overlay subscribe `vix_daily` + `dxy_daily`。Engine 是 publisher,策略是 subscriber。
+
 ### Pipeline(管線)
 資料 / 訊號從一頭流到另一頭的處理鏈。V2 執行管線(per bar)=
 SymbolStrategy 出 target → 加總 → PortfolioStrategy 出 cap → 合併 → engine 算下單。

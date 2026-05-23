@@ -140,7 +140,7 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 
 ## #2 P1 細節子題 — IN PROGRESS
 
-> 子軸:**A. 必要 vs 可選** → DONE 2026-05-22 / B. 觸發頻率粒度 → TODO / C. 狀態 lifecycle 細節 → TODO / D. 錯誤路徑 → TODO
+> 子軸:A. 必要 vs 可選 → DONE 2026-05-22 / **B. 觸發頻率粒度 → DONE 2026-05-22** / C. 狀態 lifecycle 細節 → TODO / D. 錯誤路徑 → TODO
 
 ### #2A Lifecycle method 必要 vs 可選(2026-05-22)
 
@@ -162,6 +162,43 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 **為什麼 reset 留可選**:多數策略不會在意 — engine 直接丟舊 instance、用同 params new 新的等價於 reset。只有特殊需求(例如:策略內部有 expensive cache 想保留結構但 reset 內容)才 override。
 
 **下一子軸 #2B**:`on_bar` 的「bar」到底是什麼粒度?BTC K 線是 1h、funding 是 8h、macro 資料是日線,multi-timeframe 怎麼合進同一個 on_bar 觸發?
+
+---
+
+### #2B 觸發頻率粒度(2026-05-22)
+
+**拍板:Event-driven + last known value 對齊 + 統一 event log**
+
+**核心三元素**:
+
+1. **Event-driven dispatch**:engine 不是「每根最細粒度 bar 觸發所有策略」,而是「每筆新資料來只 fire 對應 subscribe 的策略」。
+   - BTC 1h close → 只 fire trend
+   - 8h funding 結算 → 只 fire funding skew
+   - 日線 VIX/DXY → 只 fire macro overlay
+
+2. **Last known value 時序對齊**:策略被 fire 時,snapshot 中所有非主觸發 field 一律是「最新已知值」,不等同步、不空缺、但可能 stale。
+   - 例:funding skew 在 08:00 UTC funding 結算被 fire,snapshot 中 BTC price = 最近一根 1h bar(07:00 UTC 收盤)。不會因為「下一根 1h bar 還沒收」而 block。
+
+3. **統一 event log**:利用 #2A 鎖板的 `initialize` instrumentation hook,framework 把所有 lifecycle event(initialize / on_bar / reset)+ 跨策略觸發時序統一寫進 event log。Debug 時可看「先 fire trend(08:00:01)、再 fire funding(08:00:03)、snapshot 中 BTC price 是 67200(時戳 07:00:00)」這種完整時序。
+
+**架構意涵**:
+
+| 元件 | 設計需求 |
+|---|---|
+| Engine dispatch table | 註冊時 `required_data()` 不只宣告需要什麼資料、也宣告 subscribe 哪些 data event 作觸發 |
+| Snapshot 組裝 | 永遠是「組裝最新 known values」的視圖 — 各 field 帶 `timestamp` 讓策略可查 staleness |
+| Walk-forward / paper trading | event ordering 在三種模式(backtest / paper / live)下必須完全可重現,event log 是 single source of truth |
+
+**為何不選「同步每 bar 觸發」**:
+- 8h funding 跟 1h K 線之間沒有「最大公約 bar」(8h)能合理觸發 trend(trend 一天只 fire 3 次太少)
+- 強制同步會讓策略相互等對方資料,但 funding 不會「等 BTC 1h 收盤再公布」,反之亦然 → 同步只是人為延遲
+
+**未解伏筆**(往 #2C / #2D):
+- 暖機期間(buffer 未填滿)on_bar 被 fire,策略應 emit 什麼?
+- Last known value 多 stale 算「太舊不可用」?
+- 多策略 emit 衝突的 target 給同一 symbol?(這偏 portfolio aggregation,V2-A 後段)
+
+**下一子軸 #2C**:狀態 lifecycle 細節 — 暖機 / stale data / state 持久化的協議。
 
 ---
 
