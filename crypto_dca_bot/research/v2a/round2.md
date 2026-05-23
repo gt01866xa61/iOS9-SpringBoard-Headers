@@ -140,7 +140,7 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 
 ## #2 P1 細節子題 — IN PROGRESS
 
-> 子軸:A. 必要 vs 可選 → DONE 2026-05-22 / **B. 觸發頻率粒度 → DONE 2026-05-22** / C. 狀態 lifecycle 細節 → TODO / D. 錯誤路徑 → TODO
+> 子軸:A. 必要 vs 可選 → DONE 2026-05-22 / B. 觸發頻率粒度 → DONE 2026-05-22 / **C. 狀態 lifecycle 細節 → C1 DONE 2026-05-22(C2/C3 TODO)** / D. 錯誤路徑 → TODO
 
 ### #2A Lifecycle method 必要 vs 可選(2026-05-22)
 
@@ -199,6 +199,51 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 - 多策略 emit 衝突的 target 給同一 symbol?(這偏 portfolio aggregation,V2-A 後段)
 
 **下一子軸 #2C**:狀態 lifecycle 細節 — 暖機 / stale data / state 持久化的協議。
+
+---
+
+### #2C1 暖機期協議(2026-05-22)
+
+**拍板:γ 混合派 — Framework 統一 `is_ready()` API + 策略可 override + 3 條防呆**
+
+**基本機制(白話)**:
+- 策略 class 多一個 method:`is_ready() -> bool`(白話:策略告訴 engine「我準備好開始決策了嗎?」回 true/false)
+- Framework 在 fire `on_bar` 之前,先 call `is_ready()`;回 false 就跳過這次 fire(不執行 `on_bar`)
+- Framework 提供 default 實作:「buffer 滿到 `required_data()` 宣告的 `min_history` 為止」— 覆蓋多數情境
+- 策略可 override 寫自己版本(funding skew 用 default 就夠;特殊策略可特化)
+
+**3 條防呆(寫進 lifecycle 規格,不是建議,是強制)**:
+
+1. **強制 log `is_ready` 回傳結果 + 連續 N 次 false 告警**(N 預設待定,V2-B 時定數字)
+   - Framework 不問策略要、直接記;每次 dispatch 自動掛
+   - 連續 N 次 false → 告警「策略可能 buffer 餵不進來、或就緒條件設太嚴」
+   - 解決盲點:策略默默不就緒、整個系統不知道
+
+2. **`is_ready()` 只能看歷史 buffer,不能看當前最新值**
+   - 寫進 lifecycle 規格作硬約束
+   - 目的:鎖死 backtest / paper / live 三模式在同 timestamp 下 `is_ready` 結果必相同
+   - 解決盲點:避免「回測算 ready 但 live 上線後變未 ready」這種模式差異 bug
+
+3. **M5 paper-vs-backtest 對照納入 `is_ready` 觸發次數比對**
+   - M5 既有對照項(訊號數、fill rate、target 軌跡)+ 新增「`is_ready` true 次數 / false 次數」
+   - 兩模式差太多 → fail M5,設計有 bug
+   - 解決盲點:防呆 #2 鎖時序、這條鎖數值;雙重保險
+
+**為何選 γ 而非 α/β**:
+- α(策略自報):每個策略都要寫 readiness 判斷,boilerplate ↑;且 framework 無法統一插 instrumentation
+- β(framework 推遲):framework 必須懂每個策略的就緒邏輯,耦合度過高
+- γ:default 覆蓋 80% 情境(buffer-based)、特殊策略可 override,且配上 3 防呆讓 override 不會炸
+
+**對 #2A 邊界影響**:
+- `is_ready()` 是新增的策略 method,需歸到「必要 / 可選」分類
+- 拍:**可選**(default = framework 提供 buffer-based 實作),理由與 `reset()` 同 — 多數策略 default 就夠
+- 但 default 實作本身是 framework 一級公民,不是「策略開發者忘了就空」
+
+**未解伏筆**:
+- 防呆 #1 的 N 值(連續幾次 false 告警):待 V2-B 實測訊號分佈後定
+- 防呆 #2 「歷史 buffer」的精確邊界:`is_ready` 能讀 snapshot 嗎?還是只能讀策略內部 buffer?— 留 #2C2 stale data 子題一起處理
+
+**下一子軸**:#2C2 stale data 容忍協議。但 user 觸發 skill check → 推進前先做 Round 2 全部已拍板的 review pass。
 
 ---
 
