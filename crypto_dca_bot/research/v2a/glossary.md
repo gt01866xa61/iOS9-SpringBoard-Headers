@@ -321,7 +321,7 @@ V2 builder 階段代號(蓋房子比喻):
 
 ### M1 / M2 / M3 / M4 / M5
 V2 寫死的 5 條 validation 標準:
-- **M1**:V2-B 內建 5 段崩盤 stress-test
+- **M1**:V2-B 內建 5 段崩盤 stress-test。**規格補註(2026-05-24)**:M1 必須 **stale-aware** — LUNA / FTX 那種行情 exchange API 大量 timeout 會觸發 framework stale 機制(Round 2 #2C2-A/B 拍板),M1 stress test 不只測策略邏輯,**framework 對 stale 的反應(跳過 / `on_stale` hook / counter alert)本身也要被涵蓋**
 - **M2**:Walk-forward 規格(IS 30 個月 / OOS 3 個月 / WFE > 50%)
 - **M3**:Backtest 結果 lock(timestamp + commit hash,策略改 = 新編號)
 - **M4**:Paper trading ≥ 60 交易日

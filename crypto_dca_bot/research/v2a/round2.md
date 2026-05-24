@@ -424,7 +424,41 @@ def required_data(self):
 
 **Round 2 #2C2-B 全套 Sub-Q 完成(Sub-Q1/2/3 都拍板)**。
 
-**下一子軸**:Round 2 三大子題只剩 **#3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合演算法**。但建議先做 #2C2 全段(A + B 三 Sub-Q)的 review pass 對齊使用者,再進 #3。
+---
+
+### #2C2 全段收尾 — review pass 全綠 + 4 個 watch item 分流(2026-05-24)
+
+#2C2 整段(A + B-1/2/3)用白話 walk-through review pass,8 個 checkpoint 全綠。使用者 carry over 4 個 watch item,分流如下:
+
+**架構層(必處理,Round 2 #3 議題)**:
+1. **Silent divergence(沉默歧異)— 進 #3**:PortfolioStrategy 領班要有 **cross-strategy stale override** — 風控策略被 stale 跳過時 framework 強制全策略降風險。防止「風控失能 + 其他策略繼續滿倉」這種沉默危險場景(整體曝險上升、無人察覺)。**Round 2 #3 必拍**,整合進 PortfolioStrategy 領班議題的 sub-Q。
+2. **Stale 權責切 — 進 backlog #4**:資料完整性責任歸 PortfolioStrategy 還是獨立的 Risk Engine?**Round 3 拍 Risk Engine 時會撞**,先註記,Round 3 進場時 Risk Engine 邊界討論必處理。
+
+**V2-B 必驗(實測題)**:
+3. **Counter 鋸齒 reset 評估**:Sub-Q2 拍的「連續 N 次 reset」counter 模式,可能因資料偶爾恢復 1 次又斷 → counter 重置 → 永遠不觸發 alert。評估改 **滑動視窗 N-of-M**(過去 M 次裡有 N 次 stale 就 alert,不要求連續)— V2-B 觀測實際 stale 序列形狀再決定。
+4. **N 值校準不收斂**:Sub-Q3 拍的 `alert_N_default`(預設 BTC 6 / funding 2 / VIX 3)+ `max_staleness_default` 數字屬於需 V2-B **實測校準** 的參數,可能跑過才知道太鬆或太緊。
+
+**規格補註(已落地)**:
+- **M1 stress test 必須 stale-aware**:LUNA / FTX 那種行情 exchange API 大量 timeout 會觸發 stale,**stale 機制本身(framework 跳過 / `on_stale` hook / counter alert)要被 stress test 涵蓋**。已寫入 `glossary.md` M1 條目補註,V2-B M1 實作必須遵守。
+
+---
+
+## #3 PortfolioStrategy 議題(Round 1 carry over,2026-05-24 開始 frame)
+
+承自 Round 1 拍板「兩階層策略(SymbolStrategy + PortfolioStrategy)」遺留的 open question + Round 2 #2C2 watch #1 整合進來。Round 2 在此拍。
+
+**子題清單(待拍板)**:
+
+| 子題 | 內容 | 依賴 |
+|---|---|---|
+| **#3A** | **always-on 鎖** — Framework 是否強制至少有一個 PortfolioStrategy 在系統裡?(全 disable 是否合法?) | 無依賴,先拍 |
+| **#3B** | **Dispatch 順序** — fire 時 PortfolioStrategy 跟 SymbolStrategy 誰先跑?(影響領班 override 時機) | 無依賴 |
+| **#3C** | **Cross-strategy stale override**(#2C2 watch #1)— PortfolioStrategy 領班如何偵測旗下風控被 stale 跳過 + 強制全策略降風險的機制 | 依賴 #3B |
+| **#3D** | **多 PortfolioStrategy 疊合** — 如果有 N 個 PortfolioStrategy(例 macro overlay + sentiment overlay),最終 cap multiplier 怎麼算? | 無依賴 |
+
+**建議拍板順序**:#3A → #3B → #3D → #3C(把無依賴的先拍完、#3C 留最後因為要看 #3B 結果)。
+
+**下一子軸**:#3A always-on 鎖 — 等使用者確認子題清單 + 順序對不對,下輪丟 #3A options。
 
 ---
 
