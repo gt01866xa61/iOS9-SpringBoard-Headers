@@ -247,6 +247,69 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 
 ---
 
+### #2C2-A Framework 對 stale data 的行為(2026-05-24)
+
+**拍板:Option 3 — Framework 偵測 stale → 跳過 on_bar + 寫 event log,策略無感**
+
+**核心機制**:
+- Engine fire 策略前先掃 snapshot 各 field 的 `timestamp`,任何被 `required_data()` 宣告為 critical 的 field 超過 staleness 門檻 → **不 call `on_bar`**(直接跳過這次觸發)
+- 跳過事件統一寫進 event log:`{strategy, timestamp, stale_fields: [...], action: "skipped"}`
+- 策略本身**預設無感** — 它只是這次沒被叫到,跟「is_ready 回 false 被跳」結構一致
+
+**為何 Option 3(framework 擋)而非「策略自己判斷 stale」**:
+- 跟 #2C1 `is_ready()` 同精神 — framework 統一卡關、不勞煩每個策略自己重寫一份 stale 檢查 boilerplate
+- backtest / paper / live 三模式 stale 判定走同一條 code path,確保結果可重現(M5 對照不會炸)
+- staleness 門檻是 framework convention(由 `required_data()` 宣告每 field 的 `max_staleness`),不混進策略邏輯
+
+**未解伏筆 → 拆成 3 個 Sub-Q**:
+- Sub-Q1:策略要不要有 `on_stale` 鉤子?(事後通知)
+- Sub-Q2:連續 stale N 次要不要升級成 alert?(類比 #2C1 防呆 #1)
+- Sub-Q3:`max_staleness` 門檻在哪宣告 / 預設值?
+
+---
+
+### #2C2-B Sub-Q1 策略 stale 通知鉤子(2026-05-24)
+
+**拍板:Option C — 可選 `on_stale(stale_fields)`,base class default no-op,策略可 override**
+
+**機制**:
+```python
+class Strategy:
+    def on_bar(self, snapshot): ...
+    def is_ready(self, snapshot): ...
+    def on_stale(self, stale_fields):  # default no-op
+        pass
+
+class MyRiskStrategy(Strategy):
+    def on_stale(self, stale_fields):
+        if "BTC_price" in stale_fields:
+            self.reduce_position()
+```
+
+- 預設無感:多數策略(long-only DCA、單純 trend)用 default no-op,寫了等於沒寫
+- 留 hook 點:風控 / fallback / ensemble 策略 override 處理 stale 後續(例:降部位、切備援源、re-weight)
+
+**為何 Option C(可選 override)而非 A/B/D**:
+- A(黑箱,不開鉤子):跟 Option 3「策略無感」一致到底,但風控 / fallback 策略沒地方寫 stale 處理 → 過度極端 minimalist
+- B(強制 on_stale):統一介面但**多數策略不需要** = 強迫所有人寫 `def on_stale(self, fields): pass` boilerplate,違反「策略無感」精神
+- D(event bus / pub-sub):為一個 on_stale 引入 event bus 架構複雜度爆炸,V2-A 階段過早優化
+- C 同時滿足「不需要的策略無感」+「需要的策略有 hook 點」+ base class 多一個方法成本極低
+
+**對 #2A 邊界影響**:
+- `on_stale()` 是新增的策略 method,歸到「**可選**」分類(與 `reset()` / `is_ready()` 同),理由同上 — default 覆蓋多數策略
+
+**對其他 Sub-Q 的影響**:
+- 對 Sub-Q2(連續 stale 升 alert)幾乎無影響 — alert 是 framework 往 surveillance 發,跟策略 hook 解耦
+- 對 Sub-Q3(`max_staleness` 宣告)無影響 — 門檻是 `required_data()` schema 的事
+
+**未解伏筆**:
+- 順序問題:同一輪 dispatch 內,`on_stale` 應在 `on_bar` 被跳之前 / 同時 / 之後呼叫?— 留 P1 lifecycle methods 規格章節定
+- `stale_fields` payload schema:純 field name list?還是含每 field 的 timestamp + max_staleness?— 同上留 P1 規格章節
+
+**下一子軸**:#2C2-B Sub-Q2 連續 stale N 次升 alert。
+
+---
+
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
 也是 round 1 open question:
