@@ -351,6 +351,83 @@ class MyRiskStrategy(Strategy):
 
 ---
 
+### #2C2-B Sub-Q3 max_staleness + N 值宣告位置與預設機制(2026-05-24)
+
+**拍板:Option Γ+Ε — 雙層 default + 策略可 override + per-strategy 判定**
+
+**整合解(3 個小維度同時拍)**:
+
+| 維度 | 拍 |
+|---|---|
+| 1. 宣告位置 | **1C 雙層**:Framework data source registry per-source 給 default + 策略 `required_data()` 可 override |
+| 2. 預設機制 | **per-data-source**(default 寫在 framework registry,跟 `cadence` 一起設) |
+| 3. 多策略訂同 field 衝突 | **3-Ε per-strategy 判定**:snapshot 共享、stale 判定 / 跳過 per-strategy 各用自己門檻 |
+| N 值機制 | **同 `max_staleness` 機制共生**(default + override + per-strategy 判定) |
+
+**Framework data source registry 形狀**:
+```python
+DATA_SOURCES = {
+    "BTC_kline_1h": {
+        "cadence":               "1h",   # 預期 fire 頻率
+        "max_staleness_default": "2h",   # 超過 2h 算 stale
+        "alert_N_default":       6,      # 連續 6 次 stale → alert
+    },
+    "funding_rate_8h": {
+        "cadence":               "8h",
+        "max_staleness_default": "16h",
+        "alert_N_default":       2,
+    },
+    "vix_daily": {
+        "cadence":               "1d",
+        "max_staleness_default": "3d",
+        "alert_N_default":       3,
+    },
+}
+```
+
+**策略宣告兩種用法**:
+```python
+# 多數策略:用 default,完全不寫 staleness 欄位
+def required_data(self):
+    return {"BTC_kline_1h": {"min_history": 200}}
+
+# 風控策略:override 寫嚴格門檻
+def required_data(self):
+    return {
+        "BTC_kline_1h": {"min_history": 200, "max_staleness": "30m", "alert_N": 2},
+    }
+```
+
+**為何 Γ+Ε 而非 Α / Β / Δ**:
+- Α(純 per-strategy):多策略訂同 field 不一致(snapshot 共用、各家 max_staleness 不同 framework 無所適從)+ boilerplate 爆炸
+- Β(純 framework registry):**風控 / fallback 策略沒地方寫嚴格門檻**;V2-A 雖未明列風控策略,但 PortfolioStrategy(macro overlay)即風控性質,未來「BTC 跌破 stop loss 清倉」這類策略需 ≈0 stale 容忍 — Γ 留 hook
+- Δ(取最嚴 `min(max_staleness)`):trend 接受 2h、風控要 30m → framework 用 30m → **trend 也被頻繁跳過** = 寬鬆策略被嚴格策略綁架,行為不可預期
+- Γ+Ε:default 解 boilerplate、override 解風控需求、per-strategy 判定解多策略衝突 — 三維度同解,且**跟 #2C1 / Sub-Q1 / Sub-Q2 同 pattern**(framework default + 策略可特化),framework 心智統一
+
+**Framework 邏輯影響**:
+- dispatch 前 per-strategy 算自己的 stale 判定(每次 fire 多一次 timestamp 比較,cost 微乎其微)
+- snapshot 組裝**不變**(各 field 共享 last known value + timestamp,Sub-Q3 不動 snapshot 結構)
+- alert counter **per-(strategy, field)** 累積:`{strategy_X}.{BTC_kline_1h}.stale_count`,因為各策略門檻不同
+
+**配套防呆**:
+- 無新增 — Sub-Q2 已加 M5 對照 stale 次數,Sub-Q3 拍 per-strategy 後 M5 對照自動覆蓋 per-strategy 視角(各策略各自比對)
+- 未來資料源新增 → 改 registry 一處,不污染策略 code
+
+**對其他事情的影響**:
+- `required_data()` schema 多兩個可選欄位(`max_staleness` / `alert_N`),P1 lifecycle spec 章節要寫進去
+- Framework 需維護 `DATA_SOURCES` registry 為一級結構,V2-B 引擎開發時建出
+
+**未解伏筆**:
+- Per-data-source 預設值(`max_staleness_default` / `alert_N_default`)實際數字 — 留 V2-B 實測校準(類比 #2C1 防呆 #1)
+- Registry 是 Python dict / YAML / 資料庫 — 留 P1 規格實作細節
+- `cadence` 不規律的 source(如 event-driven 但 timing 抖動)的 stale 判定精度問題 — 留 V2-B 觀測
+
+**Round 2 #2C2-B 全套 Sub-Q 完成(Sub-Q1/2/3 都拍板)**。
+
+**下一子軸**:Round 2 三大子題只剩 **#3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合演算法**。但建議先做 #2C2 全段(A + B 三 Sub-Q)的 review pass 對齊使用者,再進 #3。
+
+---
+
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
 也是 round 1 open question:
