@@ -310,6 +310,47 @@ class MyRiskStrategy(Strategy):
 
 ---
 
+### #2C2-B Sub-Q2 連續 stale 升 alert 機制(2026-05-24)
+
+**拍板:Option C — 連續 N 次 stale → alert + N 值 per-field + M5 對照納入 stale 次數比對**
+
+**核心機制(完全平行 #2C1 防呆 #1)**:
+- Framework 內建 **per-field counter**:某 critical field 連續被判 stale 時 counter++
+- counter 達到 N → 升 alert(走 V1 沿用的 `notifier.py` / Telegram bot)
+- counter 在「該 field fresh 一次」時 **reset 歸零**
+- **N 值 per-field** 由 `required_data()` 宣告(預設值留 V2-B 實測校準)
+  - 例:1h K 線 N=6(連續 6 小時容忍)、8h funding N=2(連續 16 小時容忍)
+  - 把時間語義 pre-baked 進「次數 × 該 field cadence」,效果等同時長派但機制與 #2C1 共用
+
+**為何 Option C 而非 A/B/D**:
+- A(不 alert):資料源真死了沒人通知 → 災難場景沒覆蓋;且跟 #2C1 防呆 #1 心智模型分裂
+- B(一次就 alert):網路抖一下即炸 → **alert 疲勞**,重要訊號被淹
+- D(連續時長 X 分鐘):多時鐘策略更公平、但跟 #2C1 不同 pattern;C 用 per-field N 模擬時長**結果等價、機制統一**
+- C 同時滿足:跟 #2C1 一致(framework 心智統一)+ 過濾雜訊 + 抓得到死
+
+**配套防呆(類比 #2C1 防呆 #3)**:
+- **M5 paper-vs-backtest 對照納入「stale 次數 / alert 觸發次數」比對**
+- backtest 與 paper / live 的 stale 次數差太多 → 設計有 bug(可能 data lag 模擬不對、可能 `max_staleness` 門檻三模式不一致)
+- 零額外成本、直接複用 M5 既有對照框架
+
+**Alert destination 決議**:
+- 沿用 V1 `notifier.py`(Telegram bot)— 不阻塞拍板
+- V2 surveillance layer 設計時(後續 round)可再分級 critical / warning,V2-A 階段不超前設計
+
+**對 #2C1 / #2C2-A / Sub-Q1 的關係**:
+- 跟 #2C1 防呆 #1 / #3 結構完全平行(counter + 門檻 + alert / M5 對照)
+- 跟 #2C2-A 解耦:framework 跳過 on_bar 是「該次行為」;Sub-Q2 alert 是「連續觀察累積行為」
+- 跟 Sub-Q1 解耦:`on_stale` hook 是策略視角、alert 是 operator(使用者)視角
+
+**未解伏筆**:
+- N 值預設與 per-field 校準(`required_data()` schema):留 Sub-Q3(`max_staleness` 宣告)+ V2-B 實測
+- Alert payload schema(包哪些 field?多 strategy 同時 stale 要不要 dedupe?):留 V2-D 部署階段細究
+- counter reset 規則邊界:`fresh 一次即 reset` 是否會被「fresh 一筆又 stale」鋸齒重置綁架?— 留 V2-B 觀測
+
+**下一子軸**:#2C2-B Sub-Q3 `max_staleness` 門檻宣告位置 + 預設值機制。
+
+---
+
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
 也是 round 1 open question:

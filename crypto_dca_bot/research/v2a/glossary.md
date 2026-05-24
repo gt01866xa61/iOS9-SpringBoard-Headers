@@ -116,6 +116,19 @@ Round 2 #2C2-B Sub-Q1 拍板新增的 lifecycle 方法。Framework 偵測到 cri
 ### Hook(鉤子)
 Framework 預留給策略 / 外部 code「插入自訂行為」的接點。例:`initialize` 是 instrumentation hook(掛 event log),`on_stale` 是 stale 通知 hook。Hook 通常 default 是 no-op,需要的人才 override。
 
+### Alert(警報) vs Log(記錄) vs Hook(鉤子)
+三種「事情發生了要通知誰」的機制,目標不同:
+- **Log**:寫進 event log,**被動等人查**。例:每次 dispatch 寫一行 `is_ready` 回傳值、每次 stale 跳過寫一行記錄。沒人關注時不打擾。
+- **Alert**:**主動推播** 給使用者(走 V1 notifier / Telegram)。例:連續 stale N 次、連續 is_ready false N 次。代表「現在就要看一下」。
+- **Hook**:給**策略**(程式自己)插入處理邏輯的接點。例:`on_stale` 讓風控策略 stale 時降部位。代表「策略要不要做點什麼」。
+心智:Log = 給 debug,Alert = 給人,Hook = 給策略。
+
+### Counter + 門檻 pattern(連續觀察累積)
+Framework 通用模式:某事件連續發生時 counter++、發生「相反事件」時 counter 重設為 0、counter 達門檻 N 時觸發行為(通常是 alert)。
+- #2C1 防呆 #1:`is_ready` 連續 N 次 false → alert
+- #2C2-B Sub-Q2:某 field 連續 N 次 stale → alert
+心智模型統一 — 兩處共用同一個 framework primitive,使用者只記一個 pattern。N 值通常 V2-B 實測校準。
+
 ### Boilerplate vs API 統一(設計 trade-off)
 - Boilerplate:策略開發者要重複寫的樣板(壞,愈少愈好)
 - API 統一:framework 提供 default + 策略可特化(好,大家走同一條路)
