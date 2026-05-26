@@ -332,6 +332,28 @@ Round 1 拍板的雙 interface:
 - **SymbolStrategy**:處理 per-symbol 或 pair 的部位意圖。輸出 `{symbol: target%}`。
 - **PortfolioStrategy**:處理 portfolio-level 風控。輸出 `{symbol: cap multiplier}`。
 
+### cap multiplier(上限放大器)
+PortfolioStrategy 對每個 symbol 輸出的 0-1 之間倍率,乘上 SymbolStrategy 的 target%,得到最後下單目標。**日常比喻**:SymbolStrategy 是「想買多少」、cap multiplier 是「全局看盤的人允許你買多少比例」。
+- `cap=1.0` = 放行不限制
+- `cap=0.5` = 砍半(SymbolStrategy 想 60% → 實際 30%)
+- `cap=0.0` = 強制清倉
+Round 1 拍板,Round 2 #3A 用 NoOp 配套(NoOp 永遠 cap=1.0)。
+
+### NoOpPortfolioStrategy(NoOp 假人領班)
+Framework 內建的「明確不做事」版本的 PortfolioStrategy,行為:永遠對所有 symbol 回 `cap=1.0`(不限制)。**日常比喻**:擺一個假人坐在「全局看盤的人」那張椅子上 — 椅子有人占著,但那個人什麼都不做、所有交易都放行。
+- **存在目的**:Round 2 #3A 拍 framework 硬鎖 ≥1 個 PortfolioStrategy。使用者若**真的不想要** portfolio 級風控,必須**明確 register NoOpPortfolioStrategy**(等於簽字「我選擇不做」),而不是默默裸奔
+- **log 透明**:系統 log 顯示 `[NoOpPortfolio] cap=1.0 all symbols`,debug 時一眼看到「設計如此」
+- 跟「framework 內建 baseline 替使用者預設風控」(被否決的 Option D)區別:NoOp **不假設業務邏輯**,只是占位
+
+### always-on 鎖(全局風控強制就位)
+Round 2 #3A 拍板的 framework 行為:**系統啟動時強制至少有 1 個 PortfolioStrategy**(可以是真的、也可以是 NoOp),0 個 → refuse to start。**日常比喻**:像便利商店規定「至少要有一個店員在櫃檯」— 可以是真店員(做事的)、可以是假人模型(占位的),但不能空櫃。目的是**強迫使用者表態**(要做風控 / 明確選擇不做),不允許默默裸奔。
+
+### Default + override pattern + framework 不假設業務(設計哲學)
+Round 2 反覆出現的 framework 哲學:**framework 提供工具但不替使用者預設業務決定**。對比 Round 2 否決的設計:
+- ❌ Sub-Q3 Option Δ 取最嚴 max_staleness — framework 假設「最嚴是合理」
+- ❌ #3A Option D framework 內建 baseline — framework 假設「100% 曝險合理」
+- ✅ 統一採:**framework default 處理 boilerplate + 策略可 override 處理特殊 + 強制使用者表態核心業務**(NoOp / required_data / on_stale 都這 pattern)
+
 ### Round 1 / Round 2 / ...
 V2-A 階段內部的討論輪次。每輪鎖一些 axis(維度)的決定。
 

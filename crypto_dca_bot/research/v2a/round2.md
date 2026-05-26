@@ -458,7 +458,42 @@ def required_data(self):
 
 **建議拍板順序**:#3A → #3B → #3D → #3C(把無依賴的先拍完、#3C 留最後因為要看 #3B 結果)。
 
-**下一子軸**:#3A always-on 鎖 — 等使用者確認子題清單 + 順序對不對,下輪丟 #3A options。
+子題清單 + 順序 2026-05-26 使用者拍板通過。
+
+---
+
+### #3A always-on 鎖 — 拍板 Option E(2026-05-26)
+
+**拍板:Option E — Framework 硬鎖至少 1 個 PortfolioStrategy + 提供 `NoOpPortfolioStrategy` 讓使用者明確 register**
+
+**機制**:
+- 系統啟動時 framework 檢查 PortfolioStrategy 數量
+- 0 個 → refuse to start(拒絕啟動)
+- ≥1 個 → 正常啟動
+- Framework 提供內建類別 `NoOpPortfolioStrategy`,行為:永遠回 `cap=1.0` 對所有 symbol(等於「不限制」)
+- 使用者**必須明確選擇**:要 portfolio 風控 → 寫自己的 `PortfolioStrategy`;不要 → 明確 register `NoOpPortfolioStrategy`
+- NoOp 在系統 log 透明顯示:`[NoOpPortfolio] cap=1.0 all symbols` — debug 時一眼看到「使用者選了不做風控」
+
+**為何 E(非 A/B/C/D)**:
+| 否決 option | 理由 |
+|---|---|
+| A 不鎖 | 新手裸奔風險,framework 沒保護 |
+| B 軟鎖 warning | 警告會被忽略(dev 期 N 次後麻木),等於沒鎖 |
+| C 硬鎖逼寫 | 沒 escape hatch,開發 / 測試階段煩 |
+| D 硬鎖 + framework 內建 baseline | **Framework 替使用者預設業務邏輯**(「合理曝險 100%」是誰定義?),違反「framework 不假設業務」原則 + baseline 隱形 debug 困難 |
+| **E**(拍) | Framework 不假設業務 + 強迫使用者表態 + NoOp 透明可 debug + 跟 Round 2 哲學一致(同 #2C1 framework 偵測要使用者 ack / 同 Sub-Q3 default + override pattern) |
+
+**對其他事的影響**:
+- **#3C 領班 stale override**:NoOp 模式下沒人當領班 → #3C 拍板時必處理「NoOp 場景 stale 機制」(已標 watch)
+- **V2-B 實作**:`NoOpPortfolioStrategy` 是 framework 內建 first-class 類別
+
+**Watch / 未解伏筆**:
+- NoOp register 具體 API 形狀(`framework.register(NoOpPortfolioStrategy())` 之類)— V2-B 實作細節,Round 2 不拍
+
+**拍板白話講(2026-05-26 起新規則:每個拍板都附這段)**:
+你選了「framework 強迫你做風控選擇」。意思是:系統啟動的時候,framework 會檢查有沒有「全局看盤的人」(PortfolioStrategy)在崗位上。沒有的話 framework 不啟動、直接拒絕你跑。如果你真的不想要這種全局風控(例如只有一個策略、簡單 DCA、不需要 portfolio 級的兜底),那你要**明明白白寫一行**「我選擇不做」— framework 提供一個叫 NoOp 的假人讓你擺到那個位子(假人占著位置但什麼都不做、所有 symbol 都放行不砍倉位)。重點不是「強迫你寫一堆風控」,而是「強迫你做選擇 — 要做還是不要做、自己決定、但不能假裝沒這回事」。好處是以後 debug 翻 log 看到「NoOp 占位」就知道是設計如此、不是 bug 漏了東西。
+
+**下一子軸**:#3B Dispatch 順序 — fire 時 PortfolioStrategy 跟 SymbolStrategy 誰先跑?
 
 ---
 
