@@ -579,6 +579,7 @@ framework 合併:final_cap[BTC] = min(0.5, 0.7, ...) = 0.5
 **對其他事的影響 / Watch**:
 - **加權 / 優先序留未來 hook**:現拍取最狠當 framework default,未來若真有「某看盤人該大聲點」需求,再循 Round 2「default + 可 override」老路加,不在 #3D 拍
 - **#3C 接力**:#3D 是 #3 倒數第二塊。取最狠合併規則直接餵進 #3C — 「Portfolio 被 stale 跳過時 fail-safe 降風險」本質也往最保守靠,與 min 同向
+- **⚠️ overlay 訊號設計紀律(使用者 2026-05-26 補,留 V2-S 各策略 codify 時驗)**:PortfolioStrategy 輸出的 cap 訊號**必須連續可衰退**(continuous & decaying),**禁止 binary latch**(二元卡死 — 風險事件觸發後 cap 鎖在低點不放)。理由:事件型風險(地緣衝突、單日黑天鵝那類)**淡化後 cap 必須能自動鬆回**,否則取最狠(min)會被**過時的高風險訊號綁架** → 持續誤殺正常倉位(明明事件過了還在砍)。**這是 overlay 訊號層的紀律,不是 #3D 合併規則的問題** — min 合併本身正確,但餵進來的訊號若卡死,min 會忠實放大這個卡死。歸屬:**V2-S 各 PortfolioStrategy codify 時逐個驗證其 cap 訊號有 decay 機制**,不是 framework 層能強制的(framework 不知道訊號語意)
 
 **拍板白話講**:
 你選了「最擔心的那個守門員說了算」。意思是:如果同時有好幾個全局看盤的人,對同一個 BTC 各喊了不同的打折(一個說打 5 折、一個說打 7 折),framework **聽最狠那個的**(打 5 折)。
