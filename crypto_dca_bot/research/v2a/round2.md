@@ -595,6 +595,80 @@ framework 合併:final_cap[BTC] = min(0.5, 0.7, ...) = 0.5
 
 ---
 
+### #3C cross-strategy stale override — 拍板 Option C 強制降風險(2026-05-26)
+
+**拍板:Option C — PortfolioStrategy 因 stale 缺席時,framework 強制把受影響 symbol 的 cap 壓到保守上限 + 大聲告警 + 套 default + override 老路讓策略自宣告 fallback**
+
+**前提(不投票,地基)**:守門員因 stale 缺席 → **一定**走 V1 notifier Telegram 大聲告警。silent divergence 的觸發點最不能 silent。
+
+**機制**:
+```
+Framework 偵測 PortfolioStrategy 將因 stale 被跳過
+  ├─ 不 dispatch 它(同 #2C2-A)
+  ├─ Telegram 大聲告警(地基,不投票)
+  └─ 對受影響 symbol 主動壓 cap 到保守上限:
+       ├─ 策略事先在 on_stale() hook override → 用策略宣告值
+       └─ 沒 override → 用 framework `fallback_cap_default`(V2-B 校準)
+     強制壓的 cap 進入 #3D 的 min 合併池 → 跟其他正常守門員取最狠
+                                          ↓
+                                   最終 final cap
+```
+
+**為何 C(非 A/B/D/E)**:
+| Option | 否決理由 |
+|---|---|
+| A 沿用上次 cap | 過時訊號 = binary latch(#3D watch 剛否決過這種病)+ 違反「每次 fire 獨立」 |
+| B 凍結加倉 | 只「不升」不「降」,不滿足 watch #1「強制全策略降風險」 |
+| D 整輪凍結不交易 | 既有滿倉不解 + 資料常因崩盤才斷 → hold 穿越崩盤最危險(高相關性) |
+| E 強制全平倉 | 一次斷線就清倉,whipsaw 致命 + 交易成本爆炸 |
+| **C**(拍) | 寧可錯殺(假警報 whipsaw)也不裸著穿越崩盤 + 用 on_stale + min 合併池既有機制 + NoOp 天然豁免 |
+
+**串接前三塊(#3C 是 #3 收官,所有前面拍的都在這裡 converge)**:
+- **#3B(Portfolio 後算)** → 守門員缺席會留下沒人管的滿倉 → #3C 補洞
+- **#3D(min 合併)** → 強制壓的 cap 進 min 池天然往最保守倒 → 同向
+- **#2C2-B Sub-Q1(on_stale hook)** → 直接複用,不增 framework primitive
+- **#2C2-B Sub-Q3(default + override)** → fallback_cap 沿用同 pattern
+- **#3A(NoOp 假人)** → 無 required data → 不會 stale → **純 NoOp 系統天然豁免**(使用者明確選不做風控,framework 不偷塞降風險)
+- **#2C2 watch #1 silent divergence** → 落地完成 ✓
+
+**Watch(留 V2-B 實測 / 校準)**:
+1. **`fallback_cap_default` 預設值** — V2-B 校準(同 Sub-Q3 N 值命運),候選範圍 0.3-0.5 保守區
+2. **守門員可設更短的 max_staleness 容忍**(它是風控該更敏感)— 沿用 Sub-Q3 機制,自然支援
+3. **whipsaw 量化** — 假警報殺低買回成本,V2-B 用 M1 五段崩盤實測(LUNA/FTX API timeout 大量觸發,正好驗這條)— 呼應 M1 stale-aware 規格(已寫進 glossary M1 條目)
+
+**拍板白話講**:
+
+你選了「守門員瞎了 = 假設最壞、主動往安全方向倒」。
+
+當守門員(PortfolioStrategy)要看的資料壞掉了、他沒辦法上場拍板,framework **不裝沒事**(沿用舊折扣)、也**不原地凍住**(假裝沒發生),而是**主動把倉位降一點**到比較安全的水位,同時**打電話通知你**(Telegram)。
+
+降多少?守門員可以**事先在自己程式裡交代**(「我這守門員要是瞎了,請把 BTC 壓到 30%」)。沒交代的話 framework 用一個保守預設值兜底(具體數字 V2-B 跑出來校準)。這跟 Round 2 一路用的 pattern 一樣 — **framework 給合理 default、策略想特別處理可以自己 override**。
+
+這條為什麼必要:你前面拍守門員**後算**(#3B),要是他瞎了 = 整局沒人踩剎車;再加上前面拍**資料壞掉就跳過策略**(#2C2),兩條合起來會撞出「出價的人已經喊滿倉、守門員缺席」這種**沒人管的滿倉**。#3C 就是補這個洞,也是你最早 flag 的 silent divergence 落地。
+
+副作用要承認:資料**只是短暫斷線**(其實沒事),framework 也會主動降倉,可能**白殺低又買回**(whipsaw)。但這是 fail-safe 該付的保費 — **寧可在假警報時白降一點,也不要在真崩盤時裸著穿越**。而且資料常常**就是因為崩盤才斷的**(交易所 API 在 LUNA/FTX 那種行情會大量 timeout),這時候裸著穿越的代價遠遠大於 whipsaw。
+
+兩個豁免要記得:
+1. **NoOp 假人模式天然豁免** — 假人沒有要看的資料、不會壞,所以你明確選了「不做風控」的話,framework 不會偷塞這條給你
+2. **告警那條不投票** — 守門員瞎掉這件事正是 silent divergence 最危險的觸發點,所以一定 Telegram 大聲喊,它最不能 silent
+
+---
+
+## Round 2 #3 PortfolioStrategy 議題正式收官 ✓
+
+| 子題 | 拍板 | 核心 |
+|---|---|---|
+| **#3A** always-on 鎖 | Option E | Framework 硬鎖至少 1 個 PortfolioStrategy + NoOp 明確 register |
+| **#3B** Dispatch 順序 | Option A | Symbol 先算 → Portfolio 後算 → 相乘 |
+| **#3D** 多 PortfolioStrategy 疊合 | Option A 取最狠 | min(cap1, cap2, ...) 最保守者勝 |
+| **#3C** cross-strategy stale override | Option C 強制降風險 | 守門員 stale → 強制壓 cap + 告警 + on_stale 可 override |
+
+**一條線拉通的哲學**:framework 強迫使用者表態(#3A)+ 看完所有意圖才拍板(#3B)+ 多守門員取最狠(#3D)+ 守門員瞎了主動降(#3C)= 整套 fail-safe 結構,每一步都往最保守倒、framework 不假設業務、使用者隨時可 override。
+
+**下一子軸**:Round 2 #3 收官,確認 Round 2 範圍是否還有未拍項目,否則進 **Round 2 全段 review pass / 收官 + Round 3 frame**。
+
+---
+
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
 也是 round 1 open question:
