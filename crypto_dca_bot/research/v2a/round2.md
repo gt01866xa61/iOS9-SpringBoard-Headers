@@ -497,6 +497,54 @@ def required_data(self):
 
 ---
 
+### #3B Dispatch 順序 — 拍板 Option A(2026-05-26)
+
+**拍板:Option A — SymbolStrategy 先算 target → PortfolioStrategy 看完所有 target 後算 cap → framework 相乘**
+
+**機制(一次 dispatch、單向資訊流)**:
+```
+fire 響鈴
+  │
+  ├─ 階段 1:所有 SymbolStrategy 算 target%
+  │        (可從 snapshot 讀 macro 欄位:VIX / funding / regime,不盲跑)
+  │        → {BTC: 60%, ETH: 30%, ...}
+  │
+  ├─ 階段 2:所有 PortfolioStrategy 看完「全部 target」後算 cap multiplier
+  │        (有全局視角:看得到所有 Symbol 想要什麼 → 整體協調)
+  │        → {BTC: 0.5, ETH: 0.5, ...}
+  │
+  └─ framework 相乘:target × cap = 最終下單目標
+           BTC 60% × 0.5 = 30%
+```
+
+**為何 A(非 B/C/D/E)**:
+| 否決 option | 理由 |
+|---|---|
+| B(Portfolio 先 → Symbol 後) | Portfolio 算 cap 時看不到 Symbol 想要什麼 → **失去全局視角**,只剩 macro signal(但 macro Symbol 自己從 snapshot 就能讀,B 沒多給東西) |
+| C(Portfolio 給 context → Symbol → Portfolio final) | 兩階段 dispatch 心智複雜、framework 變重,收益微小(Symbol 從 snapshot 讀 macro 已達成「知道 context」目的) |
+| D(iterative 來回迭代) | 實作惡夢、可能不收斂、不可預測 — 直接否決 |
+| E(並行) | Portfolio 看不到 Symbol target → 同 B 失去全局意義 |
+| **A**(拍) | Portfolio 級風控本質 = 「看完所有意圖後的整體決定」+ Symbol 從 snapshot 讀 macro 不盲跑 + 一次 dispatch framework 簡單 |
+
+**對其他事的影響**:
+- **#3C cross-strategy stale override**:A 下 Portfolio 是後算的 — 若 Portfolio 被 stale 跳過,Symbol 已算完。**#3C 必處理「framework 在 dispatch 前先預判 Portfolio 會不會 stale,是 → fail-safe 強制全策略降風險、不浪費 Symbol 結果」**。#3B 把這責任明確 surface 給 #3C
+- **#3D 多 PortfolioStrategy 疊合**:多個 PortfolioStrategy 在「階段 2」並排跑,#3D 拍「各自 cap 怎麼合併」(取最嚴 / 平均 / 連乘)
+
+**Watch / 未解伏筆**:
+- Symbol 算時**不能依賴「上次 fire 的 Portfolio cap」**作提示 — 違反「每次 fire 獨立」原則(Portfolio 看新資料可能改變 cap,Symbol 用舊 cap 誤判)
+- NoOp 模式:dispatch 順序仍是 A,Portfolio 階段 NoOp 永遠回 `cap=1.0` trivial 過,不阻擋 Symbol 結果
+
+**拍板白話講**:
+你選了「出價的人先講、看盤的人後拍板」這個順序。意思是:每次市場有新資料,framework 先讓每個出價策略講「我想要多少 BTC、多少 ETH」,**全部講完之後**,再讓那個全局看盤的人一次看到「大家總共想要什麼」,然後決定要不要打折(例如「欸大家都想重押 BTC,加起來太擠了,全部砍半」)。最後 framework 把「想要的量」乘上「打折比例」算出真正下單的量。
+
+為什麼不反過來讓看盤的人先講?因為**全局看盤的價值就在於「看完大家的意圖再整體調度」** — 你如果讓他先講,他根本還不知道大家想幹嘛,只能看看天氣(macro 大環境)而已,而天氣這件事出價的人自己也看得到,等於白讓他先講。所以「先收集所有意圖、再讓看盤的人整體拍板」才是對的順序。
+
+要注意一點:出價的人講價的時候,雖然還不知道最後會被打幾折,但他**看得到天氣**(從市場快照讀得到 VIX、資金費率這些大環境訊號),所以不是閉著眼睛亂喊,是看著大環境喊。
+
+**下一子軸**:#3D 多 PortfolioStrategy 疊合 — N 個全局看盤的人,各自的打折比例怎麼合併成一個?
+
+---
+
 ## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
 
 也是 round 1 open question:
