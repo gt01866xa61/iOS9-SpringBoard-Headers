@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-05-26 — V2-A Round 2 全段收官:Strategy interface + PortfolioStrategy 完整契約鎖死
+
+Round 2 全 13 個議程 / 子題拍板完成,Strategy interface 從骨架(Round 1)推進到**完整 framework 契約**。完整 ledger 見 `v2a/round2.md` 末段「Round 2 全段收官」總覽表。
+
+**拍板總清單(13 條,本檔只列骨幹)**:
+- #1 起步策略池 #2 → Funding rate skew(2026-05-21,已 prepend)
+- #2A Lifecycle 4 必要 + 1 可選 / #2B Event-driven + LKV + 統一 event log / #2C1 暖機 is_ready buffer-based + 防呆 / #2C2-A Framework 偵測 stale 跳過策略無感 / #2C2-B Sub-Q1 on_stale 可選 hook / Sub-Q2 per-field counter + V1 notifier alert / Sub-Q3 max_staleness/N 寫 framework registry default + 策略可 override + per-strategy 判定 / #2D 錯誤路徑 = 復用「策略缺席」+ crash counter + #3A 湧現停機 / #3A always-on 鎖 + NoOpPortfolioStrategy 明確 register / #3B Dispatch 順序 Symbol → Portfolio → 相乘 / #3D 多 PortfolioStrategy min 取最狠 / #3C cross-strategy stale override fail-safe 丟進 min 池(非二次施加)
+
+**Round 2 浮現的 6 條設計哲學(沿用至 Round 3)**:
+1. Framework 不假設業務語意 — 否決所有「替使用者預設業務」option
+2. Default + override 老路 — framework 給合理 default,策略可特化
+3. Counter + 門檻 pattern — 連續 N 次累積觸發升級,框架統一 primitive,#2C1 / Sub-Q2 / #2D 共用
+4. 單調往最保守倒 — fail-safe 只能往緊永不放寬(#3D min / #3C 丟 min 池而非二次施加)
+5. 強迫表態 > 默默裸奔(#3A NoOp 明確 register / #2C1 ack 防呆)
+6. 湧現 > 顯式條文(#2D crash + #3A 鎖 → 自動停機;比寫死規矩穩)
+
+**Round 2 review pass 撞點處理**:
+- #3C × #3D 合併位置(fail-safe 值丟進 min 池 vs 二次施加)→ 拍丟 min 池,保住單調性、保住明眼守門員警報、實作零新層
+- silent divergence(風控失能其他策略繼續滿倉)→ 整套 #3 + #2C2 落地完成
+
+**Round 3 議程(carry over)**:
+- R3-① Risk Engine 模組邊界(吸收 backlog #4 + portfolio-gross 約束 + M6 sizing 落地)
+- R3-② 資料流 / event bus / snapshot 組裝(Round 1 + Round 2 #2B 留)
+- R3-③ 執行層 over-trading 冷卻機制(Round 1 review pass 留)
+- R3-④ V1 模組沿用整合點(#2D 開頭,完整定 hook)
+
+**V2-B 必驗清單(實測題)**:N 值校準 / counter 鋸齒評估 / whipsaw 量化 / trend × funding correlation / M1 stale-aware 受測
+
+**V2-S 各策略 codify 紀律**:overlay 訊號連續可衰退禁 binary latch(使用者補)
+
+Round 2 完整 ledger 見 `v2a/round2.md`,Round 3 議程 frame 見 `v2a/round3.md`。新增專有名詞已追加 `v2a/glossary.md`(共 Round 2 期間新增 20+ 條,以「故事 / 比喻」風格寫,使用者非 quant 背景可快速 reference)。
+
+---
+
 ## 2026-05-21 — V2-A Round 2 (Part 1):策略池 #2 拍 Funding rate skew
 
 Round 2 第一題(策略池 #2 替代 mean-reversion)拍板。

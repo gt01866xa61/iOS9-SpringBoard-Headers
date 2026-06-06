@@ -140,7 +140,7 @@ C 在 PortfolioStrategy 子訊號角色(「decade 級週期過熱期降風險」
 
 ## #2 P1 細節子題 — IN PROGRESS
 
-> 子軸:A. 必要 vs 可選 → DONE 2026-05-22 / B. 觸發頻率粒度 → DONE 2026-05-22 / **C. 狀態 lifecycle 細節 → C1 DONE 2026-05-22(C2/C3 TODO)** / D. 錯誤路徑 → TODO
+> 子軸:A. 必要 vs 可選 → DONE 2026-05-22 / B. 觸發頻率粒度 → DONE 2026-05-22 / C. 狀態 lifecycle 細節 → C1 暖機協議 DONE 2026-05-22 / C2 stale data DONE 2026-05-24(C3 marker 確認已併入 C2,無獨立題)/ **D. 錯誤路徑 → DONE 2026-05-26(架構契約層,實作細節順延 V2-B 沿用 V1 circuit_breaker)**
 
 ### #2A Lifecycle method 必要 vs 可選(2026-05-22)
 
@@ -692,22 +692,117 @@ Framework 偵測 PortfolioStrategy 將因 stale 被跳過
 
 ---
 
-## Round 2 收官缺口盤點(2026-05-26)
+### #2D 錯誤路徑(架構契約層)— 拍板 Option B 復用「策略缺席」機制(2026-05-26)
 
-#3 收官後盤點 Round 2 原始議程(line 4-7 + line 143),狀態:
+**範圍切定**(本輪 only):**策略 on_bar 拋例外時 framework 怎麼辦**。明確順延 V2-B 沿用 V1 既有資產:API reject / partial fill / timeout retry / 對帳細節 → `circuit_breaker.py` / `exchange_api.py`。架構期不碰實作層。
 
-| 議程項 | 狀態 |
+**拍板:Option B — 當掉策略 = 這輪「缺席」,直接套既有「策略缺席」處理機制**
+
+**機制(零新表面積)**:
+```
+策略 on_bar 拋例外
+  ├─ Framework catch 例外 → 寫 event log(含 stack trace)
+  ├─ 當掉策略 = 這輪「缺席」,直接走既有路徑:
+  │    ├─ SymbolStrategy 缺席 → 跳過(同 #2C2-A stale 跳過)
+  │    └─ PortfolioStrategy 缺席 → fail-safe 降風險(同 #3C),
+  │       fallback_cap 進 #3D min 池
+  ├─ Crash counter per-strategy 累加(復用 Sub-Q2 機制)
+  └─ 連續 crash N 次 → 永久停用 + Telegram 告警
+     (N 走 default + override 老路,per-strategy 可設,
+      守門員可設 N=1 等於「一次就停」)
+```
+
+**為何 B(非 A/C)**:
+
+| Option | 否決 / 拍板 理由 |
 |---|---|
-| #1 策略池 #2(Funding skew) | ✅ DONE 2026-05-21 |
-| #2A Lifecycle 必要 vs 可選 | ✅ DONE 2026-05-22 |
-| #2B 觸發頻率粒度 | ✅ DONE 2026-05-22 |
-| #2C1 暖機期協議 | ✅ DONE 2026-05-22 |
-| #2C2 stale data(A + B-1/2/3)| ✅ DONE 2026-05-24(= 原 C 軸 C2)|
-| **#2C 軸 C3 標記** | ⚠️ line 143 留 C3 marker,內容從未展開 — 需確認是否已被 C2 吸收 or 真有獨立題 |
-| **#2D 錯誤路徑(error paths)** | ⚠️ **TODO** — 策略 on_bar 拋例外 framework 怎麼辦(隔離 / 停用 / 全停)?API error / order reject / partial fill 的 framework 契約?部分屬 P1 架構(需拍)、部分屬 V1 circuit_breaker 沿用(已有資產)|
-| #3 PortfolioStrategy(A/B/C/D)| ✅ DONE 2026-05-26 |
+| A 整台停機 | 一個非關鍵策略的 bug = 全平台下線。單點故障,過脆,違反「故障隔離」基本軟工原則 |
+| C 分型隔離(Symbol 隔離 / Portfolio crash 立刻停整台) | 想要的效果 **B + #3A 已自然涵蓋**(見下「漂亮的湧現」),且 C 對 Portfolio「一次就停」分不出 transient glitch vs 真 bug 過嚴。要等價 C 只需 B 裡守門員 crash N 設成 1 |
+| **B**(拍) | 復用 #2C2 + #3C 已蓋好的「策略缺席」模型 + Sub-Q2 counter,零新 framework primitive。「故障隔離 + 限度內容忍 + 達閾值升級永久停用」是工業界 supervision 標準模式 |
 
-**待使用者拍**:#2D 錯誤路徑(+ 釐清 C3)要在 **Round 2 內收掉**,還是**順延到 Round 3 / V2-B**?這是 Round 2 能否宣告收官的最後一關。
+**漂亮的湧現(emergent behavior,B + #3A 組合自然長出)**:
+- 守門員 crash → fail-safe 降風險(#3C)+ counter 累加
+- 連續 crash 達 N → 永久停用 → 守門員數量 ↓
+- **守門員降到 0 → 撞 #3A always-on 鎖 → framework 拒絕繼續 / 停機**
+- ⇒ 「守門員壞了最終會停整台」**不是顯式規則**,是 B + #3A 組合的湧現結果。比 C 顯式寫條規矩**更溫和**(給 transient glitch 機會)+ **更不脆**(統一機制),且免費
+
+**「當掉每輪會再當」顧慮的處理**(crash 不像 stale,後者外部暫時、前者程式 bug 每輪復現):
+- crash counter **不會被「成功一輪」rese 到 0**(語意上 crash = persistent bug,不像 stale 是 transient I/O)
+- 走 #3D Sub-Q3 Watch #3 提的滑動視窗 N-of-M 評估更穩(連續 / 視窗都可,V2-B 校準)— 但 default 行為 = 連續 crash 計數,簡單派
+
+**未解伏筆(順延 V2-B 處置,架構期不拍)**:
+- 永久停用後**人工復原介面**(reload after fix)— V2-B 運維 CLI
+- crash N 預設值 — V2-B 校準(同所有 N 值命運)
+- crash 例外類型細分(策略 logic error vs framework 偵測的 contract 違反 vs 環境 error)— 全當作 catch-all,實作細節留 V2-B
+- 部分成交 / 下單 reject / API timeout 重試 — **明確順延 V2-B,沿用 V1 `circuit_breaker.py` / `exchange_api.py` / `notifier.py` / `chaos_test.py`** 既有資產
+
+**拍板白話講**:
+
+你選了「策略當掉不要全台陪葬,當它**這輪請假**」。
+
+某個策略程式爆了,framework 不會整台停機(那種「一個壞了全部死」太脆),也不會裝沒事繼續。它會:**把當掉的策略當成「這輪缺席」,直接走我們前面已經蓋好的「策略缺席」流程** — 出價的人缺席就跳過、守門員缺席就 fail-safe 降風險。重點是**完全不用為「程式 bug」另寫一套規矩**,既有機制直接借來用。
+
+那「程式 bug 每輪都會再爆,一直缺席怎麼辦?」設計裡也有答案:framework 數連續當的次數,**達到上限就永久開除這個策略 + 通知你** —— 跟前面拍的「連續 N 次 stale 就 Telegram」是同一個計數器,共用。
+
+最漂亮的地方:你不用特別為「守門員當掉」寫一條更嚴的規矩。守門員當太多次被永久開除後,**守門員數量會掉到 0 → 撞到前面拍的「至少要有一個守門員」鎖 → framework 自動停機**。三條規矩(B 隔離 + #3A 鎖 + crash counter)組起來,守門員真的壞了會升級到停機,但給它 transient glitch 的機會、不像「一次就停」那麼草木皆兵。
+
+至於下單被拒、只成交一半、API 超時那些,**這輪不拍**,V2-B 寫引擎時沿用 V1 既有的 `circuit_breaker` / `exchange_api`(我們之前累積的資產,已驗證可用)。
+
+**Round 2 #2D 收尾 → Round 2 全部議程拍完,正式收官**(見下方總覽)。
+
+---
+
+## Round 2 全段收官 ✓(2026-05-26)
+
+### 全議程拍板狀態
+
+| 議程 | 拍板 | 一句話 |
+|---|---|---|
+| #1 策略池 #2 | D Funding rate skew | 替代 mean-reversion |
+| #2A Lifecycle 必要 vs 可選 | 4 必要 + 1 可選 | initialize 鎖必要 |
+| #2B 觸發頻率粒度 | Event-driven + LKV + 統一 event log | multi-timeframe 對齊 |
+| #2C1 暖機期協議 | is_ready buffer-based default + 防呆 | Counter+門檻 pattern 首登 |
+| #2C2-A stale 行為 | Framework 跳過,策略無感 | 偵測責任歸 framework |
+| #2C2-B Sub-Q1 on_stale hook | 可選 hook,base no-op | 策略想知道有 hook |
+| #2C2-B Sub-Q2 連續 stale alert | Per-field counter + V1 notifier + M5 對照 | 重用 Counter+門檻 |
+| #2C2-B Sub-Q3 max_staleness 宣告 | Registry default + 策略可 override + per-strategy 判定 | Default+override pattern 確立 |
+| #2D 錯誤路徑(架構層)| 復用「策略缺席」機制 + crash counter + #3A 湧現停機 | 零新 primitive |
+| #3A always-on 鎖 | 硬鎖 + NoOpPortfolioStrategy 明確 register | Framework 強迫表態 |
+| #3B Dispatch 順序 | Symbol → Portfolio → 相乘 | 全局視角拍板 |
+| #3D 多 PortfolioStrategy 疊合 | min 取最狠 | 單調不爆炸 |
+| #3C cross-strategy stale override | 強制降風險 fail-safe + 丟進 min 池(非二次施加)| silent divergence 落地 |
+
+### 一條線拉通的設計哲學(整個 Round 2 共識)
+
+1. **Framework 不假設業務語意** — 否決所有「替使用者預設業務」的 option(Sub-Q3 Δ、#3A D、#3D C/D)
+2. **Default + override 老路** — framework 給合理 default 處理 boilerplate,策略可特化處理特殊(Sub-Q1/2/3、#3A、#3C、#2D 全套)
+3. **Counter + 門檻 pattern** — 連續觀察 N 次累積觸發升級,框架統一 primitive(#2C1 防呆 / Sub-Q2 stale alert / #2D crash 永久停用 共用)
+4. **單調往最保守倒** — fail-safe 只能往緊永不放寬(#3D min / #3C 丟進 min 池而非二次施加)
+5. **強迫使用者表態 > 默默裸奔** — #3A NoOp 明確 register;#2C1 ack 防呆
+6. **湧現 > 顯式條文** — #2D crash 守門員 → #3A 鎖停機,組合自然長出比寫死更穩
+
+### Round 2 carry over to Round 3 / V2-B
+
+**→ Round 3 議程**(架構層,要拍):
+- **R3-① Risk Engine 模組邊界**:從 backlog #4 升級(stale 權責歸誰 + portfolio-gross 總曝險約束 + 對應 M6 risk-based sizing 在哪一層落地)
+- **R3-② 資料流 / event bus / snapshot 組裝**:Round 1 review pass line 131 留 + Round 2 #2B 拍 event-driven 後續細節(snapshot 組裝粒度 / event log 規格 / data registry 實作層級)
+- **R3-③ 執行層 over-trading 冷卻機制**:Round 1 review pass line 131 留(dead-band / cooling period / regime-aware 降頻 — 已在 funding skew 策略內各別有 `dead_band` param,但整層 framework 規矩沒拍)
+- **R3-④ V1 模組沿用點明確化**:circuit_breaker / heartbeat / notifier / exchange_api / chaos_test 在 V2 架構接哪個 hook(#2D 已開頭,Round 3 整理)
+
+**→ V2-B 必驗清單**(實測題,Round 2 累積):
+- N 值 / max_staleness / fallback_cap 預設值校準
+- counter 鋸齒 reset 評估(連續 vs 滑動視窗 N-of-M)
+- whipsaw 量化(M1 五段崩盤 stale-aware 實測)
+- trend × funding correlation 實測(Round 1 留)
+- M1 stale-aware 機制本身受測
+
+**→ V2-S 各策略 codify 必驗**:
+- overlay 訊號連續可衰退 / 禁 binary latch(#3D watch,使用者補)
+
+**→ 順延 backlog**:
+- Round 3 完整議程 frame 後再回頭看是否漏項
+
+下一步:`round3.md` 開檔,frame R3-① ~ R3-④ 議程 + 依賴關係 + 建議順序。
 
 ---
 
