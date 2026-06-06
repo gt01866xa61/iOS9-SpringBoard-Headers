@@ -399,6 +399,19 @@ Round 2 #3C review pass 撞點(2026-05-26 拍):守門員因 stale 缺席時的 f
 ### portfolio-gross cap(總曝險約束,#3D per-symbol 模型裝不下)
 「守門員瞎 → 砍**整體總曝險**(不分幣,例全組合 gross ≤ 50%)」這種**總量級**約束,跟 #3D 的 **per-symbol cap**(逐幣各自打折)是兩種不同維度。#3D 的 per-symbol min 模型**裝不下**總量級約束。**日常比喻**:per-symbol 是「每道菜各自限量」,gross 是「整桌總預算上限」,兩個不是同一回事。Round 2 #3C review pass 標記為 **Round 3 Risk Engine 未模型化維度**,歸 backlog #4 一併處理。
 
+### 雙層節流(策略訊號級 + framework 執行政策層)
+Round 3 R3-③ 拍板的過度交易防線設計:過度交易有**兩種抖**,要兩個地方各擋一種:
+- **策略訊號級節流**(funding `dead_band` / overlay 連續可衰退 #3D 等):擋「**訊號自己抖**」— 策略最懂自己訊號該多鈍,屬訊號語意
+- **framework 執行政策層**(新元件,位於算量站後、送單前):擋「**聚合後才冒出的抖**」— 守門員 cap + Risk Engine vol-targeting + 多策略 capital 權重每 bar 都在變,加總後的最終 order 會抖,只有 framework 看得到。能力含 dead-band(差幅<threshold 不送單)/ cooling(剛調過冷卻一段)/ regime hook(預留 V2-E)
+**日常比喻**:策略級擋的是「溫度該不該變」(冷氣判斷),framework 執行層擋的是「就算溫度該變也別每 0.1 度開關一次」(開關紀律)。兩種抖不同地方產生,要兩個地方擋:純策略級漏聚合後抖(真漏洞)、純 framework 抹掉策略訊號語意。對齊精簡第 ② 層(元件內部簡單) + #3D 連續可衰退紀律自然落策略層。
+
+### framework 執行政策層(execution policy layer)
+Round 3 R3-③ 新增架構元件,位於算量站後、實際送單前。職責:**比對 current 持倉 vs 算出來的 target,套執行紀律決定送不送單**。能力三件套:
+- **dead-band**:差幅 < threshold → 不送單(擋幅度小到不值得動)
+- **cooling**:距上次成單 < 間隔 → 不送單(擋頻率太密)
+- **regime hook**:預留 V2-E regime detection 接入(市場特別瘋時降頻)
+**日常比喻**:廚房門口的「出菜檢查站」— 算量算出來的菜不是直接送,先看「跟客人現在桌上的差多少」「上次送菜過多久了」決定要不要送。Risk Engine 是保全護欄(風險判斷),執行政策層是出菜紀律(訊號雜訊過濾)。具體數值(threshold / 間隔)V2-B 校準,regime hook 啟用 V2-E。
+
 ### backtest/live parity(回測—實盤一致性)
 策略先用歷史資料**回測**(看過去會不會賺)、過關才用真錢**實盤**。parity = 回測跟實盤**用同一套 code 餵資料、行為一致**。**怕的反面**:「考試一套題、上場一套題」— 回測賺翻、實盤一上線就走樣。是量化**最常見死法之一**(M5 paper-vs-backtest 專門抓這個)。Round 3 R3-② 拍 Option A(統一 event bus + 雙 driver)讓 parity **結構性內建**(同一個 event 介面,backtest/live 無從分岔)。
 

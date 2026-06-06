@@ -321,6 +321,88 @@ snapshot 由引擎從「已發生的 events + LKV(上次已知值)」point-in-ti
 
 ---
 
+### R3-③ 執行政策層存在 + 分層 — 拍板 Option C 雙層(2026-05-26)
+
+**拍板:Option C — 雙層節流** — 策略級管**訊號穩定**、framework 執行政策層管**最終 order 紀律**
+
+**機制**:
+```
+策略層(各策略內):
+  訊號級節流(funding 的 dead_band / overlay 訊號連續可衰退 #3D)
+  → 策略 output target%
+
+... PortfolioStrategy cap → Risk Engine → 算量站 → final_order_qty
+                                                      ↓
+                                          【framework 執行政策層】← 新增
+                                            ├─ dead-band:比對 current vs final,
+                                            │            差幅 < threshold → 不送單
+                                            ├─ cooling period:距上次成單 < 間隔 → 不送單
+                                            └─ regime-aware hook(預留,V2-E)
+                                                      ↓
+                                                   送 order
+```
+
+**兩種抖的雙重防線**:
+| 抖的來源 | 由誰擋 | 為什麼 |
+|---|---|---|
+| 訊號自己抖(如 funding 小波動) | **策略級**(funding `dead_band` 等)| 策略最懂自己訊號該多鈍,是訊號語意一部分 |
+| 聚合後才抖(守門員 cap 每 bar 變 + vol-targeting 隨波動變 + 多策略 capital 權重挪)| **framework 執行層** | 只有 framework 看得到最終 order;策略看不到擋不掉 |
+
+**為何 C(非 A/B)**:
+| Option | 否決 / 拍板理由 |
+|---|---|
+| A 純策略級 | **聚合後抖無人管**(真漏洞:守門員 cap + vol-targeting 每 bar 變,策略看不到)+ 無法做全局紀律(「每分鐘最多調一次」)+ 每策略重造輪子 |
+| B 純 framework | 剝奪策略「我這訊號本來就該很鈍」的訊號語意表達(funding `dead_band` 是策略設計一部分) |
+| **C**(拍) | 兩種抖**不同地方產生**要兩個地方擋 + 每層單一職責各自簡單(精簡第 ② 層 — 元件內部簡單)+ #3D 連續可衰退訊號紀律自然落策略層、對齊 |
+
+**對 funding strategy 的影響**(具體案例 sanity check):
+- funding 自帶的 `dead_band` 參數**保留**(訊號層,策略語意)
+- framework 執行政策層**額外擋聚合後抖**(funding target × cap × vol-target 變動但實際差幅小 → 不送單)
+- 兩層各自做,**沒有覆蓋衝突**(策略層擋的是「訊號該不該動」,framework 層擋的是「動了之後該不該下單」)
+
+**與 Round 2 #3D「連續可衰退訊號紀律」對齊** ✓:#3D 是 overlay 訊號層紀律,屬**策略級節流家族**;R3-③ Option C 把這條紀律明確歸位到策略層,跟 framework 執行層各管各的、不重疊。
+
+**Watch / 降級**:
+- dead-band 確切數值 / cooling 間隔 — V2-B 校準
+- framework 執行層是**獨立 stage** 還是**算量站/下單構造的 sub-step** — V2-B 實作(架構只需「有這個政策」)
+- **regime-aware 降頻** — V2-E(依賴 regime detection),framework 執行層**預留 hook** ← 標記
+- framework 執行層支援**幅度節流(dead-band)+ 時間節流(cooling)+ regime hook** 三種能力,具體啟用 / 數值 V2-B
+
+**拍板白話講**:
+
+過度交易其實有**兩種抖**,要在兩個地方各擋一種。
+
+**第一種抖:訊號自己在抖**。例如 funding 數字小幅波動 → funding 策略的 target 跟著小變。這種抖**策略自己最懂該不該擋** —— 它知道「funding 抖個 0.001% 不算事」這種語意。**funding 策略本來就自帶 `dead_band` 參數**處理這個,我們不動。
+
+**第二種抖:聚合之後才冒出來的抖**。就算每個策略訊號都很穩,**最後下單量還是會抖** —— 因為守門員每根 bar 都在重算打幾折、Risk Engine 的波動目標每 bar 都在動、多策略的資金權重也在變。**這些加總起來、那個最終下單數字**就會小幅在跳。**策略自己看不到這個**(它只管自己的 target),要 framework 在「都算完、要送單之前」攔一手 —— 比對「現在持倉」跟「想要的最終量」,差距太小就**不送單**(dead-band),或剛調過就**冷卻一下**(cooling)。
+
+為什麼不只挑一層擋?
+- **只擋策略層** = 漏掉「聚合後抖」(那是真漏洞,守門員跟波動目標每根 bar 都在動)
+- **只擋 framework 層** = 把策略本來自己設定的訊號穩定度(funding 的 dead_band)抹掉,違反策略設計者的本意
+
+剛好你 Round 2 那條「訊號要會自動降溫不能卡死」(#3D 你補的 watch)本來就是「訊號級」的紀律,**自然落在策略層**,跟這輪拍的 framework 執行層各做各的、不打架。
+
+至於「市場特別瘋的時候要不要少調倉」(regime-aware 降頻),那個需要先有「**怎麼判斷市場特別瘋**」(regime detection,roadmap V2-E 的事),所以不在這刀拍 —— 但 framework 執行層**預留一個掛鉤的位置**,等 V2-E 真的把 regime detector 蓋出來再接上去。
+
+---
+
+## R3-③ 執行層 over-trading 冷卻議題正式收官 ✓(2026-05-26)
+
+精簡尺下塌成一刀,一刀拍完即收官:
+
+| 題 | 拍板 |
+|---|---|
+| R3-③ 執行政策層存在 + 分層 | C 雙層(策略訊號級 + framework 執行政策層)|
+
+**新增架構元件**:`framework 執行政策層`(管 dead-band / cooling / regime hook),位於算量站後、送單前。
+
+**降級 V2-B**:dead-band 數值 / cooling 間隔 / 執行層是獨立 stage 還是 sub-step
+**降級 V2-E**:regime-aware 降頻(依賴 regime detection,執行層預留 hook)
+
+**下一子軸**:R3-④ V1 模組沿用整合點(已累積 3 個前向連結:`exchange_api`、`price_recorder`、`circuit_breaker`)。Round 3 收尾在即。
+
+---
+
 ## R3-④ V1 模組沿用整合點 — 待拍
 
 **核心問題**:CLAUDE.md V2 邊界明列 V1 code 為技術資產(`exchange_api.py` / `trader.py` / `notifier.py` / `circuit_breaker.py` / `heartbeat.py` / `price_recorder.py` / `chaos_test.py`)。Round 2 #2D 已宣告 API error / partial fill 沿用 V1,但**整體 hook 點地圖**沒定。
