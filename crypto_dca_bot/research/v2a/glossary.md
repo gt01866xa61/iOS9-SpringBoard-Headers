@@ -366,6 +366,12 @@ Round 2 #3D watch(使用者 2026-05-26 補,留 V2-S codify 時驗):PortfolioStra
 ### cap 合併規則 — 取最狠(min)
 Round 2 #3D 拍板:多個 PortfolioStrategy 對同一 symbol 各給 cap multiplier(打折比例)時,framework 取**最小值**(最保守者勝)合併成一個。**日常比喻**:好幾個守門員,聽**最擔心的那個**說了算。否決平均(會稀釋緊急訊號)、否決連乘(對相關風險重複計算 + 多策略爆縮)。四大支柱:守門員天職任一可單獨剎車 / 可究責(指得出誰最狠)/ 單調不爆炸 / 不重複計算相關風險。NoOp(永遠 1.0)在 min 下天然不干擾。
 
+### fail-safe cap 的合併位置 — 丟進 min 池 vs 二次施加(#3C × #3D 補釘)
+Round 2 #3C review pass 撞點(2026-05-26 拍):守門員因 stale 缺席時的 fail-safe 值,架構上**當成 cap 候選丟進 #3D 的 min 池**(`final = min(正常 cap..., 缺席者 fallback)`),**不是 min 算完後 framework 二次施加(override)**。兩者**只在 fail-safe 值比現場 cap 寬鬆時分岔** — 那時 override 會讓「瞎掉守門員的通用兜底」蓋掉「明眼守門員看到危險喊的緊 cap」、反而**放寬**倉位,違反取最狠地基。**日常比喻**:瞎子的萬用預設,不准蓋過明眼人的真實警報。拍 min 池 = fail-safe **只能往緊、永遠不能放寬**(單調性)。實作後果:#3C 不是獨立的「事後補刀層」,stale 守門員就只是「這輪改用 fallback_cap 當它的產出」,走同一條 min 合併線。**告警與數值效果解耦** — 就算 fallback 在 min 裡沒起作用(別人更狠),告警照發(綁「守門員瞎掉」事件)。
+
+### portfolio-gross cap(總曝險約束,#3D per-symbol 模型裝不下)
+「守門員瞎 → 砍**整體總曝險**(不分幣,例全組合 gross ≤ 50%)」這種**總量級**約束,跟 #3D 的 **per-symbol cap**(逐幣各自打折)是兩種不同維度。#3D 的 per-symbol min 模型**裝不下**總量級約束。**日常比喻**:per-symbol 是「每道菜各自限量」,gross 是「整桌總預算上限」,兩個不是同一回事。Round 2 #3C review pass 標記為 **Round 3 Risk Engine 未模型化維度**,歸 backlog #4 一併處理。
+
 ### dispatch(派工 / 叫策略起來算)
 每次「市場有新資料」響鈴(framework fire 一次),framework 把所有策略叫起來、餵市場快照、收集它們算出的倉位 — 這整個「叫起來算」的動作叫 dispatch。**日常比喻**:像餐廳出餐鈴一響,廚房把所有廚師叫起來開始做菜。
 

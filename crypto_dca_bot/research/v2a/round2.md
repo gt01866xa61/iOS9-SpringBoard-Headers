@@ -432,7 +432,7 @@ def required_data(self):
 
 **架構層(必處理,Round 2 #3 議題)**:
 1. **Silent divergence(沉默歧異)— 進 #3**:PortfolioStrategy 領班要有 **cross-strategy stale override** — 風控策略被 stale 跳過時 framework 強制全策略降風險。防止「風控失能 + 其他策略繼續滿倉」這種沉默危險場景(整體曝險上升、無人察覺)。**Round 2 #3 必拍**,整合進 PortfolioStrategy 領班議題的 sub-Q。
-2. **Stale 權責切 — 進 backlog #4**:資料完整性責任歸 PortfolioStrategy 還是獨立的 Risk Engine?**Round 3 拍 Risk Engine 時會撞**,先註記,Round 3 進場時 Risk Engine 邊界討論必處理。
+2. **Stale 權責切 — 進 backlog #4**:資料完整性責任歸 PortfolioStrategy 還是獨立的 Risk Engine?**Round 3 拍 Risk Engine 時會撞**,先註記,Round 3 進場時 Risk Engine 邊界討論必處理。**(2026-05-26 #3C review pass 追加同歸此格)**:portfolio-gross 總曝險約束(per-symbol cap vs 總量級約束兩種不同維度)— #3D 的 per-symbol min 模型裝不下,Round 3 Risk Engine 一併處理。
 
 **V2-B 必驗(實測題)**:
 3. **Counter 鋸齒 reset 評估**:Sub-Q2 拍的「連續 N 次 reset」counter 模式,可能因資料偶爾恢復 1 次又斷 → counter 重置 → 永遠不觸發 alert。評估改 **滑動視窗 N-of-M**(過去 M 次裡有 N 次 stale 就 alert,不要求連續)— V2-B 觀測實際 stale 序列形狀再決定。
@@ -614,6 +614,27 @@ Framework 偵測 PortfolioStrategy 將因 stale 被跳過
                                    最終 final cap
 ```
 
+**#3C × #3D 合併位置補釘(2026-05-26,review pass 撞點)**:
+
+缺席守門員的 fail-safe 值,**架構上是「當成 cap 候選丟進 #3D 的 min 池」**(`final = min(正常守門員 cap..., 缺席者 fallback)`),**不是「min 算完後 framework 二次施加(override)」**。
+
+兩者**只在 fail-safe 值比現場 cap 寬鬆時分岔**:
+
+| 情境 | 正常 Y cap | 缺席 X fallback | (A) min 池 | (B) 二次施加 override | 差異 |
+|---|---|---|---|---|---|
+| fallback 比 Y 狠 | 0.7 | 0.4 | min=**0.4** | **0.4** | 一樣 |
+| fallback 比 Y 寬 | 0.3 | 0.5 | min=**0.3** | **0.5** | **分岔** ⚠️ |
+
+分岔那格,(B) 會讓「瞎掉守門員的通用兜底(0.5)」**蓋掉「明眼守門員看到危險喊的 0.3」**,把倉位**放寬** → 違反 #3D 取最狠地基,fail-safe 機制自己開洞。
+
+**拍 (A) 丟進 min 池,4 理由**:
+1. **單調性守住** — fail-safe 只能往緊、永遠不能放寬;(B) 在寬鬆區放寬 = 保險變漏洞
+2. **保住明眼守門員真實警報** — 瞎子的通用兜底沒資格蓋掉明眼人看真資料的判斷;min 池讓「資訊最足 + 最保守」勝出
+3. **#3C 實作位置定案 = 無獨立二次施加層** — stale 守門員不是「缺席後 framework 補一刀」,而是**「它這輪的產出 = fallback_cap」**(來自 on_stale 或預設),走**同一條 #3D min 合併**。程式路徑統一、不新增施加層、不引排序問題。(B) 反而要獨立事後 re-clamp 層,而那層正是放寬 bug 的窩
+4. **告警與數值效果解耦** — 就算 Y 已比 X fallback 狠、X 兜底在 min 裡數值上沒起作用,**告警照樣發**(綁「守門員瞎掉」事件,不綁「兜底有沒有改倉位」)。理由:這輪 Y 壓著沒事但下輪 Y 可能放寬,那時 X 還瞎著就要命 → 現在就要知道風控降級
+
+**gross-exposure watch 分出去**:(A)/(B) 處理 per-symbol cap(逐幣折扣)。「守門員瞎 → 砍**整體總曝險**(不分幣,例全組合 gross ≤ 50%)」是**總量級約束**,#3D 的 per-symbol min 模型裝不下,既非 (A) 也非 (B)。**標記 Round 3 Risk Engine 未模型化維度**(per-symbol cap vs portfolio-gross cap 兩種不同約束),接 backlog #4(stale 權責歸 PortfolioStrategy 還是 Risk Engine)。
+
 **為何 C(非 A/B/D/E)**:
 | Option | 否決理由 |
 |---|---|
@@ -665,15 +686,28 @@ Framework 偵測 PortfolioStrategy 將因 stale 被跳過
 
 **一條線拉通的哲學**:framework 強迫使用者表態(#3A)+ 看完所有意圖才拍板(#3B)+ 多守門員取最狠(#3D)+ 守門員瞎了主動降(#3C)= 整套 fail-safe 結構,每一步都往最保守倒、framework 不假設業務、使用者隨時可 override。
 
-**下一子軸**:Round 2 #3 收官,確認 Round 2 範圍是否還有未拍項目,否則進 **Round 2 全段 review pass / 收官 + Round 3 frame**。
+**#3C × #3D 合併位置補釘已落地(2026-05-26)**:fail-safe 值丟進 min 池(非二次施加),gross-exposure 約束分出去歸 backlog #4 / Round 3 Risk Engine。
+
+**下一子軸**:#3 議題收官,但 **Round 2 尚未全收官** — #2 議程 D 軸(錯誤路徑 / error paths)仍掛 TODO(見 line 143)。需先確認 D 軸是否在 Round 2 內拍 or 順延,再 frame Round 3。詳見下方「Round 2 收官缺口」。
 
 ---
 
-## #3 PortfolioStrategy always-on 鎖 + 多 PortfolioStrategy 疊合 — TODO
+## Round 2 收官缺口盤點(2026-05-26)
 
-也是 round 1 open question:
-- **always-on**:macro overlay 是 risk-layer,直覺 always-on,但會限制 V2-E meta-layer 設計空間
-- **疊合演算法**:`min` / `mul` / `sum` 各有道理(min 最保守、mul 對應獨立 risk score 累積、sum 較少用)
+#3 收官後盤點 Round 2 原始議程(line 4-7 + line 143),狀態:
+
+| 議程項 | 狀態 |
+|---|---|
+| #1 策略池 #2(Funding skew) | ✅ DONE 2026-05-21 |
+| #2A Lifecycle 必要 vs 可選 | ✅ DONE 2026-05-22 |
+| #2B 觸發頻率粒度 | ✅ DONE 2026-05-22 |
+| #2C1 暖機期協議 | ✅ DONE 2026-05-22 |
+| #2C2 stale data(A + B-1/2/3)| ✅ DONE 2026-05-24(= 原 C 軸 C2)|
+| **#2C 軸 C3 標記** | ⚠️ line 143 留 C3 marker,內容從未展開 — 需確認是否已被 C2 吸收 or 真有獨立題 |
+| **#2D 錯誤路徑(error paths)** | ⚠️ **TODO** — 策略 on_bar 拋例外 framework 怎麼辦(隔離 / 停用 / 全停)?API error / order reject / partial fill 的 framework 契約?部分屬 P1 架構(需拍)、部分屬 V1 circuit_breaker 沿用(已有資產)|
+| #3 PortfolioStrategy(A/B/C/D)| ✅ DONE 2026-05-26 |
+
+**待使用者拍**:#2D 錯誤路徑(+ 釐清 C3)要在 **Round 2 內收掉**,還是**順延到 Round 3 / V2-B**?這是 Round 2 能否宣告收官的最後一關。
 
 ---
 
