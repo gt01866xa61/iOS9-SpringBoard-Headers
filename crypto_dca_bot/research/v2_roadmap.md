@@ -63,9 +63,11 @@ V2 開發過程主要消耗時間,**不是金錢**(直到 step 4)。
 
 ---
 
-## Validation Standards(M1-M7,V2-B / V2-T / V2-D 必跑)
+## Validation Standards(M1-M8,V2-B / V2-T / V2-D 必跑)
 
 V2-B / V2-T 階段必須遵循的硬規格 — 規格鬆 → backtest 看起來綠但實單翻車。
+
+> **分類**:M1–M7 是「**策略**能不能上線」的閘門(市場風險 / 策略驗證);**M8 是「整個系統能不能安全運行」的閘門(維運風險 / 資安)** — 完整規格見 [`v2a/m8_security.md`](v2a/m8_security.md)。前者防少賺,後者防歸零。真錢上線前兩類都是硬閘門。
 
 ### M1:V2-B 內建 5 段歷史崩盤 stress-test
 
@@ -139,6 +141,20 @@ reject 的策略**不上 V2-D**(真錢 deploy)。
 **與 M5 的關係:** M5 是上線前「paper vs backtest」一次性門檻;M7 是上線後「live vs backtest」持續門檻。
 
 (門檻數字為初版,V2-D 上線前 review 校準)
+
+### M8:資安規格(Security / 維運安全)
+
+對應 backlog #8。M1–M7 管「策略會不會虧錢」(市場風險);M8 管「資產會不會被偷、系統會不會被駭」(維運風險)。**真錢系統資安失守一次 = 資產直接被提走,沒有 retry** — 所以跟策略好壞無關卻同級重要。
+
+**規範(四大面向,完整規格 + 驗收 checklist 見 [`v2a/m8_security.md`](v2a/m8_security.md)):**
+- **API key**:trading key 禁提現 + 綁 IP whitelist;read-only 與 trading 分離;實盤與測試 key 分離;90 天 rotate;永不寫死(只進 `.env` + `.gitignore`,沿用 V1)
+- **帳戶**:交易所 / email / GitHub / VPS 全開 2FA;第二道用硬體金鑰 / passkey(禁 SMS OTP — 防 SIM swap 換卡攻擊);password manager 每站獨立密碼
+- **Host(VPS)**:對外只開 SSH(且只認金鑰、禁密碼);UFW 防火牆;log 不露完整 secret;production 不跑 notebook;非 root 跑 bot
+- **Repo**:設 private(現況本 repo 為 public,bot code 建議搬獨立 private repo);detect-secrets pre-commit hook;git 全歷史掃過(2026-06-06 已掃,無真洩漏);GitHub secret scanning + push protection
+
+**現況稽核(2026-06-06)**:本 repo 雖 public,但 git 全歷史**無真金鑰殘留**(只有 chaos test 假值);唯一處置項 = 已退役 V1 Telegram token 建議直接 revoke(查不到去向、V1 已死、revoke 零成本)。詳見 m8_security.md § 1。
+
+(門檻數字 / rotate 週期為初版,V2-D 上線前 review 校準)
 
 ---
 

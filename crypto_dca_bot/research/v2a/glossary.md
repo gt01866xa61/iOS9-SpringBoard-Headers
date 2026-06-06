@@ -445,6 +445,60 @@ Round 1 用「axis」指 strategy interface 的設計維度。例:axis 6 = instr
 
 ---
 
+## 5. 資安 / 維運(M8 backlog #8)
+
+完整規格見 `v2a/m8_security.md`。這裡只收白話詞條。
+
+### operational risk(維運風險)
+跟「策略押對押錯」無關的風險 — 金鑰外洩、主機被駭、手滑打錯網。M1–M7 防市場風險(會不會虧),M8 防維運風險(會不會被偷 / 被駭)。**日常比喻**:開店,M1–M7 是「進的貨好不好賣」,M8 是「店門鎖牢不牢、收銀機會不會被整台搬走」。
+
+### 2FA(雙因素驗證,two-factor authentication)
+登入要過兩關:密碼(你知道的)+ 第二道(你有的東西,如手機動態碼或實體鑰匙)。光偷到密碼進不來。
+
+### TOTP / authenticator app(動態碼 app)
+手機 app 每 30 秒換一次的 6 位數動態碼(Google Authenticator / Authy)。2FA 第二道的中等強度選項。
+
+### 硬體金鑰 / FIDO2 / passkey(實體鑰匙)
+一把實體小鑰匙(如 YubiKey)或裝置綁定的登入憑證。2FA 第二道**最強**選項 — 對方沒實體拿到就是進不來。**日常比喻**:保險箱要插實體鑰匙,光知道密碼沒用。
+
+### SIM swap(換卡攻擊)
+攻擊者社工電信商把你的門號補發到他的 SIM 卡,你的簡訊驗證碼就送到他手機。**所以簡訊 2FA 等於沒有,M8 禁用 SMS OTP。**
+
+### IP whitelist(IP 白名單)
+API key 綁定指定 IP,非白名單 IP 拿這把 key 直接被交易所拒絕。**日常比喻**:這把鑰匙只認自家門口,別人拿去別處插不動。
+
+### key rotate(金鑰輪換)
+定期(M8 訂 90 天)產新 key、換掉、刪舊 key。鑰匙用久暴露機率累積,定期換新、作廢舊的。疑似外洩立即 rotate。
+
+### 提現權限(withdrawal permission)
+能把幣轉出帳戶的權限。bot 下單根本用不到,M8 規定 trading key 一律**關掉** — 就算 key 被偷,對方也搬不走幣。
+
+### read-only key vs trading key
+唯讀 key 只能看(抓資料 / 對帳),trading key 能下單。M8 規定兩者分離,看數字的程式只拿唯讀,降低下單 key 的暴露面。
+
+### testnet vs mainnet(測試網 vs 實盤)
+testnet = 交易所提供的假錢練習場,mainnet = 真錢。M8 規定兩邊 key 完全分開,防測試程式手滑打到真錢。
+
+### UFW(簡易防火牆)
+Ubuntu 內建防火牆。設「對內全擋、對外放行、只開 SSH」。**日常比喻**:給主機加一道牆,只留一扇你管理用的門。
+
+### SSH 金鑰登入(key-based auth)
+SSH 遠端登入只認「金鑰檔」不認密碼。密碼會被全網機器人 24h 爆破,金鑰幾乎猜不中。
+
+### redact(遮蔽)
+把敏感字串換成 `[REDACTED]` 或只留末 4 碼。M8 規定 log / 告警絕不印完整 secret。V1 `notifier.py` 已實作。
+
+### pre-commit hook(提交前掛鉤)
+每次 `git commit` 前自動跑的檢查。M8 用它掛 detect-secrets,commit 前掃到疑似金鑰直接擋下。**日常比喻**:出門前自動檢查「鑰匙有沒有不小心夾在要寄出的信封裡」。
+
+### detect-secrets / gitleaks / trufflehog
+掃 git 內容 / 歷史有沒有金鑰的工具。M8 用來掃全歷史 + 掛 pre-commit。
+
+### secret scanning + push protection(GitHub 平台層)
+GitHub 內建:有人 push 含金鑰的 commit 直接被平台擋住。M8 的第三道防線(hook 在本機擋、push protection 在平台擋、掃歷史事後稽核)。
+
+---
+
 ## 維護規則
 
 - 每 round 新出現的術語追加進對應分類

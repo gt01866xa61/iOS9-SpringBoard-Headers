@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-06-06 — Backlog #8 資安規格(M8)落地 + git 歷史洩漏稽核
+
+獨立工作項(跟 V2-A Round 3 主線架構無關),處理平台資安。**注意:此條為維運安全,非架構討論。**
+
+### 1. git 歷史洩漏稽核(急事先查)
+
+起因:V1 時代有 Telegram bot token,記憶中 commit `fcb6976` 做過 redact。查 repo 是否 public + 歷史是否殘留真金鑰。
+
+**稽核結論:**
+- **Repo 是 public**(`gt01866xa61/iOS9-SpringBoard-Headers`,`private:false`)。
+- **git 全歷史(50 commit / 所有 ref / 所有 blob)無真金鑰殘留** — 只找到 chaos test 故意的假值(`0000000000:ChAoS_invalid_token_for_testing_xxxxx`、`bad_key_xxxxxxxx`)。
+- **從未 commit 過真 `.env`**(任何路徑);code 全 `os.environ` 讀、無寫死;`.gitignore` 正確擋 `.env`。
+- **`fcb6976` 不在本 repo 歷史**(rev-parse 找不到)→ 那段「redact」歷史若存在則在別處,本 repo 看不到。
+- **處置**:不緊急(本 repo 沒在漏);但已退役 V1 Telegram token 查不到去向 + V1 已死(revoke 零成本)→ **建議直接 revoke**(`@BotFather /deletebot`)+ 刪 V1 Binance key(若開過實 key)。關鍵觀念:**改檔案式 redact 不會把 secret 移出 git 歷史**,只要曾 push public 就視同外洩。
+
+### 2. M8 資安規格(照業界標準)
+
+新增 `v2a/m8_security.md`(完整規格 + 驗收 checklist),`v2_roadmap.md` Validation Standards 由 M1–M7 擴成 **M1–M8** 並補 M8 stub + 連結。**分類**:M1–M7 = 策略上線閘門(市場風險);M8 = 系統運行閘門(維運風險)。前者防少賺,後者防歸零,真錢上線前皆硬閘門。
+
+四大面向定案:
+- **API key**:trading key 禁提現 + 綁 IP whitelist / read-only 與 trading 分離 / 實盤與測試 key 分離 / 90 天 rotate / 永不寫死(`.env` + `.gitignore`,沿用 V1)
+- **帳戶**:交易所 / email / GitHub / VPS 全開 2FA / 第二道用硬體金鑰 / passkey(禁 SMS OTP 防 SIM swap)/ password manager 每站獨立密碼 / email 為命門用最強 2FA
+- **Host(VPS)**:對外只開 SSH(只認金鑰、禁密碼)/ UFW / log 不露完整 secret(沿用並擴大 V1 `[REDACTED]`)/ production 不跑 notebook / 非 root 跑 bot / fail2ban + unattended-upgrades
+- **Repo**:設 private(現況 public,bot code 建議搬獨立 private repo)/ detect-secrets pre-commit hook / git 全歷史掃過(本次已做)/ GitHub secret scanning + push protection
+
+Glossary 追加「## 5. 資安 / 維運」16 條白話詞條(operational risk / 2FA / TOTP / 硬體金鑰-passkey / SIM swap / IP whitelist / key rotate / 提現權限 / read-only vs trading key / testnet vs mainnet / UFW / SSH 金鑰登入 / redact / pre-commit hook / detect-secrets / push protection)。門檻數字(rotate 週期等)為初版,V2-D 上線前校準。
+
+---
+
 ## 2026-05-26 — V2-A Round 2 全段收官:Strategy interface + PortfolioStrategy 完整契約鎖死
 
 Round 2 全 13 個議程 / 子題拍板完成,Strategy interface 從骨架(Round 1)推進到**完整 framework 契約**。完整 ledger 見 `v2a/round2.md` 末段「Round 2 全段收官」總覽表。
