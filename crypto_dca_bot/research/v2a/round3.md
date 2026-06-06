@@ -219,11 +219,23 @@ SymbolStrategy target % → 加總(per-strategy capital 加權)
 
 **核心問題**:Round 2 #2B 拍 event-driven + LKV + 統一 event log,但**「event 從哪裡生成 / 怎麼 fan-out 給策略 / snapshot 在哪一層組裝」**沒攤。
 
-**子題拆**:
-- R3-②-a:event 來源層(exchange websocket / 排程 / 內部 trigger)的統一抽象
-- R3-②-b:snapshot 組裝是 **per-fire 重建** 還是 **incremental update**?
-- R3-②-c:data source registry(Sub-Q3 拍的 `DATA_SOURCES`)實作層級(Python dict / YAML / DB)— 此題已標 Sub-Q3 留 P1 spec,Round 3 一併拍
-- R3-②-d:event log 規格(stale 事件、跳過事件、crash 事件、Telegram 觸發事件統一格式)
+**子題拆(2026-05-26 評估 — 精簡尺一量,塌成一刀)**:
+
+原 frame 列 4 個子題(②-a 事件來源 / ②-b snapshot 組裝機制 / ②-c registry 格式 / ②-d event log 格式)。套精簡 litmus(「不拍 V2-B 引擎骨架會卡嗎?」)後,**3 個降級 V2-B,只剩 1 個 hard 架構題**:
+
+| 原子題 | litmus | 去向 |
+|---|---|---|
+| ②-a 事件來源統一抽象 | 「具體來源(websocket/cron)」是實作;但**底層『同一套 code 跑 backtest + live』的抽象**是 hard 架構 | **升級為 R3-②(唯一 hard 題)** |
+| ②-b snapshot 組裝 per-fire vs incremental | rebuild-vs-incremental 是**效能/實作**;但 **no-lookahead 契約**是 hard 架構 | no-lookahead 併入 R3-②;機制降級 V2-B |
+| ②-c registry 格式(dict/YAML/DB)| 純實作選型,不影響引擎骨架 | ⛔ 降級 V2-B(Sub-Q3 早標) |
+| ②-d event log 格式 | 「統一 event log 存在」Round 2 #2B 已拍;確切 schema 是實作 | ⛔ 降級 V2-B(placement 併入 R3-②)|
+
+**塌縮後的唯一 hard 架構題 = R3-②:backtest/live parity 的資料抽象**
+> 引擎透過什麼抽象拿資料,讓**同一套策略 + 引擎 code** 跑歷史回放(backtest)跟即時餵料(live)都**不用改**,且 backtest 的 snapshot 有 **point-in-time no-lookahead 保證**(時間 T 的快照只含 T 當下可得的資料,結構上不可能偷看未來)?
+
+**為何這是 hard 而非可降級**:V2-B 是回測引擎,整個骨架圍著「資料怎麼進引擎」轉;且 backtest/live 分岔是量化頭號死法之一(M5 paper-vs-backtest 正是為抓它而設,架構該從根預防而非靠事後比對)。**litmus = 卡 → 拍。**
+
+**明確降級 V2-B**:事件來源具體種類 / snapshot rebuild-vs-incremental 機制 / DATA_SOURCES registry 格式 / event log 確切 schema。
 
 ---
 
