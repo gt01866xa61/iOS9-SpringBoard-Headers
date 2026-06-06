@@ -399,6 +399,18 @@ Round 2 #3C review pass 撞點(2026-05-26 拍):守門員因 stale 缺席時的 f
 ### portfolio-gross cap(總曝險約束,#3D per-symbol 模型裝不下)
 「守門員瞎 → 砍**整體總曝險**(不分幣,例全組合 gross ≤ 50%)」這種**總量級**約束,跟 #3D 的 **per-symbol cap**(逐幣各自打折)是兩種不同維度。#3D 的 per-symbol min 模型**裝不下**總量級約束。**日常比喻**:per-symbol 是「每道菜各自限量」,gross 是「整桌總預算上限」,兩個不是同一回事。Round 2 #3C review pass 標記為 **Round 3 Risk Engine 未模型化維度**,歸 backlog #4 一併處理。
 
+### backtest/live parity(回測—實盤一致性)
+策略先用歷史資料**回測**(看過去會不會賺)、過關才用真錢**實盤**。parity = 回測跟實盤**用同一套 code 餵資料、行為一致**。**怕的反面**:「考試一套題、上場一套題」— 回測賺翻、實盤一上線就走樣。是量化**最常見死法之一**(M5 paper-vs-backtest 專門抓這個)。Round 3 R3-② 拍 Option A(統一 event bus + 雙 driver)讓 parity **結構性內建**(同一個 event 介面,backtest/live 無從分岔)。
+
+### no-lookahead(不偷看未來 / lookahead bias)
+回測鐵律:時間 T 的市場快照**只能含 T 當下已知的資料**。若策略看到「未來」資料來決定當下的單 = **lookahead bias(偷看未來偏差)**,回測會**假賺**(作弊)、實盤現形。是回測**頭號作弊源**。Round 3 R3-② 拍 Option A 讓 no-lookahead **結構性內建**(引擎只處理「已發生的 event」,結構上碰不到未來)。**日常比喻**:考試只能用考前學的,不能翻到後面看答案 — 而且這個考場設計成「後面的題根本還沒發下來」,想翻都翻不到。
+
+### event bus + 雙 driver(統一資料管線)
+Round 3 R3-② 拍板的資料流架構:一個 **event 介面**(event bus),底下兩個 driver —— **backtest driver**(讀歷史按時間順序吐 events)/ **live driver**(接交易所 feed 即時吐 events)。引擎 + 策略消費同一介面、**完全不知資料來源**。**日常比喻**:同一個水龍頭,底下可接「水塔」(歷史)或「自來水」(即時),用水的人不需知道水從哪來、開法都一樣。好處:backtest/live parity + no-lookahead 都 by construction(結構性內建,不靠人自律)。前向連結 R3-④:live driver↔V1 `exchange_api`、backtest driver↔V1 `price_recorder`。
+
+### by construction vs by discipline(結構性保證 vs 靠自律)
+設計品味:讓正確性**由結構本身保證**(想犯錯都難),而非**靠人遵守紀律**(沒人犯錯才對)。Round 3 R3-② 選 Option A 而非 B 的核心 —— A 的 parity / no-lookahead 是「根本只有一套 code、根本碰不到未來」(by construction);B 的「兩套 code 講好要一致」是 by discipline(哪天有人寫錯就漏)。**日常比喻**:防止跌落,by construction = 把洞封起來(想掉都掉不下去),by discipline = 貼個「小心地洞」告示牌(靠你看到 + 記得閃)。Round 2 #3C「fail-safe 丟 min 池而非事後檢查」同一個品味。**安全的東西要 by construction。**
+
 ### dispatch(派工 / 叫策略起來算)
 每次「市場有新資料」響鈴(framework fire 一次),framework 把所有策略叫起來、餵市場快照、收集它們算出的倉位 — 這整個「叫起來算」的動作叫 dispatch。**日常比喻**:像餐廳出餐鈴一響,廚房把所有廚師叫起來開始做菜。
 

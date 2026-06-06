@@ -239,6 +239,66 @@ SymbolStrategy target % → 加總(per-strategy capital 加權)
 
 ---
 
+### R3-② backtest/live parity 資料抽象 — 拍板 Option A 統一 event bus + 雙 driver(2026-05-26)
+
+**拍板:Option A — 統一 event bus + 雙 driver(backtest replay driver / live driver)**
+
+**機制**:
+```
+                  ┌─ backtest driver:讀歷史,按時間順序吐 events
+一個 event 介面 ──┤                                           → 引擎 + 策略(完全不知資料來源)
+                  └─ live driver:接交易所 feed,即時吐 events
+snapshot 由引擎從「已發生的 events + LKV(上次已知值)」point-in-time 組裝
+```
+
+**兩個結構性保證(by construction,非 by discipline)**:
+1. **backtest/live parity**:backtest / live 餵同一個 event 介面 → 策略 + 引擎**同一套 code**,無從分岔
+2. **no-lookahead**:引擎只處理「已發生的 event」→ **結構上不可能**碰未來資料
+
+**為何 A(非 B/C)**:
+| Option | 否決 / 拍板理由 |
+|---|---|
+| B 雙資料路徑 + 共同 market 介面 | 兩條 ingestion 路徑容易悄悄分岔(正是 M5 要抓的病,架構該預防非事後比對)+ no-lookahead 靠紀律維護無結構保證 |
+| C pull-based 引擎主動要資料 | 跟 Round 2 #2B 拍的 event-driven(push)相左 + live「阻塞等待」是漏抽象 |
+| **A**(拍) | parity + no-lookahead 皆**結構性內建非靠紀律**(同 #3C「fail-safe 丟 min 池而非事後檢查」精神)+ backtest/live 分岔是量化頭號死法值得架構層堵死 + 對齊已拍 #2B |
+
+**前向連結(標記 R3-④,不在此拍)**:
+- A 的 **live driver 天然包 V1 `exchange_api`**;**backtest driver 歷史資料跟 V1 `price_recorder`(錄價模組)同血緣** → R3-④ V1 沿用接點,先標記
+
+**Watch(留 V2-B)**:
+- event bus 具體實作(in-process queue / 第三方 lib)
+- backtest driver 歷史資料來源(自錄 / 交易所 API / 第三方)
+- snapshot rebuild-vs-incremental 效能選型
+
+**拍板白話講**:
+
+策略要先用歷史資料**考試**(回測)、過了才用真錢**上場**(實盤)。最怕兩件事:「考試一套題、上場一套題」(parity 不一致 → 回測賺翻、實盤走樣)跟「考試偷看答案」(no-lookahead → 回測假賺、上場現形)。
+
+你選的做法是:**讓考試跟上場用同一條資料管線,而且這條管線結構上只送得出「已經發生」的資料**。
+
+具體說:不管是回測還是實盤,資料都從**同一個「事件介面」**進來 —— 回測時有個「歷史播放器」(backtest driver)按時間順序把舊資料一筆筆吐進來,實盤時有個「即時接收器」(live driver)接交易所推送。但**策略跟引擎完全不知道、也不需要知道資料是歷史還是即時的** —— 它們看到的是同一個介面、同一套 code。
+
+而且因為引擎**只處理「已經吐出來的事件」**,它**根本沒有管道碰到未來的資料** —— 想偷看都沒得看。
+
+為什麼不選「兩條管線、講好要一致」(B)?因為那靠的是**人不犯錯**;你選的 A 靠的是**架構讓你想犯錯都難**。安全的東西要「結構上做對」,不要「靠自律做對」 —— 這跟 Round 2 你拍「守門員瞎了的 fail-safe 直接丟進 min 池、不靠事後檢查」是同一個品味。
+
+---
+
+## R3-② 資料流議題正式收官 ✓(2026-05-26)
+
+精簡尺下塌成一刀,一刀拍完即收官:
+
+| 題 | 拍板 |
+|---|---|
+| R3-② backtest/live parity 資料抽象 | A 統一 event bus + 雙 driver(parity + no-lookahead 結構性內建)|
+
+**降級 V2-B**:事件來源具體種類 / snapshot 組裝機制 / registry 格式 / event log schema
+**前向連結 R3-④**:live driver↔`exchange_api`、backtest driver↔`price_recorder`
+
+**下一子軸**:R3-③ 執行層 over-trading 冷卻機制(議程已 frame,先評估拆法再丟第一刀)。
+
+---
+
 ## R3-③ 執行層 over-trading 冷卻機制 — 待拍
 
 **核心問題**:Round 1 review pass 使用者 raise 川普推文 / TACO 類噪音洗手續費 → 結論「執行層」處理(target → 實際下單轉換)。Round 1 留 Round 3 攻。
