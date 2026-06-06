@@ -303,11 +303,21 @@ snapshot 由引擎從「已發生的 events + LKV(上次已知值)」point-in-ti
 
 **核心問題**:Round 1 review pass 使用者 raise 川普推文 / TACO 類噪音洗手續費 → 結論「執行層」處理(target → 實際下單轉換)。Round 1 留 Round 3 攻。
 
-**子題拆**:
-- R3-③-a:**dead-band**(不動區)在 framework 哪一層?(全局 framework 強制 / 策略 param 各別宣告 / 混合)— 注意 funding skew 策略已自帶 `dead_band` param,框架層要不要再加一層?
-- R3-③-b:**cooling period**(冷卻期)— 兩次調倉間最短間隔
-- R3-③-c:**regime-aware 降頻**(macro 高 vol 時減少調倉頻率)
-- R3-③-d:與 Round 2 #3D overlay 訊號「連續可衰退」紀律的關係(都是「降抖動」家族)
+**子題拆(2026-05-26 評估 — 精簡尺一量,剩一刀但有真選擇)**:
+
+| 原子題 | litmus | 去向 |
+|---|---|---|
+| ③-a dead-band 在哪一層 | **分層問題是 hard 架構**(有沒有 framework 執行政策層 + 跟策略內部節流怎麼分);threshold 值是實作 | **升級為 R3-③(唯一 hard 題)** |
+| ③-b cooling period | 「執行層是否含時間節流」併入 ③-a(同一層的政策);間隔值是實作 | 併入 ③-a;值降級 V2-B |
+| ③-c regime-aware 降頻 | regime detection 是 **roadmap V2-E 階段**的事,依賴它的降頻不能現在拍 | ⛔ 降級 V2-E(framework 執行層留 future hook)|
+| ③-d 與 #3D「連續可衰退」關係 | 非獨立決定,是 coherence note — 策略訊號級節流跟 #3D 同家族,釐清歸屬即可 | 併入 ③-a(策略層) |
+
+**塌縮後的唯一 hard 架構題 = R3-③:執行政策層的存在 + 分層**
+> 過度交易的節流(dead-band 不動區 / cooling 冷卻)該住在哪?**純策略級**(各策略自管,如 funding 已自帶 `dead_band`)/ **純 framework 級**(統一執行政策層)/ **雙層**(策略管訊號穩定 + framework 管最終 order 紀律)?
+
+**為何這是 hard 而非可降級**:V2-B 引擎管線**有沒有一個『執行政策層』(在最終 target → 下單之間,比對 current vs target 決定要不要動)** 直接決定骨架。**litmus = 卡 → 拍。** threshold 值 / cooling 間隔 / regime 降頻全降級。
+
+**明確降級**:dead-band 數值 / cooling 間隔 / regime-aware 降頻(→ V2-E,依賴 regime detection)。
 
 ---
 
