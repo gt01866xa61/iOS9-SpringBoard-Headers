@@ -407,11 +407,29 @@ snapshot 由引擎從「已發生的 events + LKV(上次已知值)」point-in-ti
 
 **核心問題**:CLAUDE.md V2 邊界明列 V1 code 為技術資產(`exchange_api.py` / `trader.py` / `notifier.py` / `circuit_breaker.py` / `heartbeat.py` / `price_recorder.py` / `chaos_test.py`)。Round 2 #2D 已宣告 API error / partial fill 沿用 V1,但**整體 hook 點地圖**沒定。
 
-**子題拆**:
-- R3-④-a:V1 → V2 模組對應(逐個 V1 模組對應 V2 哪一層 hook)
-- R3-④-b:V1 `notifier`(Telegram)在 Round 2 累積的多處告警(stale alert / silent divergence / crash 永久停用 / fail-safe 觸發)統一 channel 設計
-- R3-④-c:V1 `circuit_breaker` 在 Round 2 #2D 架構契約下的接點(跟「策略缺席」機制的關係)
-- R3-④-d:V1 `chaos_test` 在 M1 stale-aware 規格下的角色(它是不是 M1 stress test 的 driver?)
+**子題拆(2026-05-26 評估 — 精簡尺一量,大幅塌縮 + 關鍵發現)**:
+
+**關鍵發現**:多數 V1 模組是**實盤/部署(V2-D)**的事,V2-B 是回測引擎、根本用不到 → 精簡 litmus(「不拍 V2-B 引擎骨架會卡嗎?」)下**大幅塌縮**。
+
+| 原子題 / V1 模組 | V2-B 用得到? | 去向 |
+|---|---|---|
+| ④-a 模組對應地圖 | 部分(資料側 + 執行側介面)| 拆出唯一 hard 題(見下)|
+| `exchange_api` | ✓(回測資料來源)| R3-② live driver(資料IN)+ ④-a live executor(下單OUT)— 已決 |
+| `price_recorder` | ✓(回測歷史資料)| R3-② backtest 資料源 — 已決 |
+| `trader` | ✓(輸出側介面定義)| ④-a live executor driver — **本輪唯一 hard 題決** |
+| `notifier`(④-b)| ✗(回測無 Telegram)| 統一 alert sink 接縫(thin),channel 設計 ⛔ V2-D |
+| `circuit_breaker`(④-c)| ✗(回測無實盤)| #2D 框架級 crash 處理(架構已決)+ live 實作 ⛔ V2-D |
+| `heartbeat` | ✗(回測無 liveness)| 純維運監控 ⛔ V2-D |
+| `chaos_test`(④-d)| ✓(M1 stress test driver)| V2-B 測試基建(note,非架構決定)|
+
+**塌縮後的唯一 hard 架構題 = R3-④:executor / broker 抽象(輸出側 parity)**
+> 訂單**執行**怎麼讓 backtest 跟 live 用同一套 code?——這是 R3-② event bus(**輸入側** parity)的**輸出側鏡像**。R3-② 讓「資料怎麼進」source-agnostic,R3-④ 讓「訂單怎麼出」destination-agnostic。V2-B 回測引擎需要一個「模擬成交器」,介面要跟 live 的 `trader.py` 一致。
+
+**為何這是 hard 而非可降級**:V2-B 回測引擎的**輸出端**(order → 成交)非有不可,且要跟 live 同介面(否則輸出側 backtest/live 分岔,跟 R3-② 否決 B 同病)。**litmus = 卡 → 拍。**
+
+**明確降級 V2-D(非 V2-B,實盤/部署才需要)**:notifier channel 設計 / circuit_breaker live 實作 / heartbeat 維運監控 — 全是 live 才用到、回測用不到的。
+
+**R3-④ 實質 = 1 個 hard 決定(④-a executor 抽象)+ 一張「V1 模組落點地圖」**(多數已由前面拍板自動決定 or 降 V2-D),不是 super-題。
 
 ---
 
