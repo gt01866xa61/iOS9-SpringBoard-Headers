@@ -57,6 +57,66 @@
 
 ---
 
+### R3-①-a Risk Engine 存在性 — 拍板 Option C 獨立成一級元件層(2026-05-26)
+
+**拍板:Option C — Risk Engine 獨立成一級元件層**
+
+**機制(管線新增一站)**:
+```
+Symbol target → 加總 → PortfolioStrategy per-symbol cap
+                       → 【Risk Engine】← 新一級元件
+                            ├─ portfolio-gross 總曝險上限
+                            ├─ M6 vol-targeting sizing
+                            └─ 資料完整性最終把關(stale 終責)
+                       → 下單構造 → 下單
+```
+
+**職責切分定案**:
+| 層 | 職責 | 一句話 |
+|---|---|---|
+| SymbolStrategy | per-symbol target % | 「我想要多少 BTC」 |
+| PortfolioStrategy | per-symbol cap multiplier | 「每個幣各自打幾折」 |
+| **Risk Engine**(新) | 組合級風控 | 「整桌總預算 + 按波動調倉 + 資料責任」 |
+
+**為何 C(非 A/B)**:
+| Option | 否決 / 拍板理由 |
+|---|---|
+| A 塞 PortfolioStrategy | Round 2 #3C 補釘已證 per-symbol min 模型裝不下 gross,硬塞扭曲語意 + sizing / stale 責任更不搭 |
+| B 塞現有 sizing stage | 那一站變雜物抽屜(算量 + gross + vol-target + stale 把關 4 件不相關),違反簡單派「每個元件內部簡單」+ stale 把關塞進「算量」語意不搭 |
+| **C**(拍) | 職責單一 / gross 有正確的家 / M6 sizing 有明確落點 / stale 最終責任歸一處 / 對齊頭號共識「風險管理 > 預測」風控應為一級架構公民 |
+
+**精簡原則對齊(關鍵說明)**:
+「精簡」分兩層:
+1. **元件數量少**(B 贏 — 不加新元件)
+2. **每個元件內部簡單**(C 贏 — 每個元件一句話講得清)
+
+Round 1 拍的**簡單派定的是 ②**(每策略內部一句話講得清,參數 < 5 個)。Round 2 已證**一定要有新東西裝 gross**(守門員裝不下) → 爭點不是「要不要加東西」,而是「加的東西要不要**正名**」。C 給它招牌,B 把它藏進別人家變雜物抽屜。**→ C 服務簡單派的 ②,不違反精簡。**
+
+**對 ①-b / ①-c 殘量影響(評估收斂)**:
+- ①-b 殘量:**Risk Engine 跟現有 sizing stage 合併還是分開兩站** + **看什麼算 gross**(final target × cap?還是意圖階段?)— 仍需拍
+- ①-c 殘量:**部分被 ①-a 自動回答** —— gross 歸 Risk Engine ✓、stale 最終責任歸 Risk Engine ✓。**剩**:M6 sizing 是 Risk Engine 內部 sub-stage 還是另立 stage — 仍需拍
+- **建議**:①-b 殘量(2 題)+ ①-c 殘量(1 題)= 3 個小題, **併成一輪「R3-①-bc」一次快收**,符合精簡原則 + 不違反「一輪一 axis」(都是同一個 Risk Engine 的內部結構)
+
+**Watch(留 ①-bc 一併處理)**:
+- Risk Engine 是**可插拔策略**(像 PortfolioStrategy 可換 NoOp)還是 **framework 寫死的安全護欄**(像 V1 `circuit_breaker` 不可移除)?直覺後者(風控不該允許「明確選不做」逃生口),但留 ①-bc 拍
+- NoOp 模式下 Risk Engine 是否仍 always-on?直覺是(framework-level 護欄不該被使用者關掉),但留 ①-bc 確認
+
+**拍板白話講**:
+
+你選了「**給保全總管一個自己的辦公室**」。
+
+意思是:整體性的風險(整桌總共下多少注、資料壞了誰最終扛責、部位按市場晃動調多大)不會塞進守門員的辦公桌(他桌子小、裝不下整桌總帳),也不會塞進「算量員」的辦公桌(他本來只做 USDT 換算、塞進去會變誰都看不懂的萬能間),而是**多開一間辦公室**叫 Risk Engine,**專門管這三件事**。
+
+雖然「多一間辦公室」聽起來不精簡,但你 Round 1 拍的「簡單」其實是指「**每間辦公室裡的事一句話講得清**」—— 守門員管「逐幣打折」、算量員管「換 USDT 數量」、Risk Engine 管「整體風控」,各做各的、邊界乾淨。這比「省一間辦公室、但其中一間變成什麼都做的萬能間」更好懂、更好維護、出 bug 也好查(知道找誰)。
+
+而且重點:風控是你們團隊一致認定的**第一順位**(「風險管理 > 預測」是 Round 0 就寫死的共識),它**值得自己的家、自己的招牌**,不該寄人籬下。
+
+至於「保全總管實際看什麼數字、跟算量員怎麼分工、能不能被使用者關掉」這些**辦公室內部細節**,留下一輪 R3-①-bc 一次快收。
+
+**下一子軸**:R3-①-bc(併成一題)— Risk Engine 內部結構 + 看什麼算 gross + 是否 framework-level 護欄(可插拔 vs always-on)。3 個小題同質性高,精簡原則下併輪。
+
+---
+
 ## R3-② 資料流 / event bus / snapshot 組裝 — 待拍
 
 **核心問題**:Round 2 #2B 拍 event-driven + LKV + 統一 event log,但**「event 從哪裡生成 / 怎麼 fan-out 給策略 / snapshot 在哪一層組裝」**沒攤。
