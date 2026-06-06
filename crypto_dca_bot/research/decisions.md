@@ -6,6 +6,42 @@
 
 ---
 
+## 2026-05-26 — V2-A Round 3 全段收官:平台底盤定形(Risk Engine + I/O parity + 雙層節流)
+
+V2-A Round 3 四議程 / 6 sub-Q 拍板完成,V2 平台從 Round 2 的「Strategy interface 完整契約」推上**整棟樓的公共系統**:組合級風控、資料流、執行紀律、V1 整合接點全定。完整 ledger 見 `v2a/round3.md` 末段「Round 3 全段收官」。
+
+**拍板總清單(6 條)**:
+- R3-① Risk Engine 模組邊界(吸收 backlog #4):
+  - ①-a C 獨立成一級元件層(保全總管有自己的辦公室)
+  - ①-bc:Block 1 = A 寫死護欄 + always-on(類比 V1 circuit_breaker) / Block 2 = B 分 2 站(Risk Engine 風控 vs 算量站技術轉換) / Block 3 = B post-cap(看守門員打折後算 gross)
+- R3-② 資料流 = A 統一 event bus + 雙 driver(parity + no-lookahead by construction)
+- R3-③ 執行層 = C 雙層節流(策略訊號級 + framework 執行政策層,分擋訊號自抖 vs 聚合後抖)
+- R3-④ executor 抽象 = A 對稱 R3-②(輸出側 parity by construction)+ V1 落點表確認
+
+**Round 3 浮現的 4 條新設計哲學(沿用 Round 2 6 條共 10 條)**:
+7. 精簡尺反覆作用 — litmus「不拍 V2-B 引擎骨架會卡嗎」,4 議題 3 個塌成一刀
+8. I/O 兩側對稱 parity — R3-② 輸入 + R3-④ 輸出 by construction,M5 paper-vs-backtest 從根堵死
+9. framework 級護欄 vs 策略級風控分層 — 區分「業務語意」(留使用者)vs「安全機制存在性」(framework 寫死),解 framework 不假設業務的表面衝突
+10. 雙層職責對抗雜物抽屜 — 寧多開盒子不變萬能間(R3-① Risk Engine vs 算量站、R3-③ 訊號層 vs 執行層)
+
+**V2-A 平台完整元件清單(Round 1-3 累積)**:
+- 策略層:`SymbolStrategy`(Round 1)+ `PortfolioStrategy`(可換 NoOp,Round 1+Round 2 #3A)
+- Framework 一級護欄(non-bypass):`Risk Engine`(R3-①)+ `framework 執行政策層`(R3-③)
+- Framework 管線基建:算量站 / event bus + 雙 driver(R3-②)/ executor + 雙 driver(R3-④)/ 統一 event log + alert sink / DATA_SOURCES registry
+- Framework 政策:always-on 鎖(#3A)+ 策略缺席統一模型(#2C2 + #2D)+ crash counter 永久停用(#2D)
+
+**Round 3 review pass 補釘**:#3C × #3D fail-safe 值丟進 min 池(非二次施加)— 保住單調性,Round 3 才完整適用
+
+**Carry over**:
+- V2-B 必驗清單:模擬成交器演算法 / 滑點+手續費模型(Round 1 Gap 4 同源)/ Risk Engine 3 sub-stage 順序 / snapshot rebuild vs incremental / dead-band+cooling 數值校準 / N 值校準 / counter 鋸齒評估 / whipsaw 量化 / trend×funding correlation / M1 stale-aware 受測
+- V2-D 順延(實盤才需):notifier channel 分流 / circuit_breaker 實盤層整合 / heartbeat liveness 監控
+- V2-E 順延(依賴 regime detection):regime-aware 降頻(執行政策層已預留 hook)
+- V2-S 各策略 codify 紀律:overlay 訊號連續可衰退禁 binary latch
+
+V2-A 階段(畫設計圖、不寫 code)三輪拍板全部完成。下一步建議:Round 3 全段 review pass → V2-A 收斂出總圖(平台架構文件,V2-B 開工依據)→ 進 V2-B(寫第一行 code)。Glossary 累積 Round 3 期間新增 11 條(以「故事/比喻」風格,使用者非 quant 背景可快速 reference)。
+
+---
+
 ## 2026-06-06 — Backlog #8 資安規格(M8)落地 + git 歷史洩漏稽核
 
 獨立工作項(跟 V2-A Round 3 主線架構無關),處理平台資安。**注意:此條為維運安全,非架構討論。**

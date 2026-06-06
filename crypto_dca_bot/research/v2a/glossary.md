@@ -412,6 +412,18 @@ Round 3 R3-③ 新增架構元件,位於算量站後、實際送單前。職責:
 - **regime hook**:預留 V2-E regime detection 接入(市場特別瘋時降頻)
 **日常比喻**:廚房門口的「出菜檢查站」— 算量算出來的菜不是直接送,先看「跟客人現在桌上的差多少」「上次送菜過多久了」決定要不要送。Risk Engine 是保全護欄(風險判斷),執行政策層是出菜紀律(訊號雜訊過濾)。具體數值(threshold / 間隔)V2-B 校準,regime hook 啟用 V2-E。
 
+### executor 抽象 + 雙 driver(輸出側 parity)
+Round 3 R3-④ 拍板的訂單執行架構,R3-② event bus 的**輸出側鏡像**。一個 **executor 介面**,底下兩個 driver:**backtest driver**(模擬成交器:歷史價成交+滑點/手續費估)/ **live driver**(V1 `trader.py` + `exchange_api` 真下單)。引擎算完 order 後**完全不知道是模擬還是真送**,丟介面就完事。**日常比喻**:餐廳的「出菜口」,底下廚房可接「演習用模型」(回測)或「真廚房」(實盤),服務生只認出菜口、不關心後面是誰做的。好處:輸出側 parity by construction,跟 R3-② 輸入側對稱形成完整 backtest/live parity 結構,M5 paper-vs-backtest 從根堵死。
+
+### I/O 兩側對稱 parity(設計哲學)
+Round 3 R3-② + R3-④ 累積的核心設計哲學:**資料進來(輸入)+ 訂單出去(輸出)兩側都用「同一介面 + 雙 driver」抽象**,讓 backtest 跟 live 從頭到尾用同一套 code,**結構上根本沒有「悄悄分岔」的空間**。**日常比喻**:管線兩端的水龍頭都做成同規格接口 — 不管接水塔還是自來水都對得上、接模擬下水道還是真的下水道也都對得上。對比 by discipline(靠人不犯錯維持兩條線一致):by construction(結構保證)更安全,**安全的東西要 by construction**。M5「paper-vs-backtest 一致」這條 milestone 因此**架構層已預防**,不必靠事後比對抓。
+
+### Framework 一級護欄(non-bypassable framework primitive)
+Round 3 累積的概念:某些 framework 元件**使用者不可關不可換不可 NoOp**(類比 V1 `circuit_breaker`)。對比策略級風控(`PortfolioStrategy` 可換 NoOp)。Round 3 拍的兩個 framework 一級護欄:
+- `Risk Engine`(R3-① 拍)— 管組合級風控(總曝險 + vol-targeting + stale 終責)
+- `framework 執行政策層`(R3-③ 拍)— 管最終 order 紀律(dead-band + cooling + regime hook)
+**哲學區分**:framework 不假設**業務語意**(門檻數值留使用者),但**可寫死安全機制存在性**(有沒有這層 framework 說了算)。
+
 ### backtest/live parity(回測—實盤一致性)
 策略先用歷史資料**回測**(看過去會不會賺)、過關才用真錢**實盤**。parity = 回測跟實盤**用同一套 code 餵資料、行為一致**。**怕的反面**:「考試一套題、上場一套題」— 回測賺翻、實盤一上線就走樣。是量化**最常見死法之一**(M5 paper-vs-backtest 專門抓這個)。Round 3 R3-② 拍 Option A(統一 event bus + 雙 driver)讓 parity **結構性內建**(同一個 event 介面,backtest/live 無從分岔)。
 

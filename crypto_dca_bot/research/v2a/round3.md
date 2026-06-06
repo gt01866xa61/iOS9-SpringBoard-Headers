@@ -433,6 +433,135 @@ snapshot 由引擎從「已發生的 events + LKV(上次已知值)」point-in-ti
 
 ---
 
+### R3-④ executor 抽象 + V1 落點表 — 拍板 Option A 對稱 R3-②(2026-05-26)
+
+**拍板:Option A — executor 抽象 + 雙 driver(模擬成交器 / 實盤 trader)+ V1 落點表確認 OK**
+
+R3-② 的**輸出側鏡像**:輸入側做「同一條管線、兩個插頭」(歷史播放器 / 即時接收器),這輪輸出側也做。
+
+**機制**:
+```
+引擎算出 order(qty + side + symbol)
+        ↓
+  【executor 抽象介面】
+        ├─ backtest driver:模擬成交器(歷史價成交 + 滑點/手續費估)
+        └─ live driver:V1 trader.py + exchange_api 真下單
+引擎完全不知道是模擬還是真送
+```
+
+**兩個結構性保證(對應 R3-②,I/O 兩側對稱)**:
+1. **輸出側 parity by construction**:backtest/live 用同一套下單 code,無從分岔
+2. **與 R3-② 對稱**:輸入側 event bus + 輸出側 executor = 完整 backtest/live parity 結構(I/O 兩側皆 by construction)
+
+**為何 A(非 B)**:
+| Option | 否決 / 拍板理由 |
+|---|---|
+| B 無抽象,backtest/live 各寫各的下單 | 輸出側悄悄分岔(同 R3-② 否決 B 病,M5 紙上 vs 回測對不上)+ 違背已建立的 by construction 設計品味 |
+| **A**(拍) | 輸出側 parity by construction + V1 `trader` / `exchange_api` 無痛接 live driver + 跟 R3-② 心智統一(I/O 對稱)|
+
+**V1 模組落點表(使用者確認 OK)**:
+| V1 模組 | 落點 | 狀態 |
+|---|---|---|
+| `exchange_api` | R3-② live driver(資料IN)+ R3-④ live executor(下單OUT)| 已決 |
+| `price_recorder` | R3-② backtest 歷史資料源 | 已決 |
+| `trader` | R3-④ live executor driver | **本輪 A 決** |
+| `notifier` | 所有告警(stale / silent divergence / crash / fail-safe)統一匯流的 alert sink — 接縫位置定 | 接縫確認,**channel 細節降 V2-D** |
+| `circuit_breaker` | #2D 框架級 crash 處理(架構已決)+ 實盤安全層 | 架構已決,**實作降 V2-D** |
+| `heartbeat` | 維運 liveness 監控 | **降 V2-D**(回測用不到)|
+| `chaos_test` | M1 五段崩盤壓測注錯驅動 | V2-B 測試基建(note,非架構決定)|
+
+**對齊團隊頭號共識**:
+- **M5 paper-vs-backtest 從根堵死**:輸入(R3-②)+ 輸出(R3-④)兩側 parity by construction → 結構上根本沒有「悄悄分岔」的空間,不用靠事後比對抓
+- R3-② + R3-④ 對稱形成 **I/O 兩側對稱 parity** 設計哲學
+
+**Watch(留 V2-B / V2-D)**:
+- 模擬成交器具體演算法(滑點公式 / 手續費模型)— V2-B(對應 Round 1 Gap 4 回測成本模型)
+- live executor 重試 / 部分成交 / timeout — 沿用 V1 `trader` + `circuit_breaker`,V2-D 整合
+- notifier channel 分流(critical / warning / info)— V2-D
+- heartbeat liveness 頻率 / 告警 — V2-D
+
+**拍板白話講**:
+
+你選了把「訂單怎麼出去」**也做成跟「資料怎麼進來」一樣的鏡像**。
+
+意思是:引擎算完「要買 0.5 顆 BTC」這個訂單之後,它**根本不知道、也不需要知道**這筆訂單會被「假裝吃掉算回測損益」還是「真的送到交易所下單」。它看到的就是一個「下單介面」,丟過去就完事。
+
+底下接哪個是執行時才決定 —— 回測時接「模擬成交器」(用歷史價當下成交,加估的滑點手續費), 實盤時接你 V1 那一套 `trader.py` + `exchange_api.py`(真的送單)。
+
+**為什麼這個鏡像重要**?因為 R3-② 已經堵了**資料進來那一側**的回測/實盤分岔(輸入兩邊用同套 code),但**如果訂單出去那一側不堵,結果還是會悄悄走樣** —— 回測算的成交跟實盤真成交對不上,你還是會吃到「考試會、上場走樣」的暗虧。M5「紙上交易要跟回測一致」這條 milestone 就是專門抓這種病的,**從架構層兩側都 by construction 一次堵死,不用靠事後比對**。
+
+另外那張 V1 工具的「落點表」你掃過 OK —— 其實大部分格子在前面幾輪就被**自動定好了**:資料相關的接到 R3-② 上、下單相關的接到 R3-④ 上、實盤才會用到的(Telegram 通知、心跳、斷路保護)留到 V2-D 真要上場前再實作就行。這輪我們確認的就是這張地圖**沒漏東西、沒撞**,然後 R3-④ 收官、整個 Round 3 也收官。
+
+---
+
+## Round 3 全段收官 ✓(2026-05-26)
+
+### 四議程拍板狀態
+
+| 議程 | 拍板 | 一句話 |
+|---|---|---|
+| **R3-①** Risk Engine | C(①-a)+ A/B/B(①-bc)| 保全總管獨立辦公室(寫死護欄,跟算量分 2 站,看 post-cap 算 gross)|
+| **R3-②** 資料流 parity | A | 統一 event bus + 雙 driver(輸入側 parity + no-lookahead by construction)|
+| **R3-③** 執行層冷卻 | C | 雙層節流(策略訊號級 + framework 執行政策層,擋兩種抖)|
+| **R3-④** executor 抽象 + V1 地圖 | A + 落點表 OK | 對稱 R3-②(輸出側 parity by construction)+ V1 模組接點全定 |
+
+### 一條線拉通的設計哲學(Round 3 累積,沿用 Round 2 6 條 + 4 條新增)
+
+**沿用 Round 2(1-6)**:framework 不假設業務 / default+override / counter+門檻 / 單調往最保守倒 / 強迫表態 / 湧現>顯式條文
+
+**Round 3 新增(7-10)**:
+7. **精簡尺反覆作用** — 「不拍 V2-B 引擎骨架會卡嗎?」litmus,4 議題 3 個塌成一刀(R3-②/③/④),證明 super-題前先評估拆法很值錢
+8. **I/O 兩側對稱 parity** — R3-② 輸入 + R3-④ 輸出,**by construction 取代 by discipline**,backtest/live 兩側從根堵死
+9. **framework 級護欄 vs 策略級風控分層** — R3-① 區分「業務語意」(留使用者)vs「安全機制存在性」(framework 寫死),解 framework 不假設業務的表面衝突
+10. **雙層職責對抗雜物抽屜** — R3-③ 訊號層 vs 執行層各管各的抖、R3-① Risk Engine vs 算量站各管各的事,寧多開盒子不變萬能間
+
+### V2-A 完整平台元件清單(Round 1-3 累積)
+
+**策略層(使用者寫)**:
+- `SymbolStrategy`(出價的人,Round 1)
+- `PortfolioStrategy`(策略級守門員,可換 NoOp,Round 1+ Round 2 #3A)
+
+**Framework 一級護欄**:
+- `Risk Engine`(保全總管,寫死 + always-on,Round 3 R3-①)— 內含 vol-targeting / gross 上限 / stale 終責 三 sub-stage
+- `framework 執行政策層`(出菜檢查站,Round 3 R3-③)— dead-band / cooling / regime hook
+
+**Framework 管線基建**:
+- 算量站(% → USDT → 數量,Round 1)
+- event bus + 雙 driver(輸入,Round 3 R3-②)
+- executor 抽象 + 雙 driver(輸出,Round 3 R3-④)
+- 統一 event log + alert sink(Round 2 #2B + Round 3 R3-④ notifier 接縫)
+- DATA_SOURCES registry(Round 2 #2C2-B Sub-Q3)
+
+**Framework 政策**(non-bypass):
+- always-on 鎖(Round 2 #3A)+ 策略缺席統一模型(Round 2 #2C2/#2D)+ crash counter 永久停用(Round 2 #2D)
+
+### Round 3 carry over
+
+**→ V2-B 必驗清單(新累積)**:
+- 模擬成交器演算法 / 滑點 + 手續費模型(Round 1 Gap 4 同源)
+- Risk Engine 三 sub-stage 順序選型(vol-target → gross → stale?)
+- snapshot rebuild vs incremental 效能選型
+- dead-band / cooling 數值校準
+
+**→ V2-D 順延(實盤上場才需要)**:
+- notifier channel 分流(critical / warning / info)
+- circuit_breaker 實盤層整合
+- heartbeat liveness 監控
+
+**→ V2-E 順延(依賴 regime detection)**:
+- regime-aware 降頻(framework 執行政策層已預留 hook)
+
+### 下一步
+
+V2-A Round 1-3 議題全收官。V2-A 階段(architecture / 畫設計圖)是否該:
+1. **做 Round 3 全段 review pass**(白話 walk-through 4 議程,使用者 re-validate)
+2. **V2-A 收斂出總圖**(整 Round 1-3 拍板成一份「平台架構文件」,V2-B 開工依據)
+3. **進 V2-B**(直接開始寫回測引擎 code)
+
+建議順序:1 → 2 → 3。1 跟 2 都還在 V2-A 範圍(畫圖不寫 code),3 才跨越 V2-A→V2-B 邊界。
+
+---
+
 ## Round 2 carry over 速覽(背景參考)
 
 來自 Round 2 全段收官「carry over」段:
