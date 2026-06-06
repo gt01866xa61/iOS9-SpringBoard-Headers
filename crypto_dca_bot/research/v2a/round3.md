@@ -6,6 +6,19 @@
 
 ---
 
+## Round 3 運作原則:精簡(2026-05-26 使用者拍)
+
+**只拍「進 V2-B 前非拍不可的架構題」** — pipeline 形狀 / 模組存在性 / 責任歸屬 / hook 點。實測校準(門檻數字 / 公式選型 / 參數)+ 實作細節(資料結構選型 / API 重試)**一律降級 V2-B**。
+
+**litmus test(每個子題進場前先問)**:
+> 「這題**不拍**,V2-B 寫引擎骨架會**卡住**嗎?」
+> - 卡 → 架構題,Round 3 拍
+> - 不卡(只是數字 / 公式 / 細節沒定)→ 降級 V2-B
+
+**配套節奏**:super-題(如 R3-①)**先評估拆 sub-Q,不一次吞**。每個 sub-Q 過 litmus test,過不了的當場降級,避免 Round 3 肥大。
+
+---
+
 ## 議程(R3-① ~ R3-④,來源 + 依賴關係)
 
 | 議程 | 來源 | 依賴 |
@@ -27,10 +40,20 @@
 2. **Stale 權責切**(backlog #4)— 資料完整性責任歸 PortfolioStrategy 還是獨立的 Risk Engine?
 3. **M6 risk-based sizing 落地位置**(roadmap M6)— volatility targeting / position sizing 放在 Strategy 內、PortfolioStrategy 內,還是獨立 Risk Engine?
 
-**子題拆**(待 Round 3 推進時細化):
-- R3-①-a:Risk Engine **要不要**獨立成 module?(與 PortfolioStrategy 邊界)
-- R3-①-b:若要,Risk Engine **跑在哪一層**?(Symbol/Portfolio dispatch 之後 final 之前?)
-- R3-①-c:portfolio-gross 約束的**輸入語意**(看 final target × cap 算 gross?還是看意圖階段?)
+**子題拆(2026-05-26 評估 — 精簡原則下拆 3 個,但只 ①-a 是 hard fork)**:
+
+| sub-Q | 內容 | litmus(非拍不可?) | 依賴 |
+|---|---|---|---|
+| **①-a〔hard fork〕** | Round 2 留的 3 個整體性風險(總曝險約束 / 資料完整性最終責任 / 部位大小 M6),要一個**獨立 Risk Engine 層**裝,還是**塞現有層**(PortfolioStrategy / framework sizing stage)? | ✅ **非拍** — V2-B 引擎骨架的 pipeline 形狀(有沒有 Risk Engine 這一段)非知道不可 | 無,先拍 |
+| **①-b** | 若 ①-a = 獨立,Risk Engine 跑 pipeline 哪一段(round1 已有的 "engine sizing" 之前 / 之後 / 合併)+ 看什麼算 gross(final target×cap?意圖階段?) | ✅ 非拍(若 a=獨立)/ ⛔ **若 ①-a ≠ 獨立本題塌縮** | 依賴 ①-a |
+| **①-c** | 三個關切各歸哪層(總曝險 → ? / stale 最終責任 → ? / M6 vol-targeting sizing 是否獨立 stage) | ⚠️ 部分非拍(架構落點)— 但 **stale 權責很可能被 ①-a 自動決定**(Risk Engine 存在且管總體 → stale 最終責任歸它;否則維持 #3C)| 依賴 ①-a(部分被 a 吸收) |
+
+**精簡 deferrals(明確降級 V2-B,本輪不拍)**:
+- gross 約束**確切門檻數字**(如 ≤ 50%)— V2-B 校準
+- vol-targeting **公式選型**(M6 sizing 實際算法)— V2-B 校準
+- stale **偵測參數** — 同 Round 2 N 值命運
+
+**評估結論**:**①-a 是唯一 hard fork**,①-b/①-c 大概率在 ①-a 落地後**快速收斂或自動塌縮**(①-a 若選「不獨立」→ ①-b 消失、①-c 退化成「散進現有層」;①-a 若選「獨立」→ ①-b/①-c 變填空)。所以 R3-① 這個 super-題**實質重量集中在 ①-a**,先拍 ①-a、再看殘量。
 
 ---
 
