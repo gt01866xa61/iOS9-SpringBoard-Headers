@@ -44,8 +44,11 @@ V2 分 6 階段,依序執行:
 
 ## 重要 reference
 
+- **V2-A 平台架構總圖: `v2a/architecture.md`(★ 單一 source of truth,V2-B 開工只讀這份就夠)**
 - V2 builder roadmap: `v2_roadmap.md`(長期指引)
 - 重大決定 log: `decisions.md`(倒序)
+- V2-A round-by-round ledger: `v2a/round1.md` / `round2.md` / `round3.md`(細節論證 / 否決理由 / options 對照)
+- V2-A 白話詞彙表: `v2a/glossary.md`(non-quant 友善,Ctrl+F 查詞)
 - V1 progress: `../README.md`(Phase 1-4 設計,歷史參考)
 - V1 commit history: `../../PROGRESS.md`
 - 工作流規則: `../../CLAUDE.md`(全局協作守則)
