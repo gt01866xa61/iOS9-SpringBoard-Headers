@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-05-26 — V2-A 收斂總圖落地(architecture.md)+ 資安尾巴結案
+
+### V2-A 平台架構總圖收斂
+
+V2-A 三輪(Round 1 interface / Round 2 contract / Round 3 平台底盤)拍板收斂成 `v2a/architecture.md`(356 行 self-contained single source of truth),9 sections 含每節白話 summary + 每拍板帶「是什麼+為什麼+ref」。**V2-B 開工讀這份就夠**,不必爬三個 round 檔。`research/CLAUDE.md` reference 清單置頂 architecture.md 為 ★。
+
+V2-A 階段(畫設計圖、不寫 code)三輪畫圖**正式收官**。下一步進 V2-B(寫第一行回測引擎 code)。
+
+### 資安尾巴結案(M8 audit 處置)
+
+針對 2026-06-06 backlog #8 M8 audit 的「處置建議」:
+- ✅ **V1 Telegram bot 已 revoke**(整隻刪了,`@BotFather /deletebot` 完成)
+- 🟰 **V1 Binance key 不需要 revoke** — owner 事實覆蓋 audit 假設:**V1 只跑模擬、從沒真錢交易、從未開過會 leak 的 trading key**。audit 段「若 Phase 2 真開過實 key」前提不成立 → 無 revoke 對象。
+
+**結論**:M8 audit 殘留處置全部結案。下次需要 Binance key = V2-D step 4 tiny live 真錢上場前,屆時依 `v2a/m8_security.md` § 2 規格生成(read-only / trading 分離 + 禁提現 + IP whitelist + 90 天 rotate)。
+
+`v2a/m8_security.md` § 1 處置結果段 + § 6 殘留處置 checklist 已更新狀態。
+
+---
+
 ## 2026-05-26 — V2-A Round 3 全段收官:平台底盤定形(Risk Engine + I/O parity + 雙層節流)
 
 V2-A Round 3 四議程 / 6 sub-Q 拍板完成,V2 平台從 Round 2 的「Strategy interface 完整契約」推上**整棟樓的公共系統**:組合級風控、資料流、執行紀律、V1 整合接點全定。完整 ledger 見 `v2a/round3.md` 末段「Round 3 全段收官」。
