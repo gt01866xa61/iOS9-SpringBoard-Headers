@@ -91,6 +91,19 @@ class Dispatcher:
                 self._dispatch_table.setdefault(f, []).append(name)
         self._sink.log("registered", strategy=name, fields=sorted(spec))
 
+    def portfolio_names(self) -> set[str]:
+        """已註冊的 PortfolioStrategy 名單(B4 風控合併判定缺席用)。"""
+        return {
+            n for n, r in self._records.items()
+            if isinstance(r.strategy, PortfolioStrategy)
+        }
+
+    def symbol_names(self) -> set[str]:
+        return {
+            n for n, r in self._records.items()
+            if isinstance(r.strategy, SymbolStrategy)
+        }
+
     def assert_startup_ok(self) -> None:
         """#3A always-on 鎖:至少 1 個 PortfolioStrategy(NoOp 也算 — 明確表態)。"""
         if not any(
