@@ -9,8 +9,8 @@
 |---|---|---|
 | **B1** | interface 層:策略 base class + lifecycle + NoOp + schema | **✅ DONE 2026-05-26**(19 tests)|
 | B2 | 資料層:DATA_SOURCES registry + event bus + backtest replay driver + snapshot(LKV + no-lookahead)| **✅ DONE 2026-05-26**(17 tests)|
-| B3 | dispatch core:event → fire → 收集 output + 策略缺席統一模型 + counter | **NEXT** |
-| B4 | 風控管線:min 合併 + #3C fallback + Risk Engine + 算量站 + 執行政策層 | — |
+| B3 | dispatch core:event → fire → 收集 output + 策略缺席統一模型 + counter | **✅ DONE 2026-05-26**(21 tests)|
+| B4 | 風控管線:min 合併 + #3C fallback + Risk Engine + 算量站 + 執行政策層 | **NEXT** |
 | B5 | executor:sim 成交器(滑點/手續費模型 = Gap 4 拍板)| — |
 | B6 | observability:統一 event log + alert sink | — |
 | B7 | 整合驗收:dummy 策略全管線 + M1 五段崩盤 stress test | — |
