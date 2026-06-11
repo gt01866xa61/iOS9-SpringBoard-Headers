@@ -6,6 +6,53 @@
 
 ---
 
+## 2026-05-26 — V2-B 回測引擎全段完成(B1-B7,144 tests 全綠)
+
+V2 從「畫設計圖」(V2-A)跨進「寫 code」(V2-B)。架構文件 `architecture.md`
+翻譯成可跑的多策略回測引擎,7 個 milestone:
+
+- **B1 interface 層**(19 tests):策略 base class + 8 lifecycle method +
+  NoOp + pydantic schema + framework-default 偵測
+- **B2 資料層**(17):DATA_SOURCES registry(Python dict)+ event bus +
+  backtest replay driver + LKV/snapshot(per-fire 重建,no-lookahead by
+  construction)
+- **B3 dispatch core**(21):缺席統一模型(stale/crash/not_ready/disabled)+
+  counter + #3A 鎖 + 湧現停機
+- **B4 風控管線**(29):Symbol 加總 + #3D min 合併 + #3C fallback 丟 min 池 +
+  Risk Engine 三 sub-stage + 算量站 + 執行政策層雙層節流
+- **B5 executor**(17):sim 成交器 + Gap 4 成本模型(slippage 5bps / fee
+  0.1% default,Protocol hook)+ R3-④ 輸出側 parity
+- **B6 observability**(30):結構化 EventLog + query + M3 fingerprint(可重現
+  鎖檔)+ alert channel 分流(回測 Noop / 實盤 Telegram stub)
+- **B7 整合驗收**(11):end-to-end Backtest runner + dummy 策略 + M1 五段
+  崩盤 stale-aware 合成壓測
+
+**開發節奏**:Claude 寫 + 使用者驗收 milestone;碰 §8 要拍的決定停下來
+options(registry 格式 / snapshot 組裝 / Gap 4 成本模型 / 壓測合成 vs 真資料
+皆使用者拍)。每 milestone 白話 walk-through + commit/push。
+
+**架構承諾變成可執行測試(test 釘死的性質)**:
+- no-lookahead by construction(replay 邊吐邊組 snapshot,所有值 ts ≤ now)
+- #3C fallback 丟 min 池非二次施加(明眼守門員緊 cap 不被瞎子兜底放寬)
+- min 池單調性(加 voter/fallback 只更保守不放寬)
+- M3 fingerprint determinism(同回測同 hash、改參數不同 hash)
+- I/O 兩側 parity(event bus 輸入 + executor 輸出,同介面雙 driver)
+- 湧現停機(最後守門員 crash 停用 → #3A 鎖 → halt)
+
+**B7 整合抓到一個真 bug + 釘死語意**:PortfolioStrategy 不是 event-driven
+訂閱觸發,而是 **decision-time overlay,每次 fire 都評估**(否則守門員只在
+自己資料 tick cap、kline tick 上的下單決策沒守門員)。已寫進 architecture.md
+§3.4 Dispatch 語意澄清段。
+
+**全部數字是 placeholder**(staleness / alert_n / fallback_cap / gross_limit /
+dead-band / cooling / slippage / fee),V2-S 用真資料 + V2-B 後期校準。
+**真策略 codify、真歷史資料、真數值校準 = V2-S 起的事。**
+
+下一步:V2-B review pass(可選)→ 進 V2-S(第一個真策略 trend-following
+codify + 真資料接入 + walk-forward)。
+
+---
+
 ## 2026-05-26 — V2-A 收斂總圖落地(architecture.md)+ 資安尾巴結案
 
 ### V2-A 平台架構總圖收斂
