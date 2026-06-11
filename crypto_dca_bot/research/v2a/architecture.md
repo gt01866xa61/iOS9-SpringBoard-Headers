@@ -180,7 +180,9 @@
 - **multi-timeframe**:BTC 1h / funding 8h / VIX daily 各自 cadence,LKV 對齊進同一 snapshot
 - **統一 event log**:所有 lifecycle event + 跨策略觸發時序寫一條時間序記錄,debug / 回放 / M5 對照的 single source of truth
 
-**白話 summary**:不是死板每隔固定時間叫策略,而是「**有新東西來才叫相關的策略**」。叫的時候給它一張市場快照,慢頻率的資料(像每天才更新的 VIX)就用「最後一次知道的值」填,並標上時間讓策略自己判斷新不新。
+> **Dispatch 語意澄清(V2-B B7 實作時釘死,2026-05-26)**:event-driven 訂閱觸發**只適用 SymbolStrategy**(出價的人靠新資料產生新意圖)。**PortfolioStrategy 是 decision-time overlay** — **每次 fire 都評估**(用 LKV snapshot),不靠自己的 trigger 訂閱。理由:守門員 cap 必須套在**每一個實際下單決策**(發生在 SymbolStrategy 的資料 tick)上;若守門員只在自己資料 tick(如 VIX 日更)才評估,則 kline tick 上的交易決策就沒有 overlay 把關了。對應 §2 per-fire pipeline 每次都有 Portfolio 階段 + #3B「Symbol 先算 → Portfolio 後算」。Risk Engine / 執行政策層(framework 護欄)同理:每次決策都跑。
+
+**白話 summary**:不是死板每隔固定時間叫策略,而是「**有新東西來才叫相關的出價策略**」。叫的時候給它一張市場快照,慢頻率的資料(像每天才更新的 VIX)就用「最後一次知道的值」填,並標上時間讓策略自己判斷新不新。**但守門員不一樣** —— 它是「每次有人要下單,就過來看一眼該不該打折」的角色,所以**每個下單決策都會叫它**,不是等它自己的資料更新才叫(否則中間那些下單就沒人守了)。
 
 ---
 

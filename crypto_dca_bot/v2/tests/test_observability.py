@@ -298,8 +298,8 @@ def test_integration_event_log_replay_chain():
     log = sink.event_log
     # registered 兩次
     assert len(log.by_kind(kinds.REGISTERED)) == 2
-    # is_ready 兩次,且 ts 順序正確
-    ready_entries = log.by_kind(kinds.IS_READY)
+    # S1 的 is_ready 兩次(NoOp overlay 也會 log,故 filter by strategy),ts 順序正確
+    ready_entries = [e for e in log.by_kind(kinds.IS_READY) if e.data.get("strategy") == "S1"]
     assert [e.ts for e in ready_entries] == [t(0), t(1)]
     assert ready_entries[0].data["ready"] is False
     assert ready_entries[1].data["ready"] is True

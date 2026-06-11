@@ -132,12 +132,14 @@ def test_startup_lock_satisfied_by_noop():
     d.assert_startup_ok()  # 不炸
 
 
-def test_noop_never_fired():
-    # NoOp 無 required data → 不訂閱 → 永不被 fire(min 池空 = cap 1.0,B4 處理 log)
+def test_noop_evaluated_as_overlay_passthrough():
+    # PortfolioStrategy 是 decision-time overlay → 每 fire 評估(不靠自己 trigger)。
+    # NoOp 無 required data → 永遠 ready/不 stale → 回 cap 1.0(pass-through)。
     d, _ = make()
     d.register(NoOpPortfolioStrategy(NoOpParams(symbols=["BTC"])))
     r = d.on_event(ev("BTC_kline_1h", 0))
-    assert r.portfolio_outputs == {} and r.absences == {}
+    assert r.portfolio_outputs == {"NoOpPortfolioStrategy": {"BTC": 1.0}}
+    assert r.absences == {}
 
 
 # ---- 訂閱觸發 ----

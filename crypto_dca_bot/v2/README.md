@@ -13,7 +13,9 @@
 | B4 | 風控管線:min 合併 + #3C fallback + Risk Engine + 算量站 + 執行政策層 | **✅ DONE 2026-05-26**(29 tests)|
 | B5 | executor:sim 成交器(滑點/手續費模型 = Gap 4 拍板)| **✅ DONE 2026-05-26**(17 tests)|
 | B6 | observability:統一 event log + alert sink | **✅ DONE 2026-05-26**(30 tests)|
-| B7 | 整合驗收:dummy 策略全管線 + M1 五段崩盤 stress test | **NEXT** |
+| B7 | 整合驗收:dummy 策略全管線 + M1 五段崩盤 stress test | **✅ DONE 2026-05-26**(11 tests)|
+
+**V2-B 全段完成** — 7 milestones / 144 tests 全綠。Backtest 引擎可端到端跑、M3 fingerprint 可重現、M1 stale-aware 合成壓測通過。
 
 ## 目錄
 

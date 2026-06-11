@@ -74,7 +74,12 @@ class Dispatcher:
         self._ready_alert_n = ready_alert_n
         self._records: dict[str, _Record] = {}
         self._field_counts: dict[str, int] = {}  # buffer-based is_ready 用
-        self._dispatch_table: dict[str, list[str]] = {}  # field → [strategy names]
+        # SymbolStrategy 走 event-driven 訂閱(#2B):field → [symbol names]
+        self._dispatch_table: dict[str, list[str]] = {}
+        # PortfolioStrategy 是 decision-time overlay:每次 fire 都評估(architecture
+        # §2 per-fire pipeline / #3B),不靠自己的 trigger — 否則只在 overlay 資料
+        # tick 才 cap、實際下單決策(symbol tick)反而沒守門員。註冊序保證 determinism。
+        self._portfolio_order: list[str] = []
 
     # ---- 註冊 ----
 
@@ -86,9 +91,12 @@ class Dispatcher:
         for f in spec:
             get_source(f)  # 不在 registry → 註冊時就炸(fail fast)
         self._records[name] = _Record(strategy=strategy, crash_limit=crash_limit)
-        for f, fs in spec.items():
-            if fs.trigger:
-                self._dispatch_table.setdefault(f, []).append(name)
+        if isinstance(strategy, PortfolioStrategy):
+            self._portfolio_order.append(name)
+        else:  # SymbolStrategy:event-driven 訂閱觸發欄位
+            for f, fs in spec.items():
+                if fs.trigger:
+                    self._dispatch_table.setdefault(f, []).append(name)
         self._sink.log("registered", strategy=name, fields=sorted(spec))
 
     def portfolio_names(self) -> set[str]:
@@ -121,13 +129,11 @@ class Dispatcher:
         self._field_counts[event.field] = self._field_counts.get(event.field, 0) + 1
 
         result = FireResult(ts=event.ts, trigger_field=event.field)
-        subscribers = [
-            self._records[n] for n in self._dispatch_table.get(event.field, ())
-        ]
-        # #3B:同一 event 的訂閱者裡 Symbol 先、Portfolio 後
-        subscribers.sort(key=lambda r: isinstance(r.strategy, PortfolioStrategy))
-        for rec in subscribers:
-            self._dispatch_one(rec, event.ts, result)
+        # #3B:Symbol 先(訂閱觸發)、Portfolio 後(decision-time overlay,每 fire 評估)
+        for n in self._dispatch_table.get(event.field, ()):
+            self._dispatch_one(self._records[n], event.ts, result)
+        for n in self._portfolio_order:
+            self._dispatch_one(self._records[n], event.ts, result)
         return result
 
     # ---- 單一策略 dispatch(缺席統一模型)----

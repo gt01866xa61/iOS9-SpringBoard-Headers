@@ -3,6 +3,7 @@ from .aggregation import (
     aggregate_symbol_targets,
     merge_portfolio_caps,
 )
+from .backtest import Backtest, BacktestResult
 from .dispatcher import Absence, Dispatcher, FireResult, StartupError
 from .execution_policy import (
     COOLING_DEFAULT,
@@ -25,6 +26,8 @@ from .sizing import size_to_quantity
 
 __all__ = [
     "Absence",
+    "Backtest",
+    "BacktestResult",
     "COOLING_DEFAULT",
     "DEAD_BAND_DEFAULT",
     "Dispatcher",
