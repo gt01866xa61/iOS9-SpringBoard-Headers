@@ -6,6 +6,50 @@
 
 ---
 
+## 2026-06-13 — V2-S 開工:Donchian 策略 + 真資料雙軌 loader 拍板
+
+### V2-S1 策略:Donchian breakout(海龜經典)
+
+使用者拍規格:日線 / 進場突破過去 20 日高 / 出場跌破過去 10 日低 / long-only /
+BTC+ETH / 2 params(entry=20, exit=10,簡單派)/ 停損 = 跌破 exit 通道內建
+(海龜 ATR 停損列為之後可選)。codify 完成 12 tests 合成驗證。
+
+**rolling-window 暖機通則釘清**:rolling 通道要逐 bar 累積歷史,但 framework
+buffer-based is_ready gate(#2C1)會擋掉「還沒 ready」的 bar → 策略反拿不到
+累積所需 bar。解法 = `min_history=0`(每 bar 都 call)+ 策略內部自管暖機
+(buffer 未滿回 flat)。在 default+override 框架內,不動 framework。is_ready
+buffer-gate 留給「指標=當前 snapshot 純函式」那類策略。
+
+**澄清**:V2-A roadmap 寫「trend-following 對應使用者既有合約 setup」,實查 V1
+是純 DCA bot、無 trend code → trend 策略從零 codify(Donchian),非沿用 V1。
+
+### 真資料接入:CsvLoader + CcxtLoader 雙軌(Option A)
+
+**網路現實**:容器 egress proxy 擋所有交易所 / 資料 API(Binance/Coinbase/
+Kraken/CryptoCompare/Yahoo/CoinGecko 全 403),只 github + pypi 可達。→
+「ccxt 容器內直接抓」不可行。
+
+**拍板 A**:雙軌 loader(同介面、可換 driver,跟引擎 I/O parity 同哲學):
+- `CsvLoader`:讀 committed CSV fixture → 容器能跑(sanity / 回測 / CI)
+- `CcxtLoader`:從 Binance 抓 → **使用者本機 env**(Windows + ccxt,V1 那套)
+  跑、`to_csv()` 存檔帶回容器餵。**不在容器硬連交易所。**
+
+**sanity fixture**:CoinMetrics community `PriceUSD`(reputable),BTC/ETH
+2019-2024(2192 天,含 M1 五段崩盤)。**close-only**(無 OHLC high/low)→
+Donchian 退化成 Donchian-on-CLOSE,**僅 sanity 用,正典 = Binance via ccxt
+(V2-T)**。檔頭 + fixtures/README.md 標清楚。
+
+**真資料 sanity 結果**(Donchian 20/10,BTC+ETH,$10k 起,2019-2024):
+跑通 4384 fires、131 fills(63 買/68 賣)、最終 flat、確定性 fingerprint、
+長期 long-only 趨勢捕捉淨值成長。**finding**:752 rejections(near-fully-
+invested 時 sizing-to-target × executor reject-whole 互動)— V2-B 簡化的
+已知後果,partial-fill / sell-before-buy / delta-aware sizing 留 V2-T 精修。
+
+格式 CSV(日線小、git-diff 友善)/ 存 `v2/data/fixtures/`(committed);
+intraday(之後大)→ gitignore。
+
+---
+
 ## 2026-05-26 — V2-B 回測引擎全段完成(B1-B7,144 tests 全綠)
 
 V2 從「畫設計圖」(V2-A)跨進「寫 code」(V2-B)。架構文件 `architecture.md`

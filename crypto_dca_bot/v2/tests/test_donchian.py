@@ -177,3 +177,74 @@ def test_donchian_backtest_deterministic():
         return bt.run(BacktestReplayDriver(series)).fingerprint
 
     assert run() == run()  # M3 lock:同回測同指紋
+
+
+# ---- 真資料 sanity check(CoinMetrics fixture,close-only;見 fixtures/build_fixture.py)----
+
+from pathlib import Path
+
+FIXTURES = Path(__file__).resolve().parents[1] / "data" / "fixtures"
+_has_fixtures = (FIXTURES / "btc_usd_1d.csv").exists() and (FIXTURES / "eth_usd_1d.csv").exists()
+
+requires_fixtures = pytest.mark.skipif(not _has_fixtures, reason="real-data fixtures missing")
+
+
+def _load_real():
+    from v2.data import CsvLoader, build_replay_series
+    return build_replay_series(
+        CsvLoader(FIXTURES / "btc_usd_1d.csv", "BTC_kline_1d"),
+        CsvLoader(FIXTURES / "eth_usd_1d.csv", "ETH_kline_1d"),
+    )
+
+
+@requires_fixtures
+def test_fixture_loads_and_is_time_ordered():
+    series = _load_real()
+    assert len(series["BTC_kline_1d"]) == 2192  # 2019-01-01..2024-12-31
+    assert len(series["ETH_kline_1d"]) == 2192
+    for field in ("BTC_kline_1d", "ETH_kline_1d"):
+        ts = [t for t, _ in series[field]]
+        assert ts == sorted(ts), f"{field} 必須時間序(replay no-lookahead 前提)"
+    # BTC 2019-01-01 ≈ $3800(真實歷史 sanity)
+    assert 3000 < series["BTC_kline_1d"][0][1].close < 5000
+
+
+@requires_fixtures
+def test_donchian_real_data_sanity():
+    """Donchian(entry=20/exit=10)跑真 BTC/ETH 2019-2024:不爆 + 進出場 +
+    確定性 + 形狀合理(long-only 永遠 >=0,最終淨值 > 0)。"""
+    series = _load_real()
+    bt = Backtest(initial_cash=10000,
+                  price_map={"BTC": "BTC_kline_1d", "ETH": "ETH_kline_1d"})
+    bt.add_symbol(DonchianBreakout(DonchianParams(symbol="BTC", entry=20, exit=10)))
+    bt.add_symbol(DonchianBreakout(DonchianParams(symbol="ETH", entry=20, exit=10)))
+    bt.add_portfolio(NoOpPortfolioStrategy(NoOpParams(symbols=["BTC", "ETH"])))
+    res = bt.run(BacktestReplayDriver(series))
+
+    assert res.fired_events == 2192 * 2
+    assert len(res.fills) > 0, "6 年真資料該有進出場成交"
+    assert any(f.delta_qty > 0 for f in res.fills), "該有買進"
+    assert any(f.delta_qty < 0 for f in res.fills), "該有賣出"
+    # long-only:部位永不為負
+    for sym, qty in res.final_state.positions.items():
+        assert qty >= -1e-9, f"{sym} long-only 不該負部位"
+    # 最終淨值 > 0(沒把帳戶跑爆)
+    last_px = {"BTC": series["BTC_kline_1d"][-1][1].close,
+               "ETH": series["ETH_kline_1d"][-1][1].close}
+    assert res.final_state.equity(last_px) > 0
+    assert res.fingerprint
+
+
+@requires_fixtures
+def test_donchian_real_data_deterministic():
+    """真資料整場回測 M3 fingerprint 跨 run 可重現。"""
+    def run():
+        series = _load_real()
+        bt = Backtest(initial_cash=10000,
+                      price_map={"BTC": "BTC_kline_1d", "ETH": "ETH_kline_1d"})
+        bt.add_symbol(DonchianBreakout(DonchianParams(symbol="BTC", entry=20, exit=10)))
+        bt.add_symbol(DonchianBreakout(DonchianParams(symbol="ETH", entry=20, exit=10)))
+        bt.add_portfolio(NoOpPortfolioStrategy(NoOpParams(symbols=["BTC", "ETH"])))
+        return bt.run(BacktestReplayDriver(series)).fingerprint
+
+    assert run() == run()
