@@ -32,6 +32,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+from ..analysis import metrics_from_curve
 from ..data import BacktestReplayDriver, CsvFundingLoader, CsvLoader
 from ..engine import Backtest
 from ..interfaces import NoOpParams, NoOpPortfolioStrategy
@@ -69,6 +70,7 @@ def _report(name: str, res) -> dict:
             last_px[sym] = s[-1][1].close
     equity = res.final_state.equity(last_px) if last_px else float("nan")
     invested = equity - res.final_state.cash
+    pm = metrics_from_curve(res.equity_curve)  # T1 績效指標(日頻 resample)
     print(f"\n=== {name} ===")
     print(f"  fired_events : {res.fired_events}")
     print(f"  pipeline_runs: {res.pipeline_runs}")
@@ -78,6 +80,9 @@ def _report(name: str, res) -> dict:
         print(f"      - {reason:20s}: {n}")
     print(f"  final equity : ${equity:,.0f}  (cash ${res.final_state.cash:,.0f} "
           f"+ positions ${invested:,.0f})")
+    print(f"  metrics(T1)  : CAGR {pm.cagr*100:6.1f}%  Sharpe {pm.sharpe:5.2f}  "
+          f"Sortino {pm.sortino:5.2f}  maxDD {pm.max_drawdown*100:5.1f}%  "
+          f"Calmar {pm.calmar:5.2f}  (n={pm.n_periods}d)")
     return {
         "name": name,
         "fills": len(res.fills),

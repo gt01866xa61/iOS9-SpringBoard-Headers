@@ -38,6 +38,9 @@ class BacktestResult:
     pipeline_runs: int = 0
     fired_events: int = 0
     fingerprint: str = ""
+    # mark-to-market equity 曲線 (ts, equity);T1 績效指標層的輸入。
+    # 每個有 mark price 的 event 記一點(含未 fire 的純 mark-to-market)。
+    equity_curve: list[tuple[datetime, float]] = field(default_factory=list)
 
 
 class Backtest:
@@ -96,27 +99,30 @@ class Backtest:
         for event in source.events():
             result.fired_events += 1
             fire = self._dispatcher.on_event(event)  # 缺席模型 / counter / 全 portfolio 評估都在這
-            if not fire.symbol_outputs:
-                continue  # 無交易決策(暖機 / 全缺席);portfolio stale 偵測已在 dispatch 完成
             prices = self._mark_prices()
-            if not prices:
-                continue  # 還沒任何 mark price(暖機初期)
 
-            pres: PipelineResult = run_pipeline(
-                fire,
-                portfolio_names=self._dispatcher.portfolio_names(),
-                symbol_names=self._dispatcher.symbol_names(),
-                state=self._state,
-                prices=prices,
-                sink=self._sink,
-                **self._pipeline_kwargs,
-            )
-            result.pipeline_runs += 1
+            # 有交易決策 + 有 mark price 才跑風控管線(暖機 / 全缺席 / 無價格跳過)
+            if fire.symbol_outputs and prices:
+                pres: PipelineResult = run_pipeline(
+                    fire,
+                    portfolio_names=self._dispatcher.portfolio_names(),
+                    symbol_names=self._dispatcher.symbol_names(),
+                    state=self._state,
+                    prices=prices,
+                    sink=self._sink,
+                    **self._pipeline_kwargs,
+                )
+                result.pipeline_runs += 1
 
-            if pres.orders:
-                fills, rejs = self._executor.execute(pres.orders, prices, event.ts)
-                result.fills.extend(fills)
-                result.rejections.extend(rejs)
+                if pres.orders:
+                    fills, rejs = self._executor.execute(pres.orders, prices, event.ts)
+                    result.fills.extend(fills)
+                    result.rejections.extend(rejs)
+
+            # mark-to-market equity 曲線:任何有價格的 event 都記一點(含純 mark
+            # 的非交易 event),T1 績效指標層用。observability 不進 fingerprint。
+            if prices:
+                result.equity_curve.append((event.ts, self._state.equity(prices)))
 
         result.fingerprint = self._sink.event_log.fingerprint()
         return result
