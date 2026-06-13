@@ -1,5 +1,10 @@
 """Fixture 建置腳本(provenance + 可重現)。
 
+⚠️ V2-T 後 BTC/ETH 部分已退役(2026-06-13)
+   現用 Binance via ccxt(本機抓)→ `import_binance_uploads.py` 接入。
+   本檔保留:VIX 仍由 datahub finance-vix 拉,且歷史保存(close-only 的
+   `build()` 函式可重現 V2-S 開發期 sanity fixture,但不再是主流程)。
+
 來源:CoinMetrics community data(reputable)
   https://raw.githubusercontent.com/coinmetrics/data/master/csv/{btc,eth}.csv
 欄位:time + PriceUSD(CoinMetrics 日參考價)

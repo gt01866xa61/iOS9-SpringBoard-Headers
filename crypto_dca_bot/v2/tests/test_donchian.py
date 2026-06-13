@@ -200,13 +200,20 @@ def _load_real():
 @requires_fixtures
 def test_fixture_loads_and_is_time_ordered():
     series = _load_real()
-    assert len(series["BTC_kline_1d"]) == 2192  # 2019-01-01..2024-12-31
-    assert len(series["ETH_kline_1d"]) == 2192
-    for field in ("BTC_kline_1d", "ETH_kline_1d"):
-        ts = [t for t, _ in series[field]]
+    btc, eth = series["BTC_kline_1d"], series["ETH_kline_1d"]
+    # 範圍從 2019-01-01 起,長度 >= 2192(2019-2024 6 年最小);實際視最新更新而定
+    assert len(btc) >= 2192
+    assert len(eth) >= 2192
+    assert len(btc) == len(eth), "BTC/ETH 同步抓應同範圍"
+    for field, series_ in series.items():
+        ts = [t for t, _ in series_]
         assert ts == sorted(ts), f"{field} 必須時間序(replay no-lookahead 前提)"
     # BTC 2019-01-01 ≈ $3800(真實歷史 sanity)
-    assert 3000 < series["BTC_kline_1d"][0][1].close < 5000
+    assert 3000 < btc[0][1].close < 5000
+    # 真 OHLC sanity:high >= close >= low(close-only fixture 退役驗證)
+    sample = btc[100][1]
+    assert sample.high >= sample.close >= sample.low
+    assert sample.high > sample.low, "真 OHLC 該有日內波動"
 
 
 @requires_fixtures
@@ -221,8 +228,9 @@ def test_donchian_real_data_sanity():
     bt.add_portfolio(NoOpPortfolioStrategy(NoOpParams(symbols=["BTC", "ETH"])))
     res = bt.run(BacktestReplayDriver(series))
 
-    assert res.fired_events == 2192 * 2
-    assert len(res.fills) > 0, "6 年真資料該有進出場成交"
+    n = len(series["BTC_kline_1d"]) + len(series["ETH_kline_1d"])
+    assert res.fired_events == n
+    assert len(res.fills) > 0, "多年真資料該有進出場成交"
     assert any(f.delta_qty > 0 for f in res.fills), "該有買進"
     assert any(f.delta_qty < 0 for f in res.fills), "該有賣出"
     # long-only:部位永不為負

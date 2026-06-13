@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-06-13 — V2-T 真資料接入(前置 1 解,正典 Binance OHLCV + funding)
+
+使用者本機 Windows + ccxt(V1 那套)抓 Binance 正典資料、上傳容器:
+- BTCUSDT_1d.csv / ETHUSDT_1d.csv:2019-01-01 ~ 2026-06-13(2721 天)真 OHLCV
+- BTCUSDT_funding.csv(7405 筆,2019-09 起)/ ETHUSDT_funding.csv(7171 筆,
+  2019-11 起):Binance USDT-M 永續 8h funding
+
+`v2/data/fixtures/import_binance_uploads.py` 純轉檔(ms ts → ISO date,
+`fundingRate` → `funding_rate`)後覆蓋 fixtures。檔頭 + fixtures/README
+標清楚 source / 工作流 / close-only 退役。
+
+**close-only sanity 退役**(V2-S 期數字作廢):同參數 Donchian(entry=20/exit=10
+BTC+ETH,$10k 起,2019-2024 範圍)
+- close-only(CoinMetrics PriceUSD,Donchian-on-CLOSE):$171k
+- 真 OHLCV(Binance,真 high/low):$137k(差 $34k,close-only 通道窄、訊號偏多)
+
+正典版實跑(V2-T 開工現況,2019-01-01 ~ 2026-06-13):
+- S1 Donchian:111 fills(53/58)/ 958 rejections / $137k
+- S2 Funding skew:379 fills / **11206 rejections** / $48k
+  — funding 每 8h tick,下單頻率高,752 → 11206 rejections,**引擎精修
+    急迫性大幅提高**
+- S1 + S3 MacroOverlay(VIX):177 fills / 968 rejections / $197k
+  — risk-off 反而保住長期淨值(但 V2-T walk-forward 才能驗是否 fit 週期)
+
+**V2-S2 真資料 sanity 自動啟用**(`requires_funding_fixture` 偵測新 fixture):
+196 tests 全綠(原 195 + 1 skipped → 196,零 skip)。
+
+V2-S 既有 tests 對「2192 天 close-only」的硬編斷言改成 `>= 2192` + 真 OHLC
+sanity(`high >= close >= low` / 日內波動 > 0)。
+
+**V2-T 開工前置 1 完成**;前置 2(752 → 11206 rejections 引擎精修)接著做。
+詳見 `research/v2t_prereqs.md`。
+
+---
+
 ## 2026-06-13 — V2-S 收官 + V2-T 開工前置 backlog(session 結束)
 
 **V2-S 起步策略池 3 個全 codify 完成**(S1 Donchian / S2 Funding skew /

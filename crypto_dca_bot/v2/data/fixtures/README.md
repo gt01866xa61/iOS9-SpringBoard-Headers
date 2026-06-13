@@ -1,16 +1,45 @@
 # Data fixtures
 
-V2-S real-data sanity-check 資料。**committed(日線小、版控可重現回測)**。
+V2 真資料 fixture。**committed(日線/funding 小、版控可重現回測)**。
 
-## 現有
+## 現有(V2-T 正典資料,2026-06-13)
 
 | 檔 | 內容 | 來源 | 定位 |
 |---|---|---|---|
-| `btc_usd_1d.csv` | BTC 日線 2019-01-01..2024-12-31(2192 天)| CoinMetrics community `PriceUSD` | sanity-only(close-only)|
-| `eth_usd_1d.csv` | ETH 日線 同範圍 | 同上 | sanity-only(close-only)|
-| `vix_daily.csv` | VIX 日線 同範圍(1529 交易日)| datahub.io core/finance-vix(CBOE 官方)| sanity,**真 OHLC** |
+| `btc_usd_1d.csv` | BTC 日線 2019-01-01~2026-06-13(2721 天)| **Binance spot via ccxt(本機抓)** | **canonical 真 OHLCV** |
+| `eth_usd_1d.csv` | ETH 日線 同範圍 | 同上 | **canonical 真 OHLCV** |
+| `btc_funding_8h.csv` | BTC 永續 funding(7405 筆,2019-09~)| **Binance USDT-M via ccxt(本機抓)** | **canonical** |
+| `eth_funding_8h.csv` | ETH 永續 funding(7171 筆,2019-11~)| 同上 | **canonical** |
+| `vix_daily.csv` | VIX 日線 2019-2024(1529 交易日)| datahub.io core/finance-vix(CBOE 官方)| sanity,**真 OHLC**(本機抓更新待補)|
 
-重建:`python -m v2.data.fixtures.build_fixture`(需 github 網路)。
+## 工作流(已固化)
+
+容器內 egress proxy 擋所有交易所 API。**正典資料路徑**:
+1. **使用者本機**(Windows + ccxt,即 V1 那套)跑 `CcxtLoader` / `CcxtFundingLoader`
+   抓 Binance OHLCV / funding → `to_csv()` 存檔。
+2. 上傳容器 → `python -m v2.data.fixtures.import_binance_uploads <4 個 csv 路徑>`
+   把使用者格式(`timestamp(ms),...`)轉成 V2 fixture 既定格式
+   (`date,...` / `timestamp(ISO),funding_rate`)→ 覆蓋本資料夾。
+3. 既有 `requires_fixtures` / `requires_funding_fixture` 機制 → V2-S 真資料
+   sanity test 自動啟用正典版本。
+
+## 歷史(close-only sanity 退役,2026-06-13)
+
+V2-S 開發期用 CoinMetrics community `PriceUSD`(close-only)當 BTC/ETH
+sanity fixture(`build_fixture.py` 拉的)。V2-T 開工真資料接入後**已取代**:
+- close-only 版的 Donchian 退化成 Donchian-on-CLOSE(收盤通道,非 high/low
+  通道)
+- 真 OHLCV 跑出來 Donchian 進出場時點不同:close-only $171k → 真 OHLCV
+  $137k(同參數 / 同期間 / 同初始資金,**差 $34k**)
+- V2-S 期間的 close-only 數字**作廢**;V2-T 起以真 OHLCV 為準
+
+`build_fixture.py` 保留(VIX 部分仍 active);BTC/ETH 部分已退役,新流程
+走 `import_binance_uploads.py`。
+
+## DXY(仍缺,留 optional)
+
+`MacroOverlay` 預設 VIX-only。DXY 等使用者本機 ccxt 抓 → 同 funding 流程
+帶回 → commit `dxy_daily.csv` → 加進 `MacroOverlayParams(indicators=...)`。
 
 ## DXY 缺口(V2-S3 MacroOverlay 第二指標,等本機帶回)
 
