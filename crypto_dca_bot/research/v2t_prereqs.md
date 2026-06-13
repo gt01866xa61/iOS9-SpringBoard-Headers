@@ -10,8 +10,10 @@
 | 項 | 狀態 |
 |---|---|
 | **前置 1 真資料接入** | ✅ **DONE 2026-06-13** |
-| **前置 2 引擎精修(3 件全做)** | ⬜ **NEXT — 下個 session 動工** |
-| T1 績效指標層 | ⬜ |
+| **前置 2-① delta-aware → 組合視角 sizing** | ✅ **DONE 2026-06-13**(rejections 11206/958/968 → **0**) |
+| **前置 2-② sell-before-buy** | ⏸ **延後 V2-E**(見下;事件驅動單幣 fire 用不到) |
+| **前置 2-③ partial fill** | ⏸ **延後 V2-E**(見下) |
+| T1 績效指標層 | 🔨 **動工中(2026-06-13)** |
 | T2 Walk-forward runner(M2) | ⬜ |
 | T3 M1 真資料壓測 | ⬜ |
 | T4 M3 lock(commit-hash)| ⬜ |
@@ -55,6 +57,11 @@
 
 ## 前置 2 — 引擎精修(使用者 2026-06-13 拍板)
 
+> **⚠️ 2026-06-13 結案更新**:真資料診斷後,**第 1 件做成「組合視角 sizing」
+> 就把三場 rejections(11206/958/968)全清成 0**,硬前置解除。**第 2、3 件
+> 延後到 V2-E**(原因見本節末「實際做法與 frame 修正」)。詳細決策 + P&L
+> 跳動成因見 `decisions.md`(2026-06-13 條目)。下個 session 從 **T1** 接。
+
 **Rejections 從 V2-S 的 752 → 真資料 11206,引擎精修不是可選、是 V2-T
 其他閘的硬前置**。被拒絕的單沒成交 → P&L 是錯的 → walk-forward 拿到的
 數字也是錯的 → 後面所有 M2-M7 建在沙上。
@@ -87,6 +94,41 @@
 - 既有 `test_pipeline.py` / `test_execution.py` 部分數字會跳,要更新
 - 重跑三策略真資料 demo,看 11206 rejections 降到合理水位(但**不是歸零**;
   真實交易也會有 reject,看的是「降到符合策略合理頻率 × 真實交易所拒絕率」)
+
+### ★ 實際做法與 frame 修正(2026-06-13 結案)
+
+真資料診斷推翻了拍板時的假設,記下來:
+
+1. **dominant rejection 成因不是 within-fire 排序,是 cross-symbol 搶現金**。
+   引擎 event-driven 一次只 fire 一個幣(BTC kline 只叫醒 BTC 策略),Risk
+   Engine gross **只看本 fire 的 symbol**、用總 equity 當基數無視別處已押的錢
+   → 單一幣推到 gross_limit + 別處持倉 = 總曝險破表 → 結構上買不起的單 →
+   `insufficient_cash`。實測每筆 reject 的 need/have = **15~31×**,**0 筆**是
+   小額加倉,**0 個 fire** 同時有買單 + 賣單。
+
+2. **拍板三件的有效性實測**:
+   - **(1) delta-aware 字面(target−current)= no-op**:現有
+     `execution_policy.delta_q = target_q − cur_q` 數值已相同。**真正治本是
+     讓 sizing 看整桌** → 做成「組合視角 sizing」(`apply_risk_engine` 加
+     `held_elsewhere_pct`,gross 看「本 fire + 別處已持有」)。`gross_limit=0.95`
+     留 5% buffer → 買單結構上恆可成交 → rejections **誠實歸零**(非裁切作弊)。
+   - **(2) sell-before-buy = 在此架構 no-op**:需要「同 fire 又買又賣」,實測
+     **一次都沒發生**(每 fire 單幣)。**延後 V2-E**:多幣協同 rebalance 時
+     (一個 fire 內同時調 BTC+ETH)賣單先成交釋放現金才有意義。
+   - **(3) partial fill = 延後 V2-E**:目前 executor 市價單餘額不足整單拒
+     (已對齊 Binance)、賣單 `min(delta, held)`(long-only 下永不超賣);
+     限價單 partial fill 等真有限價單型別 + 多幣協同時再做。
+
+3. **P&L 跳動是誠實清帳、非引擎放寬**(三鐵證):S1 完全不變(純清帳);
+   S2/S3 最高曝險**下降** 100%→97%(更緊)卻獲利升;手續費**升**(非省成本)。
+   → 多賺來自連貫預算分配取代 cross-contention 亂搬。詳見 `decisions.md`。
+
+4. **ETH 非作弊式餓死**:兩幣都會出場讓預算 → 自然輪替(S1 BTC68/ETH43、
+   S2 BTC236/ETH160)。「同時各 47.5% 公平分」= V2-E meta-layer 職責。
+
+→ **V2-E backlog 新增**:多幣協同 rebalance 時做 ②sell-before-buy(同 fire
+賣先買後)+ ③limit-order partial fill;並評估「先進場者佔額 vs 比例均分」的
+資金分配政策(現為先搶先贏 + 自然輪替)。
 
 ---
 

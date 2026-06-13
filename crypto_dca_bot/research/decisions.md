@@ -6,6 +6,73 @@
 
 ---
 
+## 2026-06-13 — V2-T 前置 2 第 1 件:組合視角 sizing(rejections 11206→0)+ P&L 跳動成因
+
+**背景**:前置 2 動工前用真資料重跑(`v2/tools/real_demo.py`)確認 baseline:
+S1 Donchian 958 rejections / S2 FundingSkew 11206 / S3 +MacroOverlay 968,
+三場 rejections **全為 `insufficient_cash`**。
+
+**真資料診斷揪出 dominant 成因**(原以為是 within-fire 多單排序問題,**錯**):
+引擎 event-driven 一次只 fire 一個幣(BTC kline 只叫醒 BTC 策略),Risk Engine
+的 gross sub-stage **只看「本 fire 的 symbol」**、用總 equity 當基數無視別處
+已押的錢 → 單一幣被推到 gross_limit,加上別處持倉後總曝險破表 → 產生**結構上
+買不起的單** → executor `insufficient_cash`。實測:每筆 reject 的 need/have =
+**15~31×**,**0 筆**是「加倉差一點」的小單,**0 個 fire** 同時有買單和賣單。
+
+→ **重要 frame 修正**:拍板的三件裡,**(2) sell-before-buy 在這事件驅動架構
+下打不到這些 rejections**(需要「同 fire 又買又賣」,實測一次都沒發生);
+**(1) delta-aware 字面(target−current)跟現有 `execution_policy.delta_q` 數值
+相同**,也無效。真正治本的是讓 sizing **看整桌**。
+
+**拍板(使用者選):第 1 件做成「組合視角 sizing」**(portfolio-aware gross):
+`apply_risk_engine` 加 `held_elsewhere_pct`(本 fire 沒在管的 symbol 已持有的
+曝險),gross 改看「整桌 = 本 fire vol-targeting 後 + 別處已持有」。總曝險上限
+是對**整個帳戶**不是對單一幣;本 fire 的 symbol 只配剩餘額度,別處持倉各自
+fire 時才自我 rebalance。`gross_limit=0.95` 留 5% buffer → 買單結構上恆可成交
+(friction 0.15% << 5%)→ `insufficient_cash` **誠實歸零**。
+
+**鐵則對齊**:這**不是**「餘額不足就裁切到能買的量」(那是作弊);是**從源頭
+只配給剩餘額度** — 真人不會對只剩 5% 現金的帳戶丟 95% 市價單。每個 reject
+路徑對得上 Binance:市價單 notional > 餘額 = 整單拒,我們改成根本不產生那張單。
+
+**真資料結果(BTC+ETH,default exec policy)**:
+
+| 場景 | rejections | fills | **最高曝險** | equity 前→後 |
+|---|---|---|---|---|
+| S1 Donchian | 958 → **0** | 111 → 111 | 97.3% → 97.3% | $137,324 → $137,324 |
+| S2 FundingSkew | 11206 → **0** | 379 → 396 | **100.0% → 97.1%** | $48,672 → **$59,693** |
+| S3 +MacroOverlay | 968 → **0** | 177 → 187 | **100.0% → 97.3%** | $197,854 → **$225,679** |
+
+**★ P&L 跳動成因(寫死,免得日後看到數字變動以為 bug)**:S2/S3 equity 上升
+**不是引擎變寬鬆讓它多賺**,是**髒交易清掉後的誠實數字**。三條鐵證:
+1. **S1 一個字都沒變**(equity / fills / 曝險全等)→ 純清帳,958 張注定被拒的
+   單擋在源頭,零真實交易被動。
+2. **S2/S3 最高曝險「下降」**(100% → 97%)→ 引擎變**更緊**。以前 cross-
+   contention 讓某幣把帳戶吃到 100% 滿、另一個被拒;現在整桌封頂。最高曝險
+   降了、獲利卻升 → 多賺的不可能來自「押更多」。
+3. **手續費還變高**(S2 $1,448→$1,645)→ 也不是「少交易省成本」。
+   → 唯一解釋:以前把錢在錯時點亂搬(集中單幣的混亂進出)磨掉價值;現在預算
+   在 BTC/ETH 連貫分配、對的時機進出 → 同曝險上限內賺更多。
+
+**ETH 不是被作弊式餓死**:per-symbol S1 BTC 68 / ETH 43 fills、S2 BTC 236 /
+ETH 160 — 兩幣都會出場(Donchian 跌破 / funding 飆高)讓出預算 → 自然輪替。
+「同時各 47.5% 公平分」是 V2-E meta-layer 的事(glossary 已定 meta-layer 管
+資金分配),非 V2-T。
+
+**第 2、3 件(sell-before-buy / partial fill)延後到 V2-E**:這事件驅動架構
+一次只 fire 一個幣,fire 內永遠不會同時有買賣單,sell-before-buy 無用武之地;
+等 V2-E 多幣協同 rebalance 時(一個 fire 內同時調多個幣)才有意義。記進
+`v2t_prereqs.md` backlog。
+
+**附帶修正**:`real_demo.py` equity 顯示曾有 bug(用 field 名當 price key →
+未平倉部位估 0、只印現金),導致 S2 第 1 件後一度顯示 $3,041(其實只是現金,
+全額 $59,693)。已修(commit 2ce1f4c)。decisions log 的「$48k」一直正確。
+
+**202 tests 全綠**(196 + 6 新:整桌 gross / 滿池歸零 / 漂移 clamp 不放寬 /
+向後相容 / 比例分 / 單 symbol fire 尊重別處持倉且送出單買得起)。
+
+---
+
 ## 2026-06-13 — V2-T 真資料接入(前置 1 解,正典 Binance OHLCV + funding)
 
 使用者本機 Windows + ccxt(V1 那套)抓 Binance 正典資料、上傳容器:
