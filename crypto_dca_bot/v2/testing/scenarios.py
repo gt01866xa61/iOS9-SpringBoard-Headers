@@ -18,6 +18,22 @@ from ..data.events import DataEvent
 from ..interfaces.types import Bar
 
 
+def make_funding_series(
+    field: str,
+    start: datetime,
+    values: list[float],
+    *,
+    step: timedelta = timedelta(hours=8),
+) -> list[tuple[datetime, float]]:
+    """合成 funding rate 序列(每筆是該 8h period 的 funding rate float)。
+
+    V2-S2 funding skew 等策略的合成 sanity check 用。真資料正典 =
+    Binance via ccxt 本機抓(CcxtFundingLoader)→ to_csv 帶回容器 →
+    CsvFundingLoader 讀(同 BTC OHLCV pipeline 對稱)。
+    """
+    return [(start + i * step, float(v)) for i, v in enumerate(values)]
+
+
 def make_bar_series(
     field: str,
     start: datetime,

@@ -22,7 +22,7 @@
 | # | 策略 | 狀態 |
 |---|---|---|
 | **S1** | Donchian breakout(海龜經典,日線,entry=20/exit=10,long-only,BTC+ETH)| **✅ DONE 2026-06-13**(15 tests)— codify + 真資料接入(CsvLoader/CcxtLoader 雙軌)+ 真資料 sanity(BTC/ETH 2019-2024)|
-| S2 | Funding rate skew(Round 2 #1 拍板,5 params)| — |
+| **S2** | Funding rate skew(Round 2 #1,5 params 簡單派)| **✅ DONE 2026-06-13**(22 tests,1 skipped 等真資料 fixture)— codify + 合成 sanity + CcxtFundingLoader/CsvFundingLoader 雙軌 |
 | S3 | Macro overlay(VIX/DXY)| — |
 
 > 真策略在 `v2/strategies/`(donchian.py 等);dummy(SmaCross/ThresholdOverlay)留作 reference + engine smoke。

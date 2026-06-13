@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-06-13 — V2-S2 Funding skew codify + 真資料 fixture 缺口處置
+
+**V2-S2 策略**:Round 2 #1 規格(2026-05-21 拍,5 params 簡單派)直翻 code。
+每 8h funding event → 過去 `lookback_periods=21` 個 8h funding 滾動平均 →
+`raw ≤ low_threshold(0.005%/8h)` 滿倉 / `raw ≥ high_threshold(0.03%/8h)` 出場 /
+中間 linear interp;`dead_band(0.002% 訊號變動)` = R3-③ 策略訊號級節流,
+跟 framework 執行政策層雙層分工。**thesis 不交易永續、只把 funding 當 spot 訊號**
+(V2 邊界 long-only spot 對齊)。22 tests 含 dead_band 抑制 + 累積觸發 + linear
+interp 邊界 + per-symbol 獨立 + state 序列化 + 合成 backtest 進出場 + M3 determinism。
+
+**Loader 雙軌擴**(對稱 BTC OHLCV):新增 `CcxtFundingLoader` /
+`CsvFundingLoader`(配 `to_csv` 對應格式 + 行對行 roundtrip 測試)。
+DataLoader Protocol 通用化(value 異質:Bar / float / ...)。
+
+**真資料 fixture 缺口**:系統性探勘 GitHub 5+ 候選 + Kaggle/HuggingFace
+egress 全 403 → **無可達 reputable 公開 funding rate dataset**
+(haozhu18 發 Kaggle 容器擋、leepacific 只有兩行 README、其他 0-7 ★ code-only 或
+PostgreSQL pipeline)。**處置照使用者 (a) 拍板**:
+1. 容器內 sanity = 合成 funding 序列(`testing/scenarios.make_funding_series`),
+   驗策略邏輯。
+2. 正典路徑 = 使用者本機 Windows + ccxt 跑 `CcxtFundingLoader` →
+   `to_csv()` → 帶回容器 commit 進 `v2/data/fixtures/` → `CsvFundingLoader` 讀。
+3. `test_funding_skew_real_data_sanity` 的 `requires_funding_fixture` 自動偵測
+   (同 BTC `requires_fixtures` 機制),fixture 缺則 skip、commit 即啟用。
+
+`v2/data/fixtures/README.md` 加 funding 章節(缺口紀錄 + 正典路徑 + 範例 code)。
+
+---
+
 ## 2026-06-13 — V2-S 開工:Donchian 策略 + 真資料雙軌 loader 拍板
 
 ### V2-S1 策略:Donchian breakout(海龜經典)
