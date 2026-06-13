@@ -42,6 +42,17 @@ DATA_SOURCES: dict[str, DataSourceSpec] = {
         max_staleness_default=timedelta(hours=2),
         alert_n_default=6,
     ),
+    # K 線(日):cadence 1d / stale 2d / 連 2 次 alert(Donchian V2-S1 用)
+    "BTC_kline_1d": DataSourceSpec(
+        cadence=timedelta(days=1),
+        max_staleness_default=timedelta(days=2),
+        alert_n_default=2,
+    ),
+    "ETH_kline_1d": DataSourceSpec(
+        cadence=timedelta(days=1),
+        max_staleness_default=timedelta(days=2),
+        alert_n_default=2,
+    ),
     # funding(8h 結算):cadence 8h / stale 16h / 連 2 次 alert
     "BTC_funding_8h": DataSourceSpec(
         cadence=timedelta(hours=8),

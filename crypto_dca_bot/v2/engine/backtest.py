@@ -19,6 +19,7 @@ from ..engine.execution_policy import OrderIntent
 from ..engine.pipeline import PipelineResult, run_pipeline
 from ..engine.portfolio_state import PortfolioState
 from ..execution.executor import BacktestSimExecutor, Fill, Rejection
+from ..interfaces.types import Bar
 from ..observability.sink import EventLogSink
 from ..observability.log import EventLog
 
@@ -72,12 +73,20 @@ class Backtest:
         self._dispatcher.register(strategy, crash_limit=crash_limit)
 
     def _mark_prices(self) -> dict[str, float]:
-        """從 LKV store 取各 symbol 的 mark price(kline 收盤)。"""
+        """從 LKV store 取各 symbol 的 mark price(kline 收盤)。
+
+        value 可能是 float(dummy)或 Bar(真 kline)→ 取 close。
+        """
         out: dict[str, float] = {}
         for symbol, field_name in self._price_map.items():
             fv = self._store.get(field_name)
-            if fv is not None and isinstance(fv.value, (int, float)):
-                out[symbol] = float(fv.value)
+            if fv is None:
+                continue
+            v = fv.value
+            if isinstance(v, Bar):
+                out[symbol] = v.close
+            elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                out[symbol] = float(v)
         return out
 
     def run(self, source: EventSource) -> BacktestResult:

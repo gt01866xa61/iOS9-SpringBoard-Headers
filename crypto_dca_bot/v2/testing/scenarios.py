@@ -15,6 +15,39 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from ..data.events import DataEvent
+from ..interfaces.types import Bar
+
+
+def make_bar_series(
+    field: str,
+    start: datetime,
+    closes: list[float],
+    *,
+    step: timedelta = timedelta(days=1),
+    hl_spread: float = 0.0,
+) -> list[tuple[datetime, Bar]]:
+    """從 close 序列合成 OHLCV Bar 序列(high/low = close ± spread)。
+
+    hl_spread=0 → high=low=close(純突破測試,通道 = 過去 close 高低)。
+    供真策略(Donchian 等)的合成測試用。
+    """
+    out: list[tuple[datetime, Bar]] = []
+    prev = closes[0] if closes else 0.0
+    for i, c in enumerate(closes):
+        out.append(
+            (
+                start + i * step,
+                Bar(
+                    open=prev,
+                    high=c + hl_spread,
+                    low=c - hl_spread,
+                    close=c,
+                    volume=1.0,
+                ),
+            )
+        )
+        prev = c
+    return out
 
 
 def make_kline_series(

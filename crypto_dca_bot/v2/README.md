@@ -17,6 +17,17 @@
 
 **V2-B 全段完成** — 7 milestones / 144 tests 全綠。Backtest 引擎可端到端跑、M3 fingerprint 可重現、M1 stale-aware 合成壓測通過。
 
+## V2-S Milestones(策略實作)
+
+| # | 策略 | 狀態 |
+|---|---|---|
+| **S1** | Donchian breakout(海龜經典,日線,entry=20/exit=10,long-only,BTC+ETH)| **IN PROGRESS** — 策略 codify ✅(12 tests,合成驗證)/ 真資料接入 ⬜ |
+| S2 | Funding rate skew(Round 2 #1 拍板,5 params)| — |
+| S3 | Macro overlay(VIX/DXY)| — |
+
+> 真策略在 `v2/strategies/`(donchian.py 等);dummy(SmaCross/ThresholdOverlay)留作 reference + engine smoke。
+> M1-M7 真驗證(walk-forward / paper)= V2-T,V2-S 不碰。
+
 ## 目錄
 
 ```

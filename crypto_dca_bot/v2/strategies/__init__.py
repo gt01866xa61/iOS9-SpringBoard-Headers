@@ -1,3 +1,4 @@
+from .donchian import DonchianBreakout, DonchianParams, DonchianState
 from .dummy import (
     SmaCrossParams,
     SmaCrossState,
@@ -7,6 +8,9 @@ from .dummy import (
 )
 
 __all__ = [
+    "DonchianBreakout",
+    "DonchianParams",
+    "DonchianState",
     "SmaCrossParams",
     "SmaCrossState",
     "SmaCrossSymbol",

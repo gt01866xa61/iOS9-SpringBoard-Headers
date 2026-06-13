@@ -7,9 +7,10 @@ from .strategy import (
     uses_framework_default,
     validate_output,
 )
-from .types import DataSpec, FieldSpec, FieldValue, Snapshot
+from .types import Bar, DataSpec, FieldSpec, FieldValue, Snapshot
 
 __all__ = [
+    "Bar",
     "DataSpec",
     "FieldSpec",
     "FieldValue",

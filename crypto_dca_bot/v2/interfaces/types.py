@@ -23,6 +23,24 @@ class FieldValue(BaseModel):
     ts: datetime
 
 
+class Bar(BaseModel):
+    """OHLCV K 線(真 kline 的 field value 型別)。
+
+    B2/B7 的 dummy 策略用 float(close)簡化;真策略(Donchian 要 high/low、
+    funding 不用 bar)按需用 Bar。snapshot.fields[f].value 可以是 float
+    或 Bar,消費端各自處理。
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float = 0.0
+
+
+
 class Snapshot(BaseModel):
     """fire 那一刻的市場快照(point-in-time,只含已發生資料)。
 
