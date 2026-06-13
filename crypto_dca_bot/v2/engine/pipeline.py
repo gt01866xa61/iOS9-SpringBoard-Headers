@@ -96,9 +96,18 @@ def run_pipeline(
     # 階段 4:Risk Engine(framework 護欄,always-on)
     absent_symbols = symbol_names & set(fire.absences)
     all_relevant_absent = bool(symbol_names) and absent_symbols == symbol_names
+    # 組合視角 sizing(V2-T 前置 2):本 fire 沒在管的 symbol 已持有的曝險。
+    # 讓 gross 看「整桌」、不只看當下 fire 的幣 → 不再產生結構上買不起的單。
+    fire_symbols = set(result.final_target)
+    held_elsewhere_pct = sum(
+        state.position_pct(sym, prices)
+        for sym in state.positions
+        if sym not in fire_symbols
+    )
     result.risk_adjusted = apply_risk_engine(
         result.final_target,
         all_strategies_absent=all_relevant_absent,
+        held_elsewhere_pct=held_elsewhere_pct,
         vol_estimator=vol_estimator,
         gross_limit=gross_limit,
         terminal_fallback_cap=terminal_fallback_cap,

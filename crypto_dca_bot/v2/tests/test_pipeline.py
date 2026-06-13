@@ -183,6 +183,45 @@ def test_terminal_fallback_only_tightens():
     assert r["BTC"] == 0.1
 
 
+# ---- Risk Engine:組合視角 gross(V2-T 前置 2,cross-symbol 修正)----
+
+
+def test_gross_accounts_for_held_elsewhere():
+    """本 fire 只管 ETH 想滿倉,但別處(BTC)已持 80% → 整桌 0.95 上限只剩
+    0.15 給 ETH(gross 看整桌、不只看當下 fire 的幣)。"""
+    r = apply_risk_engine({"ETH": 1.0}, held_elsewhere_pct=0.80, gross_limit=0.95)
+    assert r["ETH"] == pytest.approx(0.15)
+
+
+def test_gross_full_book_elsewhere_zeros_the_fire():
+    """別處已占滿 gross_limit → 本 fire 配 0(不產生買不起的單,reject 從源頭消失)。"""
+    r = apply_risk_engine({"ETH": 1.0}, held_elsewhere_pct=0.95, gross_limit=0.95)
+    assert r["ETH"] == pytest.approx(0.0)
+
+
+def test_gross_held_elsewhere_over_limit_clamps_to_zero_not_relax():
+    """別處因價格漂移已超過 gross_limit → remaining clamp 0,**不放寬**(單調性)。"""
+    r = apply_risk_engine({"ETH": 0.5}, held_elsewhere_pct=0.98, gross_limit=0.95)
+    assert r["ETH"] == pytest.approx(0.0)
+
+
+def test_gross_held_elsewhere_default_zero_backward_compatible():
+    """held_elsewhere 預設 0 = 舊行為(只看本 fire 總和)。"""
+    r = apply_risk_engine({"BTC": 0.6, "ETH": 0.5}, gross_limit=0.95)
+    assert sum(r.values()) == pytest.approx(0.95)
+
+
+def test_gross_held_elsewhere_splits_two_firing_symbols_proportionally():
+    """兩個 firing symbol + 別處持倉:剩餘額度在 firing 之間按比例分。"""
+    r = apply_risk_engine(
+        {"BTC": 0.6, "ETH": 0.4}, held_elsewhere_pct=0.45, gross_limit=0.95
+    )
+    # 剩餘 0.5,按 0.6:0.4 分 → 0.3 / 0.2
+    assert r["BTC"] == pytest.approx(0.30)
+    assert r["ETH"] == pytest.approx(0.20)
+    assert sum(r.values()) + 0.45 == pytest.approx(0.95)
+
+
 # ---- 算量站 ----
 
 
@@ -484,3 +523,34 @@ def test_pipeline_noop_treated_as_pass_through_no_fallback():
     # 空池(沒任何 vote)= 1.0
     assert result.effective_cap["BTC"] == 1.0
     assert result.final_target["BTC"] == 0.5
+
+
+def test_pipeline_single_symbol_fire_respects_held_elsewhere():
+    """V2-T 前置 2 核心:event-driven 一次只 fire 一個幣,別處已持倉時本 fire
+    被壓進剩餘額度 → 不再產生「想花 95% 但現金只有 5%」的破表單。"""
+    d = Dispatcher(LKVStore(), MemorySink())
+    d.register(FixedSym({"BTC": 1.0}, name="BtcTrend"))  # BTC 想滿倉
+    d.register(NoOpPortfolioStrategy(NoOpParams(symbols=["BTC", "ETH"])))
+    d.assert_startup_ok()
+
+    # 帳戶:現金 2000 + ETH 部位 8000(80%);BTC fire 想滿倉
+    state = PortfolioState(cash=2000, positions={"ETH": 4.0})  # 4.0 × 2000 = 8000
+    prices = {"BTC": 50000, "ETH": 2000}  # equity = 10000,ETH = 80%
+
+    fire = d.on_event(DataEvent(field="BTC_kline_1h", value=50000, ts=t(0)))
+    result = run_pipeline(
+        fire,
+        portfolio_names=d.portfolio_names(),
+        symbol_names=d.symbol_names(),
+        state=state,
+        prices=prices,
+        sink=MemorySink(),
+        gross_limit=0.95,
+    )
+    # ETH 已 80% → BTC 只剩 0.15(不是破表的 1.0/0.95)
+    assert result.risk_adjusted["BTC"] == pytest.approx(0.15)
+    # 送出的單真的買得起(cost ≤ cash),這才是 reject 從源頭消失的關鍵
+    assert result.orders, "0.15 vs current 0% 大於 dead-band,應送單"
+    o = result.orders[0]
+    cost = o.delta_qty * prices["BTC"]
+    assert o.delta_qty > 0 and cost <= state.cash + 1e-9
