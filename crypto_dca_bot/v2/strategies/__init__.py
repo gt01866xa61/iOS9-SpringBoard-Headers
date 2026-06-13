@@ -7,6 +7,7 @@ from .dummy import (
     ThresholdOverlayParams,
 )
 from .funding_skew import FundingSkew, FundingSkewParams, FundingSkewState
+from .macro_overlay import MacroIndicator, MacroOverlay, MacroOverlayParams
 
 __all__ = [
     "DonchianBreakout",
@@ -15,6 +16,9 @@ __all__ = [
     "FundingSkew",
     "FundingSkewParams",
     "FundingSkewState",
+    "MacroIndicator",
+    "MacroOverlay",
+    "MacroOverlayParams",
     "SmaCrossParams",
     "SmaCrossState",
     "SmaCrossSymbol",

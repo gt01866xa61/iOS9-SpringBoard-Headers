@@ -27,9 +27,20 @@ SOURCES = {
     "BTC": "https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv",
     "ETH": "https://raw.githubusercontent.com/coinmetrics/data/master/csv/eth.csv",
 }
+# VIX:datahub finance-vix(reputable,基於 CBOE 官方),真 OHLC(非 close-only)
+VIX_SOURCE = "https://raw.githubusercontent.com/datasets/finance-vix/main/data/vix-daily.csv"
 START, END = "2019-01-01", "2024-12-31"
 PRICE_COL = "PriceUSD"
 HERE = Path(__file__).resolve().parent
+
+VIX_HEADER_COMMENT = [
+    "# VIX daily — sanity-check fixture (real OHLC)",
+    "# source: datahub.io core/finance-vix (CBOE official VIX history)",
+    "# field: vix_daily ; level = CLOSE (MacroOverlay 讀 close)",
+    f"# range: {START}..{END}  built by build_fixture.py",
+    "# 用於 V2-S3 MacroOverlay 真資料 sanity(VIX-primary)。DXY 找不到",
+    "# reputable 公開源 → 留 optional indicator hook,本機抓 dxy_daily 後加入。",
+]
 
 HEADER_COMMENT = [
     "# BTC/ETH daily — sanity-check fixture (NOT canonical)",
@@ -66,6 +77,27 @@ def build(symbol: str, url: str) -> Path:
     return out_path
 
 
+def build_vix() -> Path:
+    """VIX:datahub finance-vix（真 OHLC,DATE,OPEN,HIGH,LOW,CLOSE）→ vix_daily.csv。"""
+    rows = list(csv.DictReader(io.StringIO(_grab(VIX_SOURCE))))
+    out_path = HERE / "vix_daily.csv"
+    n = 0
+    with out_path.open("w", newline="") as f:
+        for line in VIX_HEADER_COMMENT:
+            f.write(line + "\n")
+        w = csv.writer(f)
+        w.writerow(["date", "open", "high", "low", "close", "volume"])
+        for r in rows:
+            d = r["DATE"][:10]
+            if not (START <= d <= END) or not r.get("CLOSE"):
+                continue
+            w.writerow([d, r["OPEN"], r["HIGH"], r["LOW"], r["CLOSE"], "0"])
+            n += 1
+    print(f"VIX: wrote {n} rows -> {out_path.name}")
+    return out_path
+
+
 if __name__ == "__main__":
     for sym, url in SOURCES.items():
         build(sym, url)
+    build_vix()

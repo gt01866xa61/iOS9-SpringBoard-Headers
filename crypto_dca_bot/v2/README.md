@@ -23,7 +23,9 @@
 |---|---|---|
 | **S1** | Donchian breakout(海龜經典,日線,entry=20/exit=10,long-only,BTC+ETH)| **✅ DONE 2026-06-13**(15 tests)— codify + 真資料接入(CsvLoader/CcxtLoader 雙軌)+ 真資料 sanity(BTC/ETH 2019-2024)|
 | **S2** | Funding rate skew(Round 2 #1,5 params 簡單派)| **✅ DONE 2026-06-13**(22 tests,1 skipped 等真資料 fixture)— codify + 合成 sanity + CcxtFundingLoader/CsvFundingLoader 雙軌 |
-| S3 | Macro overlay(VIX/DXY)| — |
+| **S3** | Macro overlay(VIX/DXY,第一個真守門員 PortfolioStrategy)| **✅ DONE 2026-06-13**(15 tests)— codify + 真 VIX 資料(datahub OHLC)sanity + cap 套到 S1/S2 下單驗證;DXY 留 optional hook |
+
+**V2-S 起步策略池 3 個全 codify 完成**(S1 Donchian / S2 Funding skew / S3 Macro overlay)。真資料:BTC/ETH(CoinMetrics close-only)+ VIX(datahub OHLC)已接;funding + DXY 等本機 ccxt 帶回。M1-M7 正式驗證(walk-forward/paper)= V2-T。
 
 > 真策略在 `v2/strategies/`(donchian.py 等);dummy(SmaCross/ThresholdOverlay)留作 reference + engine smoke。
 > M1-M7 真驗證(walk-forward / paper)= V2-T,V2-S 不碰。

@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-06-13 — V2-S3 Macro overlay(第一個真守門員)+ VIX 真資料
+
+**V2-S3 策略**:MacroOverlay(PortfolioStrategy,起步策略池 #3,DXY/VIX 上升
+減倉)。設計:多 indicator 門檻 overlay,每 indicator=(field, risk_off_above,
+cap),某 symbol 的 cap = 所有觸發 indicator 的 cap **取 min**(內部沿用 #3D
+最狠者勝)。無 state,讀當前 snapshot level(Bar 取 close / float)。stale →
+framework 跳過 overlay → #3C fallback(缺席統一模型,overlay 自己不處理)。
+
+**真資料 = VIX-primary**:`datasets/finance-vix`(datahub.io core,CBOE 官方,
+**真 OHLC** 非 close-only)2019-2024 1529 交易日。2020-03-16 VIX close 82.69
+(COVID 真實峰值,sanity 對得上)。
+**DXY 缺口**:FRED/CBOE/stooq/yahoo 全 403,datahub 無 dollar-index →
+無 reputable 公開源。**處置同 funding**:DXY 留 optional 第二 indicator hook,
+本機抓 dxy_daily commit 後加進 indicators 即生效。
+
+**整合驗證(使用者點名)**:cap 真的套到 S1/S2 下單上 —
+`test_overlay_cap_flows_to_donchian_orders` / `..._to_funding_skew_orders`:
+同進場下,VIX risk-off(45)的最終部位 < calm(18)× 0.7,證明 cap 流到下單。
+真資料 demo(2×Donchian BTC+ETH + MacroOverlay,2019-2024):overlay 438 次
+risk-off(VIX>30 的 COVID/2022),淨值 $167k vs 無 overlay $171k —— 風控在
+恐慌期收斂曝險,符合預期。
+
+LKV 驗證:VIX 週末不開盤(1-2 天 stale)< registry 3d 容忍 → overlay 仍用
+last known(Friday VIX);斷流 > 3d → framework 跳過 → fallback。真實世界
+multi-timeframe staleness 設計被真資料驗證。
+
+15 tests(params validation / overlay 邏輯 / 多 indicator min / Bar+float
+level / cap 套到 S1+S2 下單 / stale 跳過 fallback / LKV 週末容忍 / 真 VIX
+COVID spike + 真資料 sanity)。
+
+**V2-S 起步策略池 3 個全 codify 完成**(S1 Donchian / S2 Funding skew /
+S3 Macro overlay)。M1-M7 正式驗證 = V2-T。
+
+---
+
 ## 2026-06-13 — V2-S2 Funding skew codify + 真資料 fixture 缺口處置
 
 **V2-S2 策略**:Round 2 #1 規格(2026-05-21 拍,5 params 簡單派)直翻 code。
