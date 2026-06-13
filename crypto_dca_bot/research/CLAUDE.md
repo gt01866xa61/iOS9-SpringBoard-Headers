@@ -1,5 +1,8 @@
 # V2 Strategy Research — Claude Context
 
+> **⚠️ 目前進度(2026-06-13):V2-A/B/S 完成。下一步 V2-T,但卡在硬前置 —
+> 開 V2-T 前必讀 `v2t_prereqs.md`(正典真資料接入 + 752 引擎精修)。**
+
 ## What this folder is
 
 V2 量化交易平台研究工作區。**V1(Phase 4 DCA bot)2026-05-08 結案,Stage 4 後停止運行**(不繼續跑當儲蓄機 — 使用者已有手動長期部位,V1 重疊無意義)。

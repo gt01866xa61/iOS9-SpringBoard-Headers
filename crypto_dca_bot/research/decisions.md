@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-06-13 — V2-S 收官 + V2-T 開工前置 backlog(session 結束)
+
+**V2-S 起步策略池 3 個全 codify 完成**(S1 Donchian / S2 Funding skew /
+S3 Macro overlay,195 tests + 1 skip)。V2-S officially own 完(review pass
+13 checkpoint 全綠)。
+
+**session 收尾**:V2-T 卡在**真資料硬前置**(使用者本機 ccxt 抓 Binance
+正典 OHLCV + funding,容器擋交易所不能硬連)。下個 session 開 V2-T。
+
+**V2-T 開工前置記成 `v2t_prereqs.md`(下個 session 開頭必讀)**:
+- **前置 1（硬 blocker）**:正典真資料接入 — V2-S 用 sanity 級(BTC/ETH
+  close-only / funding 合成 / DXY 無),V2-T 要正典級(Binance OHLCV +
+  funding history）。使用者本機跑 CcxtLoader / CcxtFundingLoader → to_csv →
+  帶回容器 commit fixtures。**Donchian close-only vs 真 high/low 訊號會不同
+  → 正典進來後 V2-S 回測數字作廢、重跑。**
+- **前置 2（使用者 V2-S1 拍板留 V2-T）**:752 rejections 引擎精修 —
+  multi-symbol near-fully-invested 時 sizing-to-absolute-target × executor
+  reject-whole 互動。選項:sell-before-buy ordering / partial fill /
+  delta-aware sizing。不依賴真資料,可先做。
+- **V2-T 本體**:M2 walk-forward(IS 30mo/OOS 3mo/WFE>50%）/ M1 真資料壓測 /
+  M4 paper trading（要 LiveDriver 輸入側,V2-B 只做 backtest driver）/ M5-M7。
+  還要蓋「績效指標計算層」(Sharpe/maxDD/WFE) + walk-forward 多窗 runner
+  (B7 Backtest 是單次跑)。
+
+**未動的真相**(誠實記錄):V2-S 的回測損益數字($171k Donchian / $167k +
+overlay）是 **close-only sanity 級**,**非正典**,正典資料進來後重跑才算數。
+
+---
+
 ## 2026-06-13 — V2-S3 Macro overlay(第一個真守門員)+ VIX 真資料
 
 **V2-S3 策略**:MacroOverlay(PortfolioStrategy,起步策略池 #3,DXY/VIX 上升
