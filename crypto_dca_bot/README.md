@@ -1,5 +1,9 @@
 # Crypto Smart DCA Bot
 
+> **Status (2026-05-09)**: V1 已結案、停止運行 — Stage 4 trial 全綠驗證完成 2026-05-08（commit `346108e`），V1 bot 不再執行。
+> 本 README 為 **V1 歷史紀錄 + V2 沿用模組參考**。
+> **V2 active work** → `research/v2_roadmap.md`（builder mode 蓋房子,V2-A/B/S/T/E/D 框架）。
+
 A 24/7 crypto DCA + holdings-monitor bot.
 Exchange: **Binance** (via `ccxt`). Notifications: **Telegram Bot**.
 
@@ -10,7 +14,7 @@ Exchange: **Binance** (via `ccxt`). Notifications: **Telegram Bot**.
 | 1 | Logger + Telegram notifier bootstrap | ✅ Done |
 | 2 | `exchange_api.py` — ccxt price + balance (read-only) | ✅ Done |
 | 3 | `trader.py` — market buy with multi-layer safety + daily cap | ✅ Done |
-| 4 | `main.py` — schedule loop + circuit breaker + heartbeat + dry-run | ✅ Implemented — awaiting user validation |
+| 4 | `main.py` — schedule loop + circuit breaker + heartbeat + dry-run | ✅ Validated |
 
 ## Phase 1 setup
 
@@ -206,7 +210,7 @@ result (14 passed, 1 skipped, total 15).
 | `SYMBOL_WHITELIST` | `{BTC/USDT, ETH/USDT}` | Only these symbols can be bought |
 | `DAILY_CAP_USDT` | `50.0` | Hard ceiling on total USDT spent per Asia/Taipei calendar day |
 | `MAX_SINGLE_BUY_USDT` | `25.0` | Hard ceiling on a single order |
-| `MIN_SINGLE_BUY_USDT` | `10.0` | Strategy floor; final min = `max(this, Binance min notional)` |
+| `MIN_SINGLE_BUY_USDT` | `5.0` | Strategy floor; final min = `max(this, Binance min notional)` |
 | `BALANCE_SAFETY_MULTIPLIER` | `1.01` | Required balance = quote × this (1% buffer for fees + slippage) |
 
 The daily counter persists in `crypto_dca_bot/state/daily_state.json`,
@@ -298,6 +302,97 @@ over 3 days of `12:00` production runs.
 
 #### Stage 3: cross-day validation (~14h, ~30 min active)
 
+##### Pre-flight (run before D1 23:25 — 11 items, all must be green)
+
+> Production host = Windows. Commands assume an active venv. Cheapest checks
+> first; abort the run if any item fails — do not wave it through.
+
+**Host environment**
+
+1. **Repo sync**:
+   ```bash
+   git pull
+   ```
+2. **Host timezone** must be Asia/Taipei (UTC+8) — `schedule` uses local clock:
+   ```powershell
+   Get-TimeZone
+   ```
+   Expected: `Id : Taipei Standard Time`, `BaseUtcOffset : 08:00:00`.
+3. **Sleep / hibernate disabled** for 23:55–00:15 cross-day window:
+   ```powershell
+   powercfg /a
+   ```
+   Set Power Plan → Sleep → "Never" on AC. A sleep mid-window kills the
+   23:55 tick or the cross-day reset.
+4. **`.env` keys** — `crypto_dca_bot/.env` exists with all four filled:
+   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `BINANCE_API_KEY`,
+   `BINANCE_API_SECRET`.
+5. **Dependency versions** (`ccxt` and `schedule` are the highest-risk):
+   ```bash
+   pip freeze | findstr /R "^ccxt== ^schedule=="
+   ```
+   Compare against the versions used in your last green chaos run; any
+   mismatch → reinstall before proceeding. `requirements.txt` uses `>=`
+   so silent upgrades are possible.
+6. **`bot.log` headroom** < 4 MB:
+   ```bash
+   dir crypto_dca_bot\bot.log
+   ```
+   `RotatingFileHandler` rotates at 5 MB. ≥ 4 MB → archive + truncate so
+   Stage 3 doesn't straddle a rotation boundary.
+7. **No stale `state/daily_state.json`**:
+   ```bash
+   type crypto_dca_bot\state\daily_state.json
+   ```
+   Acceptable: file does not exist, OR `{"date": "<today>", "spent_usdt": 0.0}`.
+   Anything else (yesterday's date, non-zero spend from an aborted run) →
+   delete the file before starting.
+
+**Application sanity**
+
+8. **Telegram path**:
+   ```bash
+   python test_phase1.py
+   ```
+   Expected: terminal `Phase 1 驗證通過`, Telegram receives
+   `Bot 初始化成功 ✅`.
+9. **Pre-flight smoke + balance reconciliation**:
+   ```bash
+   python main.py --check
+   ```
+   Prints config + live `USDT / BTC / ETH` free balances + `Pre-flight OK`.
+   Sends no `🟢 上線` Telegram and starts no schedule. **Cross-check the
+   three balances against a fresh Binance App screenshot** — any
+   discrepancy means wrong account / wrong key / out-of-date snapshot.
+
+**Chaos re-verify**
+
+10. **Wrong-IP whitelist on the Phase 3 trade-permission key** (the Phase 2
+    pass was on the read-only key; the upgraded key has not been verified):
+    on Binance, change the whitelist to `1.2.3.4`, wait 30 s, then:
+    ```bash
+    python chaos_test.py --run-wrong-ip
+    ```
+    Expected: `[7/15] PASS wrong IP whitelist: raised AuthenticationError`.
+    **Critical**: restore the real IP whitelist immediately after —
+    forgetting this kills the 23:55 tick.
+11. **Dry-run graceful shutdown** end-to-end (validates `🛑 下線` Telegram
+    actually fires; chaos `[15/15]` only checks the event flag, not the
+    Telegram path):
+    ```cmd
+    set DRY_RUN=1
+    python main.py
+    ```
+    Wait for `🟢 Bot 上線` Telegram, then **Ctrl+C**. Expected: terminal
+    logs `Signal 2 received, graceful shutdown initiated`, Telegram
+    receives `🛑 Bot 下線`, `state/daily_state.json` unchanged. Then
+    clear the env var before the real Stage 3 launch:
+    ```cmd
+    set DRY_RUN=
+    ```
+
+##### Steps
+
 1. **Day 1 23:30** — set `DCA_TIME = "23:55"` in `config.py`, then:
    ```bash
    python main.py
@@ -305,15 +400,56 @@ over 3 days of `12:00` production runs.
    You should receive `🟢 Bot 上線`.
 2. **Day 1 23:55** — auto-triggers BTC 5.5 USDT buy (pre-trade + post-trade
    notifications, two messages).
-3. **Day 2 00:05** — change `DCA_TIME = "00:05"` in `config.py`, **Ctrl+C**
+3. **Day 2 00:15** — change `DCA_TIME = "00:15"` in `config.py`, **Ctrl+C**
    the bot (you should receive `🛑 Bot 下線` — this verifies the OS signal
-   path), then `python main.py` again.
-4. The 00:05 tick auto-triggers ETH 5.5 USDT buy. `state/daily_state.json`
+   path), then `python main.py` again. The window from D2 ~00:00 (Ctrl+C)
+   to 00:15 (next tick) is **15 minutes** — comfortable margin for edit +
+   restart; cross-day reset still validates as long as the second buy
+   lands on a new calendar date.
+4. The 00:15 tick auto-triggers ETH 5.5 USDT buy. `state/daily_state.json`
    resets to today + accumulates from `0.0 → 5.5` (proof that cross-day
    reset works in production).
 5. **Day 2 06:00** — first heartbeat fires; verify `💓 Bot 存活` arrives.
 6. **Day 2 morning** — audit: `bot.log` + `state/daily_state.json` +
    `data/prices.sqlite` + Binance Order History.
+
+##### Contingency: 單筆失敗時的決策樹
+
+Stage 3 has 2 ticks (D1 23:55 BTC, D2 00:15 ETH). Market buys are irreversible
+— "rollback" means stop + audit, never auto-replay.
+
+**Per-tick failure mode → action**
+
+- 🚨 `ccxt.AuthenticationError` (Binance `-2015`: bad key / IP mismatch /
+  missing permission) → **HARD STOP**. Ctrl+C bot, audit Binance API key.
+  Stage 3 abort + reschedule.
+- 💰 `ccxt.InsufficientFunds` → **HARD STOP**. Top up Spot wallet to ≥ 12 USDT.
+  If still before the next tick, restart bot; otherwise abort.
+- 🌐 `ccxt.NetworkError` / timeout → **LET RIDE**. `schedule` does not retry
+  mid-day; the next opportunity is the other day's tick. If that also fails,
+  abort.
+- ❌ Local `ValueError` (symbol whitelist / notional / cap) → **HARD STOP**.
+  This is a config bug, not a market issue. Investigate `config.py` +
+  `trader.py` constants before restarting.
+- ❓ Unknown exception → check `bot.log`; **STOP** by default.
+
+**Cross-day reset glitch (the thing Stage 3 actually verifies)**
+
+- At ~D2 00:00 (before tick), `state/daily_state.json` should still be
+  `{"date": <D1>, "spent_usdt": 5.5}`.
+- After D2 00:15 tick, state should be `{"date": <D2>, "spent_usdt": 5.5}` —
+  **not** `11.0`, **not** the D1 date.
+- If state shows `spent_usdt = 11.0` or a stale date →
+  `trader._check_daily_cap` is broken. **HARD STOP**. Do not proceed to
+  Stage 4 until fixed.
+
+**Notes**
+
+- CircuitBreaker will not trip in Stage 3 (only 2 ticks; threshold is 5
+  consecutive failures). Don't rely on it for safety.
+- Telegram silence ≠ trade silence. Always cross-check Binance Order History.
+- Manual state edits: write a tmp file then `os.replace` (mirrors
+  `trader._write_state` atomicity) — never edit `daily_state.json` in place.
 
 USDT consumed: ~11.
 
@@ -345,7 +481,7 @@ USDT consumed: ~16.5. Remaining buffer: ~10.5 of the original 38.
 |---|---|---|
 | `DRY_RUN` | `False` | If `True`, log + Telegram only — never call exchange write APIs |
 | `DCA_AMOUNT_USDT` | `5.5` | USDT spent per scheduled buy |
-| `SYMBOLS_ROTATION` | `("BTC/USDT", "ETH/USDT")` | `day % 2` selects today's symbol |
+| `SYMBOLS_ROTATION` | `("ETH/USDT", "BTC/USDT")` | `day % 2` selects today's symbol (tuple order is significant: even days → index 0 = ETH, odd days → BTC) |
 | `DCA_TIME` | `"12:00"` | Local-clock time of daily buy (host must be Asia/Taipei) |
 | `DAILY_CAP_USDT` | `12.0` | Overrides `trader.DAILY_CAP_USDT` (Phase 3 default 50) |
 | `HEARTBEAT_HOURS` | `6` | Interval between `💓 Bot 存活` posts |

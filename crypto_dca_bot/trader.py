@@ -28,10 +28,14 @@ from notifier import get_notifier
 SYMBOL_WHITELIST: frozenset[str] = frozenset({"BTC/USDT", "ETH/USDT"})
 try:
     from config import DAILY_CAP_USDT
-except ImportError:
-    DAILY_CAP_USDT = 50.0  # Phase 3 fallback when config.py absent
+except ImportError as exc:
+    raise RuntimeError(
+        f"trader.py failed to import DAILY_CAP_USDT from config.py: {exc}. "
+        f"Refusing to start with stale 50.0 fallback — a syntax error in "
+        f"config.py would otherwise silently use Phase 3's 50 USDT cap."
+    ) from exc
 MAX_SINGLE_BUY_USDT: float = 25.0
-MIN_SINGLE_BUY_USDT: float = 10.0
+MIN_SINGLE_BUY_USDT: float = 5.0
 BALANCE_SAFETY_MULTIPLIER: float = 1.01
 STATE_FILE: Path = Path(__file__).resolve().parent / "state" / "daily_state.json"
 

@@ -1,0 +1,9 @@
+# V2 deps(V1 四件套之上的增量;V1 requirements.txt 不動)
+pydantic>=2.0
+pytest>=8.0
+pandas>=2.0
+numpy>=1.26
+# 沿用 V1(import V1 模組時需要)
+python-dotenv>=1.0.0
+requests>=2.31.0
+ccxt>=4.2.0

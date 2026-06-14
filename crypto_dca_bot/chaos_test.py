@@ -97,7 +97,7 @@ def _expect_raises(label: str, exc_type: type, fn) -> str:
 
 def chaos_bad_token() -> str:
     print("[1/15] Bad token (Telegram should return 401/404, log + return False)")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "1942404023")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID") or "999999999"
     notifier = TelegramNotifier(
         token="0000000000:ChAoS_invalid_token_for_testing_xxxxx",
         chat_id=chat_id,

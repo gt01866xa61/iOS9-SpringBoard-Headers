@@ -1,23 +1,65 @@
 # CLAUDE.md
 
-## 1. 先讀 README
+## 1. 先讀 V2 roadmap + research context
 
-開始任何工作前，請先讀 `crypto_dca_bot/README.md` 取得完整專案脈絡與 Phase 進度。本檔只補 README 沒涵蓋的協作規則，不重複內容。
+開始任何工作前，請按順序讀：
+
+1. `crypto_dca_bot/research/v2_roadmap.md` — V2 builder roadmap（**目前主動工作區**）
+2. `crypto_dca_bot/research/CLAUDE.md` — V2 研究脈絡 + multi-CLI（Claude / Codex / Gemini）分工
+3. `crypto_dca_bot/research/decisions.md` — 重大決策紀錄（倒序，最新在最上）
+4. `crypto_dca_bot/README.md` — V1 Phase 1-4 歷史紀錄（**V1 已結案**，V2 沿用模組參考用）
+
+本檔只補上述沒涵蓋的協作規則，不重複內容。
 
 ## 2. 工作流程鐵律
 
 - 每完成一個邏輯單元（一個函式、一個 bug fix、一個小功能）立刻 `git add` + `git commit` + `git push`，**不累積**。
 - 每次 commit 後在 `PROGRESS.md` 追加一行：`YYYY-MM-DD HH:MM (Asia/Taipei) | <commit hash 前 7 碼> | <一句話描述>`，新項目放表格頂端（倒序）。
+- **例外**：`PROGRESS.md` 維護類 commit（backfill、排版修正等 meta-commit）不自記，避免無限遞迴。只有純功能 commit 才記。
 - 每個 session 開始先跑 `git status` + `git log --oneline -10` 對齊狀態。
 - 每個 session 結束前確認所有改動已 push。
 - 遇到 API 400 / context error / 任何異常**立刻停手回報**，不要硬跑或 retry。
 
-## 3. 當前 live 驗證進度
+## 3. 當前 phase
 
-- [ ] Stage 3 跨日驗證：Day1 23:55 BTC 5.5 USDT + Day2 00:05 ETH 5.5 USDT
-- [ ] Stage 4 三天 production trial：每天 12:00 一筆，總計 ~16.5 USDT
-- 預計 5/3 23:25 開工
+- **V1（Phase 4 DCA bot）2026-05-08 結案，已停止運行**（Stage 4 trial 全綠驗證完成，commit `346108e`；不重啟、不當儲蓄機）
+- **V2 builder pivot 2026-05-09**：framework 從 V2-Q/R/D（問題驅動）改成 V2-A/B/S/T/E/D（builder 蓋房子模式，詳見 `crypto_dca_bot/research/v2_roadmap.md`）
+- **目前位置:V2-A 架構設計第一輪**（**不寫 code**，先把平台骨架討論清楚）
 
 ## 4. Repo 借殼提示
 
 本 repo 名為 `iOS9-SpringBoard-Headers`，根目錄的 `System/` 與 `usr/` 是 iOS dyld cache dump，**與 bot 無關，不要動**。所有 bot code 都在 `crypto_dca_bot/` 底下。
+
+## 5. 溝通的 sense（2026-05-04 被訓斥後加，違者 = 浪費使用者的錢）
+
+這節記錄反覆犯的低級錯誤，未來 session 啟動就讀，不要再犯同一招。
+
+- **使用者已 bracket 掉的範圍不要偷渡回答案裡**。例：他明確說「#1 是 runtime（只能等時間到）、#2 是 deterministic（可預先驗）」之後問「#2 能不能保證」，答案就只談 #2。硬加「但 runtime 也可能 fail」是把 #1 的東西塞回 #2 — 暗示「我覺得你沒想到」，既不尊重也浪費他的 token。**先解析使用者怎麼分類，再進去那個格子裡作答**。
+- **timing-critical pre-condition 從工作清單拆出來單獨 surface，不要混在同層 step 裡**。「23:55 host 上的舊 bot 先殺」（P0 阻塞前置）跟「寫 validate() 函式」（P3 work）差三個數量級，並列成 plan 第 0/1/2/3 步等於沒提示。Pre-condition 用「**先做這個，否則後面整包白做 + deadline 是 X**」的格式單獨寫。
+- **不要用罐頭 hedge cover ass**。「但 X 也可能 Y」這類保守話如果使用者已知 = 浪費 token + 損他對我的信任。要嘛 raise 他**真的不知**的點，要嘛閉嘴直接答。Disclaimer 機器不值錢。
+- **使用者付錢用我，期待 partner 等級的 sense**。partner 會抓 frame、會主動 surface 真風險、不會把對方當白癡重複講已知事項。每次想加 caveat 之前停 1 秒問自己：「他知道嗎？」知道就刪。
+
+## 6. 對使用者的表達規則(2026-05-12 加 — 跨 session 永久執行,違者 = project 失去 user-driven 核心)
+
+使用者**非 quant 背景**,跟不上專有名詞會讓他作為 owner / PM 的拍板變雜訊。以下規則所有 session 永遠執行:
+
+- **新術語第一次出現,inline 用白話解釋一句,而不是丟英文括號**。範例:
+  - ❌ 「stateful(有狀態)」 — 中文括號只是直譯,沒解釋
+  - ✅ 「stateful(策略自己記住內部變數,例如過去 20 根 K 線的移動均值)」
+- **拍板必附「白話 walk-through」段,純人話不堆英文符號**(2026-05-26 加 — 使用者明確要求,跨 session 永久執行):
+  - 架構討論段**可以**用術語(framework / dispatch / cap multiplier / hook 等),效率優先
+  - 但每次拍板後**單獨給一個「這個拍板實際是什麼意思」段** — 純白話、用比喻或日常情境、**不堆英文符號表格**,讓使用者用日常話確認自己懂的對不對
+  - 第一次出現的專有名詞**用比喻或日常情境**,不只是括號直譯
+  - 範例對比:
+    - ❌ 「拍板 = Option E:framework 硬鎖 + NoOpPortfolioStrategy explicit register」
+    - ✅ 「拍板白話講:你選了 framework 強迫你做風控選擇 — 啟動時必須有至少一個『全局看盤的人』,沒有就拒絕啟動。真的不要就要明明白白寫『我選擇不要』(那個叫 NoOp 的假人,擺著占位子但什麼都不做)」
+- **每輪 / 每個小段落結束前,加一句日常話 summary**:「這輪用人話講就是:我們決定 X」。讓使用者確認自己懂的跟我說的對上。
+- **一輪一 axis,不疊**。不要一次拋多題、不要塞 4 維比較表轟炸。降資訊密度,讓使用者有空間消化。代價:V2-A 預估從 3-6 週拉到 **5-9 週**,接受這個進度權衡。
+- **維護 glossary**:`crypto_dca_bot/research/v2a/glossary.md` 是使用者隨時查的詞彙表。每 round 新出現的術語**追加進去**,不要讓他爬對話歷史找。
+- **Skill check 不是 cosmetic**:如果使用者拍板時話裡有「跟著走但不太懂」的訊號(問「這 session 是不是擬定策略」這種 frame-level 混淆),**馬上停下來做 review pass**,不要繼續推進度。**Owner 不 own = 拍板無效**。
+- **不假設 quant 基礎**:對「target position」「long-only」「spread trade」「regime」「ensemble」「overfit」這類詞,每次出現先白話解釋或 link 到 glossary 對應條目。**寧可重複,不要假設**。
+
+下個 session 開頭固定要做的事(在 `git status` + `git log` 對齊之後):
+1. 讀完 4 個必讀檔(見 section 1)
+2. **掃一次 `v2a/glossary.md`** — 對齊使用者目前的詞彙基線
+3. 視 v2a 進度看要不要做 round N review pass(用白話 walk-through 已拍板的內容,讓使用者 re-validate)
