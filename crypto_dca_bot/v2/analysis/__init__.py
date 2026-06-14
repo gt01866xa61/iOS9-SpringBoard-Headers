@@ -23,6 +23,18 @@ from .walk_forward import (
     walk_forward,
     windows,
 )
+from .regime import (
+    CHOP,
+    DOWN,
+    TREND_THRESHOLD_DEFAULT,
+    UP,
+    RegimeBucket,
+    bucket_windows,
+    classify,
+    closes_in_range,
+    efficiency_ratio,
+    net_return,
+)
 
 __all__ = [
     "PERIODS_PER_YEAR_DAILY",
@@ -45,4 +57,15 @@ __all__ = [
     "sortino",
     "walk_forward",
     "windows",
+    # regime
+    "CHOP",
+    "DOWN",
+    "TREND_THRESHOLD_DEFAULT",
+    "UP",
+    "RegimeBucket",
+    "bucket_windows",
+    "classify",
+    "closes_in_range",
+    "efficiency_ratio",
+    "net_return",
 ]
