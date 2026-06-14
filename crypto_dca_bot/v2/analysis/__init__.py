@@ -13,10 +13,24 @@ from .metrics import (
     sharpe,
     sortino,
 )
+from .walk_forward import (
+    SplitResult,
+    WalkForwardResult,
+    WindowResult,
+    add_months,
+    single_split,
+    slice_series,
+    walk_forward,
+    windows,
+)
 
 __all__ = [
     "PERIODS_PER_YEAR_DAILY",
     "PerformanceMetrics",
+    "SplitResult",
+    "WalkForwardResult",
+    "WindowResult",
+    "add_months",
     "cagr",
     "calmar",
     "compute_metrics",
@@ -26,5 +40,9 @@ __all__ = [
     "metrics_from_curve",
     "rolling_sharpe",
     "sharpe",
+    "single_split",
+    "slice_series",
     "sortino",
+    "walk_forward",
+    "windows",
 ]
