@@ -20,9 +20,9 @@ def _stub(name: str) -> Callable[[Mapping[str, object]], object]:
 
 
 # source 名稱 -> fetcher。Phase 3 會把 stub 換成真的抓取函式。
+# 價格類全部走 yf_close（yfinance 支援 .TW/.TWO/.KS/US/期貨），FinMind 只負責月營收。
 SOURCE_REGISTRY: dict[str, Callable[[Mapping[str, object]], object]] = {
     "finmind_revenue": _stub("finmind_revenue"),  # TW 月營收（回傳已換算 YoY）
-    "finmind_close": _stub("finmind_close"),      # TW 個股收盤序列
-    "yf_close": _stub("yf_close"),                # 美/韓股 + 金屬收盤序列
+    "yf_close": _stub("yf_close"),                # TW/美/韓股 + 金屬收盤序列
     "fred": _stub("fred"),                        # 選配：總經序列
 }

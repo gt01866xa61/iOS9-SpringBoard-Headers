@@ -21,8 +21,29 @@ DECLINE_EPS = 0.0        # YoY 差 < EPS 視為下滑
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # Phase 1 stub；Phase 2 依 inputs["rev"] = [(month, yoy%), ...] 算連降月數與燈號。
-    return SignalResult(light="gray")
+    # inputs["rev"] = [[month "YYYY-MM", yoy%], ...] 已對齊、舊→新（FinMind adapter 產出）
+    rev = list(inputs.get("rev") or [])[-BARS_SHOWN:]
+    if len(rev) < 2:
+        return SignalResult(light="gray")
+    labels = [str(m) for m, _ in rev]
+    yoy = [float(v) for _, v in rev]
+
+    consec = 0
+    for i in range(len(yoy) - 1, 0, -1):
+        if yoy[i] - yoy[i - 1] < DECLINE_EPS:
+            consec += 1
+        else:
+            break
+
+    light = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
+    return SignalResult(
+        light=light,
+        value_label=f"{yoy[-1]:+.1f}%",
+        series=[round(v, 2) for v in yoy],
+        labels=labels,
+        extra={"highlight_index": len(yoy) - 1, "unit": "% YoY", "zero_line": True},
+        detail={"consecutive_down_months": consec},
+    )
 
 
 SIGNAL = SignalSpec(

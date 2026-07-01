@@ -12,6 +12,7 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
+from core.indicators import above_ma
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數 ===
@@ -22,9 +23,39 @@ YELLOW_BELOW = 60.0       # < 此% → YELLOW，否則 GREEN
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # Phase 1 stub；Phase 2 依 inputs["closes"] = {symbol: [close,...]} 算站上 50MA 比例、
-    # 對照 RED_BELOW / YELLOW_BELOW 決定燈號，並填 gauge 的 bands。
-    return SignalResult(light="gray")
+    # inputs["closes"] = {symbol: [close, ...]}（舊→新）
+    closes = inputs.get("closes") or {}
+    above = counted = 0
+    rows: list[dict] = []
+    for sym in BASKET:
+        amv = above_ma(closes.get(sym) or [], MA_WINDOW)
+        if amv is None:                       # 個股缺資料不拖垮整體
+            rows.append({"symbol": sym, "above": None})
+            continue
+        counted += 1
+        above += int(amv)
+        rows.append({"symbol": sym, "above": bool(amv)})
+
+    if counted == 0:
+        return SignalResult(light="gray")
+
+    pct = round(100.0 * above / counted, 1)
+    light = "red" if pct < RED_BELOW else "yellow" if pct < YELLOW_BELOW else "green"
+    return SignalResult(
+        light=light,
+        value_label=f"{pct:.0f}%",
+        rows=rows,
+        extra={
+            "percent": pct, "min": 0, "max": 100,
+            "bands": [
+                {"to": RED_BELOW, "light": "red"},
+                {"to": YELLOW_BELOW, "light": "yellow"},
+                {"to": 100, "light": "green"},
+            ],
+            "caption": f"{above}/{counted} 檔站上 {MA_WINDOW}MA", "unit": "%",
+        },
+        detail={"above": above, "counted": counted},
+    )
 
 
 SIGNAL = SignalSpec(

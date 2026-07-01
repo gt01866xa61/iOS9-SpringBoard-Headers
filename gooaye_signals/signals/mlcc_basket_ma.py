@@ -13,19 +13,48 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
+from core.indicators import basket_index, ma_slope_pct, mean
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數 ===
-BASKET = ("2327", "2492", "3026", "6173")  # 國巨、華新科、禾伸堂、信昌電
+# 國巨、華新科、禾伸堂、信昌電（yfinance 代碼；6173 在櫃買故用 .TWO）
+BASKET = ("2327.TW", "2492.TW", "3026.TW", "6173.TWO")
 MA_WINDOW = 50
 SLOPE_LOOKBACK = 5        # 50MA 斜率取近幾日
 NEAR_MA_PCT = 1.5         # 距 50MA 在 ±此% 內視為「貼近」（黃燈鬆動）
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # Phase 1 stub；Phase 2 依 inputs["closes"] = {stock_id: [close,...]} 建等權籃、
-    # 算籃 vs 50MA 與 50MA 斜率，決定燈號與 sparkline。
-    return SignalResult(light="gray")
+    # inputs["closes"] = {symbol: [close, ...]}（舊→新）
+    closes = inputs.get("closes") or {}
+    idx = basket_index([closes.get(s) or [] for s in BASKET])
+    if len(idx) < MA_WINDOW:
+        return SignalResult(light="gray")
+
+    ma_now = mean(idx[-MA_WINDOW:])
+    dist_pct = (idx[-1] / ma_now - 1) * 100 if ma_now else 0.0
+    slope = ma_slope_pct(idx, MA_WINDOW, SLOPE_LOOKBACK)
+    slope_pct = 0.0 if slope is None else slope
+
+    if dist_pct < 0 and slope_pct < 0:            # 跌破 50MA 且均線下彎
+        light = "red"
+    elif dist_pct > NEAR_MA_PCT and slope_pct > 0:  # 明確站上且向上
+        light = "green"
+    else:                                          # 貼近均線／轉平／鬆動
+        light = "yellow"
+
+    return SignalResult(
+        light=light,
+        value_label=f"{dist_pct:+.1f}%",
+        series=[round(x, 2) for x in idx[-60:]],
+        extra={
+            "slope_pct": round(slope_pct, 2),
+            "ma_window": MA_WINDOW,
+            "caption": f"距 50MA {dist_pct:+.1f}%，50MA 斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
+        },
+        detail={"dist_pct": round(dist_pct, 3), "slope_pct": round(slope_pct, 3),
+                "ma_now": round(ma_now, 3)},
+    )
 
 
 SIGNAL = SignalSpec(
@@ -37,8 +66,8 @@ SIGNAL = SignalSpec(
     bindings=(
         DataBinding(
             key="closes",
-            source="finmind_close",
-            params={"stock_ids": list(BASKET), "days": 120},
+            source="yf_close",
+            params={"symbols": list(BASKET), "days": 120},
         ),
     ),
     compute=_compute,
