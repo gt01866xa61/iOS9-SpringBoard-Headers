@@ -41,10 +41,10 @@
 | Phase | 範圍 | 狀態 |
 | ----- | ---- | ---- |
 | 1 | 契約 + registry 完整性（`core/`、`registry.py`、`config.py`、`logger.py` + 3 個種子 spec，stub compute） | ✅ Done |
-| 2 | 運算引擎 + demo 模式（`fetchers/cache.py`、`demo/fixtures/`、六訊號真 `_compute`） | ⬜ 待做 |
-| 3 | 實接資料源 + 全流程（`finmind.py`、`yfinance_src.py`、`build.py` 端到端 + 失敗隔離） | ⬜ 待做 |
-| 4 | 前端（`web/index.html` 泛型渲染 + 5 widget + 內嵌 fallback + 自動刷新） | ⬜ 待做 |
-| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ⬜ 待做 |
+| 2 | 運算引擎 + demo 模式（`fetchers/cache.py`、`demo/fixtures/`、六訊號真 `_compute`） | ✅ Done |
+| 3 | 實接資料源 + 全流程（`finmind.py`、`yfinance_src.py`、`build.py` 端到端 + 失敗隔離） | ✅ Done |
+| 4 | 前端（`web/index.html` 泛型渲染 + 5 widget + 內嵌 fallback + 自動刷新） | ✅ Done |
+| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ 程式就緒，待使用者上線 |
 | 6+ | 擴充驗證（口述新訊號逐一加，如 `rates_macro` cluster） | ⬜ 持續 |
 
 ## 首版種子訊號（cluster：半導體 / 記憶體循環見頂觀察）
@@ -73,3 +73,26 @@ python -m http.server                    # 開 http://localhost:8000/web/ 看儀
 
 慣例沿用 `crypto_dca_bot/`：`from __future__ import annotations` + type hints、設定常數
 集中檔頭、繁中註解、每 phase 一個驗證測試、時區鎖 Asia/Taipei (fixed UTC+8)。
+
+## 🚀 上線（Phase 5，一步一步）
+
+架構：**GitHub Actions 排程算訊號 → 把 `web/` 當 Pages artifact 部署**。程式都寫好了，
+剩下幾個只能在 GitHub 網頁點的設定。網址會是
+`https://gt01866xa61.github.io/iOS9-SpringBoard-Headers/`。
+
+1. **拿 FinMind token**（免費）：到 [finmindtrade.com](https://finmindtrade.com) 註冊登入 →
+   後台產生 API token 複製。（不加也能跑，只是額度低、月營收可能抓不到。）
+2. **加 Secret**：repo → Settings → Secrets and variables → Actions → New repository secret →
+   Name `FINMIND_TOKEN`、Value 貼 token → Add。（`FRED_API_KEY` 選配，暫時不用。）
+3. **開 Pages（來源選 Actions）**：repo → Settings → Pages → Build and deployment →
+   Source 選 **GitHub Actions**（不是 Deploy from a branch）。
+4. **先手動跑一次測試**：repo → Actions → 左邊選 `build-and-deploy-signals` → 右邊
+   **Run workflow**（可先選 `claude/korea-semiconductor-investment-nb8cgk` 這個分支測）→
+   等綠勾。完成後點出現的 `page_url`，或直接開上面的網址。
+5. **讓它自動定時更新**：把這個分支合併到 `master`（開 PR → 核准合併）。**排程 (cron) 只在
+   master 生效**，合併後才會平日每 30 分、每日再補跑一次自動更新。
+6. **加到手機主畫面**：iPhone Safari → 分享 → 加入主畫面；Android Chrome → ⋮ → 加到主畫面。
+   之後點圖示打開就是雲端最後一次跑出來的最新燈號，不用開電腦。
+
+常見卡點：Pages 剛開會先 404，等第一次 workflow 部署完才有；某個 symbol（尤其韓股 `.KS`、
+期貨 `PA=F`）偶爾抓空 → 那張卡會顯示「資料較舊」沿用上一版，屬正常，下輪通常補回。
