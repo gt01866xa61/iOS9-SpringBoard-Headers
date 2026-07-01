@@ -22,6 +22,7 @@ from core.spec import WIDGET_NAMES  # noqa: E402
 
 EMBED_RE = re.compile(
     r'<script id="embedded" type="application/json">(.*?)</script>', re.DOTALL)
+INDEX = config.WEB_DIR / "index.html"
 
 
 def _prep() -> None:
@@ -62,8 +63,12 @@ def _check_index() -> None:
 
 def main() -> int:
     print("Phase 4 驗證中…")
-    _prep()
-    _check_index()
+    original = INDEX.read_text(encoding="utf-8")  # 測試會 re-embed，跑完還原，不弄髒已 commit 的檔
+    try:
+        _prep()
+        _check_index()
+    finally:
+        INDEX.write_text(original, encoding="utf-8")
     print("Phase 4 驗證通過")
     return 0
 
