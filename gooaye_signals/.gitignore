@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.log
+# 抓取快取（含 last-good），不進 git
+data/cache/

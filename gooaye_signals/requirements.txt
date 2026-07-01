@@ -1,0 +1,6 @@
+# 資料抓取（Phase 3 起實際使用；Phase 1/2 DEMO 模式不需要）
+requests>=2.31
+yfinance>=0.2.40
+FinMind>=1.7
+# 選配：FRED 總經 overlay
+# fredapi>=0.5
