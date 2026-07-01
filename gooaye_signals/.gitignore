@@ -3,3 +3,6 @@ __pycache__/
 *.log
 # 抓取快取（含 last-good），不進 git
 data/cache/
+# build 產物（由 CI 每輪重建、artifact 部署），不進 git
+data/signals.json
+web/data/
