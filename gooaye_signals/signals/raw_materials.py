@@ -66,6 +66,9 @@ SIGNAL = SignalSpec(
     episode_ref="?",
     episode_date="2025-05-01",
     cadence="trading_day",
+    track="鈀、銀期貨價——被動元件/半導體的成本推力：金屬漲＝成本推升撐漲價邏輯，金屬跌＝漲價動能減弱。",
+    shape="兩列同綠＝成本推升；轉分歧或同紅＝成本壓力緩解、漲價故事鬆動。",
+    order=5,
     in_master=False,
     unit="",
 )

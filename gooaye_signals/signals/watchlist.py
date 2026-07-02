@@ -69,6 +69,9 @@ SIGNAL = SignalSpec(
     episode_ref="?",
     episode_date="2025-05-01",
     cadence="trading_day",
+    track="跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
+    shape="一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
+    order=6,
     in_master=False,
     unit="",
 )

@@ -51,6 +51,10 @@ def _check_specs() -> None:
         for lt in REQUIRED_LIGHTS:
             assert lt in s.interpretations, f"{s.id} interpretations 缺 '{lt}'"
             assert s.interpretations[lt], f"{s.id} interpretations['{lt}'] 為空"
+        # 三個必答問題：①追什麼 ②怎麼看，＋擴充順序
+        assert s.track, f"{s.id} 缺 track（追什麼）"
+        assert s.shape, f"{s.id} 缺 shape（怎麼看）"
+        assert isinstance(s.order, int), f"{s.id} order 需為 int"
         # episode_date 需可解析（"?" 只允許在 episode_ref）
         datetime.strptime(s.episode_date, "%Y-%m-%d")
 

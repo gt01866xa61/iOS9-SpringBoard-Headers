@@ -72,6 +72,9 @@ SIGNAL = SignalSpec(
     episode_ref="EP505",
     episode_date="2025-04-02",
     cadence="trading_day",
+    track="記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
+    shape="表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
+    order=4,
     in_master=False,
     unit="",
 )

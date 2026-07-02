@@ -57,10 +57,15 @@ def _check_full_build() -> None:
     cl = data["clusters"][0]
     assert cl["master"]["light"] == "yellow", cl["master"]  # 國巨紅 + MLCC黃 + AI綠 → 黃
     assert data["master_light"] == "yellow", data["master_light"]
-    # 每張卡都帶前端必需欄位
+    # 每張卡都帶前端必需欄位（含三個必答問題：track / shape / interpretations 全燈對照）
     for c in cl["signals"] + cl["supporting"]:
-        for k in ("widget", "light", "interpretation", "widget_data", "ok", "stale"):
+        for k in ("widget", "light", "interpretation", "widget_data", "ok", "stale",
+                  "track", "shape", "order", "interpretations"):
             assert k in c, f"{c['id']} 缺 {k}"
+        assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
+    # 排序 = 擴充順序（order 欄位），不是檔名字母序
+    assert [c["id"] for c in cl["signals"]] == ["yageo_rev_yoy", "mlcc_basket_ma", "ai_breadth"]
+    assert [c["id"] for c in cl["supporting"]] == ["memory_rs", "raw_materials", "watchlist"]
     assert _find_card(data, "yageo_rev_yoy")["light"] == "red"
     assert not config.SIGNALS_JSON.with_suffix(".json.tmp").exists(), "殘留 .tmp（原子寫失敗）"
     print("  ✓ 全流程 demo build → schema-valid、主燈黃、原子寫")

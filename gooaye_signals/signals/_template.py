@@ -49,6 +49,9 @@ SIGNAL = SignalSpec(
     episode_ref="?",                      # 記不清可填 "?"
     episode_date="2025-01-01",
     cadence="trading_day",               # daily / trading_day / monthly / manual
+    track="（白話：在盯什麼、為什麼重要——會顯示在卡片名稱下方）",
+    shape="（白話：動起來長什麼樣、往哪個方向變化算轉弱——會顯示在圖表下方）",
+    order=99,                            # 同 cluster 內顯示順序 = 擴充順序（接在現有最大值後）
     in_master=True,                      # False = 只當佐證面板，不計入主燈
     unit="",
 )

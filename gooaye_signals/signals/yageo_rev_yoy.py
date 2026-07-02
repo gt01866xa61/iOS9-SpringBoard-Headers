@@ -69,6 +69,9 @@ SIGNAL = SignalSpec(
     episode_ref="EP512",
     episode_date="2025-06-18",
     cadence="monthly",
+    track="龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
+    shape="長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
+    order=1,
     in_master=True,
     unit="% YoY",
 )

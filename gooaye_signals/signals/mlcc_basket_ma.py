@@ -80,6 +80,9 @@ SIGNAL = SignalSpec(
     episode_ref="EP512",
     episode_date="2025-06-18",
     cadence="trading_day",
+    track="被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
+    shape="線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
+    order=2,
     in_master=True,
     unit="%",
 )

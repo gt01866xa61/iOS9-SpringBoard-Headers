@@ -44,6 +44,15 @@
   .viz{margin:8px 0 4px}
   .viz svg{display:block}
   .interp{color:#c9d1d9;font-size:13px;margin-top:6px}
+  .kv{font-size:12.5px;color:#b9c4d0;margin-top:7px;line-height:1.5}
+  .klabel{display:inline-block;font-size:10px;color:var(--muted);border:1px solid var(--line);
+          border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px;letter-spacing:1px}
+  .legend{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px;
+          display:flex;flex-direction:column;gap:4px}
+  .lg{display:flex;gap:7px;align-items:flex-start;font-size:12px;color:var(--muted);opacity:.5}
+  .lg .rdot{margin-top:4px;flex:0 0 auto}
+  .lg.cur{opacity:1;color:var(--fg)}
+  .nowtag{font-size:10px;background:var(--line);border-radius:4px;padding:0 4px;margin-right:5px;white-space:nowrap}
   .meta{color:var(--muted);font-size:11px;margin-top:8px}
   details{margin:6px 0 2px}
   summary{color:var(--muted);font-size:13px;cursor:pointer;padding:6px 2px}
@@ -74,8 +83,8 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-07-02T00:14:35+08:00",
-  "generated_at_label": "2026/07/02 00:14 (台北)",
+  "generated_at": "2026-07-02T23:12:34+08:00",
+  "generated_at_label": "2026/07/02 23:12 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
@@ -98,77 +107,72 @@
       },
       "signals": [
         {
-          "id": "ai_breadth",
-          "name": "AI 類股廣度轉弱",
-          "widget": "gauge",
+          "id": "yageo_rev_yoy",
+          "name": "國巨(2327) 月營收 YoY 轉弱",
+          "widget": "bar_chart",
           "tags": [
-            "AI",
             "半導體",
-            "廣度",
-            "50MA"
+            "被動元件",
+            "MLCC",
+            "月營收",
+            "2327"
           ],
           "in_master": true,
-          "unit": "%",
-          "cadence": "trading_day",
-          "episode_ref": "EP515",
-          "episode_date": "2025-07-02",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "unit": "% YoY",
+          "cadence": "monthly",
+          "episode_ref": "EP512",
+          "episode_date": "2025-06-18",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
+          "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
+          "order": 1,
+          "interpretations": {
+            "green": "國巨營收年增仍在擴張，被動元件需求未見反轉。",
+            "yellow": "YoY 首度轉弱，觀察是否為趨勢起點，可能只是單月雜訊。",
+            "red": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
+            "gray": "月營收資料尚未更新或抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
-          "light": "green",
-          "value_label": "100%",
-          "interpretation": "多數 AI 權值仍站上 50MA，主升段結構完整。",
+          "light": "red",
+          "value_label": "-3.1%",
+          "interpretation": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
           "widget_data": {
-            "rows": [
-              {
-                "symbol": "NVDA",
-                "above": true
-              },
-              {
-                "symbol": "AVGO",
-                "above": true
-              },
-              {
-                "symbol": "TSM",
-                "above": true
-              },
-              {
-                "symbol": "2330.TW",
-                "above": true
-              },
-              {
-                "symbol": "6669.TW",
-                "above": true
-              },
-              {
-                "symbol": "2327.TW",
-                "above": true
-              }
+            "series": [
+              12.4,
+              9.8,
+              5.1,
+              6.0,
+              3.2,
+              1.1,
+              -0.4,
+              -1.8,
+              -2.5,
+              -2.9,
+              -3.0,
+              -3.1
             ],
-            "percent": 100.0,
-            "min": 0,
-            "max": 100,
-            "bands": [
-              {
-                "to": 40.0,
-                "light": "red"
-              },
-              {
-                "to": 60.0,
-                "light": "yellow"
-              },
-              {
-                "to": 100,
-                "light": "green"
-              }
+            "labels": [
+              "2025-07",
+              "2025-08",
+              "2025-09",
+              "2025-10",
+              "2025-11",
+              "2025-12",
+              "2026-01",
+              "2026-02",
+              "2026-03",
+              "2026-04",
+              "2026-05",
+              "2026-06"
             ],
-            "caption": "6/6 檔站上 50MA",
-            "unit": "%"
+            "highlight_index": 11,
+            "unit": "% YoY",
+            "zero_line": true
           },
           "detail": {
-            "above": 6,
-            "counted": 6
+            "consecutive_down_months": 8
           }
         },
         {
@@ -186,7 +190,16 @@
           "cadence": "trading_day",
           "episode_ref": "EP512",
           "episode_date": "2025-06-18",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
+          "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
+          "order": 2,
+          "interpretations": {
+            "green": "被動元件籃站穩 50MA 且向上，漲價題材仍有資金追捧。",
+            "yellow": "籃子貼近 50MA 或斜率轉平，漲價題材推力鈍化，觀察是否失守。",
+            "red": "籃子跌破 50MA 且均線下彎，漲價新聞不再帶動股價，資金退潮。",
+            "gray": "被動元件股價資料抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
@@ -267,63 +280,86 @@
           }
         },
         {
-          "id": "yageo_rev_yoy",
-          "name": "國巨(2327) 月營收 YoY 轉弱",
-          "widget": "bar_chart",
+          "id": "ai_breadth",
+          "name": "AI 類股廣度轉弱",
+          "widget": "gauge",
           "tags": [
+            "AI",
             "半導體",
-            "被動元件",
-            "MLCC",
-            "月營收",
-            "2327"
+            "廣度",
+            "50MA"
           ],
           "in_master": true,
-          "unit": "% YoY",
-          "cadence": "monthly",
-          "episode_ref": "EP512",
-          "episode_date": "2025-06-18",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "unit": "%",
+          "cadence": "trading_day",
+          "episode_ref": "EP515",
+          "episode_date": "2025-07-02",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
+          "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
+          "order": 3,
+          "interpretations": {
+            "green": "多數 AI 權值仍站上 50MA，主升段結構完整。",
+            "yellow": "AI 籃廣度轉中性，領軍股撐盤、跟風股走弱，動能鈍化。",
+            "red": "過半 AI 股跌破 50MA，廣度惡化，主升段動能流失。",
+            "gray": "股價資料抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
-          "light": "red",
-          "value_label": "-3.1%",
-          "interpretation": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
+          "light": "green",
+          "value_label": "100%",
+          "interpretation": "多數 AI 權值仍站上 50MA，主升段結構完整。",
           "widget_data": {
-            "series": [
-              12.4,
-              9.8,
-              5.1,
-              6.0,
-              3.2,
-              1.1,
-              -0.4,
-              -1.8,
-              -2.5,
-              -2.9,
-              -3.0,
-              -3.1
+            "rows": [
+              {
+                "symbol": "NVDA",
+                "above": true
+              },
+              {
+                "symbol": "AVGO",
+                "above": true
+              },
+              {
+                "symbol": "TSM",
+                "above": true
+              },
+              {
+                "symbol": "2330.TW",
+                "above": true
+              },
+              {
+                "symbol": "6669.TW",
+                "above": true
+              },
+              {
+                "symbol": "2327.TW",
+                "above": true
+              }
             ],
-            "labels": [
-              "2025-07",
-              "2025-08",
-              "2025-09",
-              "2025-10",
-              "2025-11",
-              "2025-12",
-              "2026-01",
-              "2026-02",
-              "2026-03",
-              "2026-04",
-              "2026-05",
-              "2026-06"
+            "percent": 100.0,
+            "min": 0,
+            "max": 100,
+            "bands": [
+              {
+                "to": 40.0,
+                "light": "red"
+              },
+              {
+                "to": 60.0,
+                "light": "yellow"
+              },
+              {
+                "to": 100,
+                "light": "green"
+              }
             ],
-            "highlight_index": 11,
-            "unit": "% YoY",
-            "zero_line": true
+            "caption": "6/6 檔站上 50MA",
+            "unit": "%"
           },
           "detail": {
-            "consecutive_down_months": 8
+            "above": 6,
+            "counted": 6
           }
         }
       ],
@@ -343,7 +379,16 @@
           "cadence": "trading_day",
           "episode_ref": "EP505",
           "episode_date": "2025-04-02",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
+          "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
+          "order": 4,
+          "interpretations": {
+            "green": "記憶體族群普遍站上均線，循環仍強，擴產利空尚未反映到股價。",
+            "yellow": "記憶體族群強弱分歧，留意是否開始領跌。",
+            "red": "多數記憶體股跌破均線，循環轉弱，與韓廠大擴產的見頂邏輯呼應。",
+            "gray": "記憶體股報價抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
@@ -654,7 +699,16 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "鈀、銀期貨價——被動元件/半導體的成本推力：金屬漲＝成本推升撐漲價邏輯，金屬跌＝漲價動能減弱。",
+          "shape": "兩列同綠＝成本推升；轉分歧或同紅＝成本壓力緩解、漲價故事鬆動。",
+          "order": 5,
+          "interpretations": {
+            "green": "鈀、銀同步走高，成本推升，支撐漲價邏輯。",
+            "yellow": "金屬價格分歧，成本訊號不明確。",
+            "red": "鈀、銀同步走弱，成本壓力緩解，漲價動能減弱。",
+            "gray": "金屬報價抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
@@ -758,7 +812,16 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-02T00:14:35+08:00",
+          "updated_at": "2026-07-02T23:12:34+08:00",
+          "track": "跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
+          "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
+          "order": 6,
+          "interpretations": {
+            "green": "觀測名單多數站上均線，個股體質偏強。",
+            "yellow": "觀測名單強弱互見，分歧加大。",
+            "red": "觀測名單多數跌破均線，個股體質轉弱。",
+            "gray": "觀測名單報價抓取失敗。"
+          },
           "ok": true,
           "stale": false,
           "error": null,
@@ -1117,14 +1180,31 @@ function tableHTML(cols, rows){
 }
 
 /* ===== 卡片 / cluster / 整頁 ===== */
+function legendHTML(sig){
+  // ③各狀態含義：三燈全列出、當前燈高亮＋「現在」標記。舊資料沒有 interpretations 時退回單句。
+  const it=sig.interpretations;
+  if(!it) return sig.interpretation?`<div class="interp">${esc(sig.interpretation)}</div>`:"";
+  const keys=["green","yellow","red"]; if(sig.light==="gray") keys.push("gray");
+  const rows=keys.map(k=>{
+    const cur=(k===sig.light);
+    return `<div class="lg ${cur?"cur":""}"><span class="rdot" style="background:${COLORS[k]}"></span>
+      <span>${cur?'<span class="nowtag">現在</span>':""}${esc(it[k]||"")}</span></div>`;
+  }).join("");
+  return `<div class="legend">${rows}</div>`;
+}
+
 function renderSignal(sig){
   const body=(WIDGETS[sig.widget]||renderUnknown)(sig.widget_data||{}, sig);
   const ep=[sig.episode_ref, sig.episode_date, sig.cadence].filter(x=>x&&x!=="?").join(" · ");
   const badge=sig.stale?'<span class="badge">資料較舊</span>':"";
+  const track=sig.track?`<div class="kv"><span class="klabel">追什麼</span>${esc(sig.track)}</div>`:"";
+  const shape=sig.shape?`<div class="kv"><span class="klabel">怎麼看</span>${esc(sig.shape)}</div>`:"";
   return `<div class="card ${sig.light}">
     <div class="hrow"><span class="hname">${esc(sig.name)}${badge}</span><span class="hval">${esc(sig.value_label)}</span></div>
+    ${track}
     ${body}
-    <div class="interp">${esc(sig.interpretation)}</div>
+    ${shape}
+    ${legendHTML(sig)}
     <div class="meta">${esc(ep)}${sig.updated_at?` · 更新 ${esc(sig.updated_at.slice(5,16).replace("T"," "))}`:""}</div>
   </div>`;
 }

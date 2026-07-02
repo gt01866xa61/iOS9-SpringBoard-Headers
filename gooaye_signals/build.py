@@ -45,6 +45,9 @@ def _run_one(spec: SignalSpec, cache: DayCache) -> dict:
         "tags": list(spec.tags), "in_master": spec.in_master, "unit": spec.unit,
         "cadence": spec.cadence, "episode_ref": spec.episode_ref,
         "episode_date": spec.episode_date, "updated_at": now,
+        # 三個必答問題（①追什麼 ②怎麼看 ③各燈含義）＋擴充順序——spec 層 metadata，永遠新鮮
+        "track": spec.track, "shape": spec.shape, "order": spec.order,
+        "interpretations": dict(spec.interpretations),
     }
 
     inputs: dict = {}
@@ -126,6 +129,7 @@ def build_payload() -> tuple[dict, list[dict]]:
     top = "gray"
     for cspec in sorted(CLUSTERS, key=lambda c: c.order):
         group = by_cluster.get(cspec.id, [])
+        group.sort(key=lambda c: c.get("order", 999))  # 擴充順序（先加的在前），非檔名字母序
         ml, reason, votes = master_light(group)
         if LIGHT_SEVERITY[ml] > LIGHT_SEVERITY[top]:
             top = ml

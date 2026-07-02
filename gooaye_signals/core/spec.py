@@ -65,5 +65,8 @@ class SignalSpec:
     episode_ref: str                           # 提及來源，如 "EP512"，記不清可填 "?"
     episode_date: str                          # 對應日期 "YYYY-MM-DD"（台北）
     cadence: Cadence                           # 更新節奏
+    track: str                                 # 回答①：白話「在盯什麼、為什麼重要」（卡片名稱下方顯示）
+    shape: str                                 # 回答②：白話「動起來長什麼樣」（卡片圖表下方顯示）
+    order: int                                 # 同 cluster 內顯示順序 = 擴充順序（先加的在前）
     in_master: bool = True                     # 是否計入所屬 cluster 的主燈投票
     unit: str = ""                             # 主數字單位
