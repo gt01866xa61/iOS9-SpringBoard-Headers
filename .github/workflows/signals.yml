@@ -54,6 +54,8 @@ jobs:
           python web/build_embed.py
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # 若 repo 尚未開 Pages，嘗試自動開通（省去手動到 Settings 按開關）
 
       - uses: actions/upload-pages-artifact@v3
         with:
