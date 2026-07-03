@@ -22,6 +22,7 @@ BASKET = ("2327.TW", "2492.TW", "3026.TW", "6173.TWO")
 MA_WINDOW = 50
 SLOPE_LOOKBACK = 5        # 50MA 斜率取近幾日
 NEAR_MA_PCT = 1.5         # 距 50MA 在 ±此% 內視為「貼近」（黃燈鬆動）
+SHOWN_BARS = 60           # sparkline 顯示根數（同時畫籃子與 50MA 虛線）
 
 
 def _compute(inputs: dict) -> SignalResult:
@@ -43,14 +44,21 @@ def _compute(inputs: dict) -> SignalResult:
     else:                                          # 貼近均線／轉平／鬆動
         light = "yellow"
 
+    # 圖上同時畫「籃子(綠/紅實線)」與「50MA(灰虛線)」，站上/跌破直接可見
+    shown = min(SHOWN_BARS, len(idx) - MA_WINDOW + 1)
+    series = [round(x, 2) for x in idx[-shown:]]
+    ma_series = [round(mean(idx[i - MA_WINDOW + 1:i + 1]), 2)
+                 for i in range(len(idx) - shown, len(idx))]
+
     return SignalResult(
         light=light,
         value_label=f"{dist_pct:+.1f}%",
-        series=[round(x, 2) for x in idx[-60:]],
+        series=series,
         extra={
+            "ma_series": ma_series,
             "slope_pct": round(slope_pct, 2),
             "ma_window": MA_WINDOW,
-            "caption": f"距 50MA {dist_pct:+.1f}%，50MA 斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
+            "caption": f"實線=籃子、虛線=50MA｜距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
         },
         detail={"dist_pct": round(dist_pct, 3), "slope_pct": round(slope_pct, 3),
                 "ma_now": round(ma_now, 3)},
@@ -67,7 +75,7 @@ SIGNAL = SignalSpec(
         DataBinding(
             key="closes",
             source="yf_close",
-            params={"symbols": list(BASKET), "days": 120},
+            params={"symbols": list(BASKET), "days": 170},
         ),
     ),
     compute=_compute,

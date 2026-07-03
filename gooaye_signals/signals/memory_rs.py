@@ -47,7 +47,7 @@ def _compute(inputs: dict) -> SignalResult:
         value_label=f"{above}/{counted} 站上50MA",
         rows=rows,
         extra={"columns": ["標的", "價格", "漲跌%", "站上50MA", "趨勢"],
-               "caption": "佐證：南韓大擴產見頂邏輯 vs 記憶體股實際強弱"},
+               "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)"},
         detail={"above": above, "counted": counted},
     )
 
