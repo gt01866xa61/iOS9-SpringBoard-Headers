@@ -46,7 +46,7 @@
 | 2 | 運算引擎 + demo 模式（`fetchers/cache.py`、`demo/fixtures/`、六訊號真 `_compute`） | ✅ Done |
 | 3 | 實接資料源 + 全流程（`finmind.py`、`yfinance_src.py`、`build.py` 端到端 + 失敗隔離） | ✅ Done |
 | 4 | 前端（`web/index.html` 泛型渲染 + 5 widget + 內嵌 fallback + 自動刷新） | ✅ Done |
-| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ 程式就緒，待使用者上線 |
+| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ Pages 已開通，開發分支 push 即自動部署 |
 | 6+ | 擴充驗證（口述新訊號逐一加，如 `rates_macro` cluster） | ⬜ 持續 |
 
 ## 首版種子訊號（cluster：半導體 / 記憶體循環見頂觀察）
