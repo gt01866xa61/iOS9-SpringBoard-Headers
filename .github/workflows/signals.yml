@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/configure-pages@v5
         with:
-          enablement: true   # 若 repo 尚未開 Pages，嘗試自動開通（省去手動到 Settings 按開關）
+          enablement: true   # Pages 已由擁有者開通（Source=GitHub Actions）；保留此參數作保險
 
       - uses: actions/upload-pages-artifact@v3
         with:
