@@ -11,7 +11,8 @@ on:
     - cron: "30 22 * * *"          # UTC 22:30 = 台北 06:30 每日補跑（美股收盤後）
   workflow_dispatch: {}
   push:
-    branches: [master]
+    # 開發階段：dev 分支的推送也觸發部署（每次改動即時上線看效果）；合併 master 後可移除 dev 分支
+    branches: [master, "claude/korea-semiconductor-investment-nb8cgk"]
     paths:
       - "gooaye_signals/**"
       - ".github/workflows/signals.yml"
