@@ -93,5 +93,14 @@ jobs:
         with:
           path: gooaye_signals/web
 
+      # GitHub Pages 發佈偶爾回傳暫時性錯誤（"Deployment failed, try again later"）。
+      # 第一次失敗不讓 job 直接掛，隔 20 秒自動重試一次；artifact 已上傳可重用。
       - id: deploy
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Retry Pages deploy if first attempt failed
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 20
+      - name: Deploy to GitHub Pages (retry)
+        if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
