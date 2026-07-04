@@ -38,7 +38,7 @@ def _compute(inputs: dict) -> SignalResult:
     light = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
     return SignalResult(
         light=light,
-        value_label=f"{yoy[-1]:+.1f}%",
+        value_label=f"YoY {yoy[-1]:+.1f}%",
         series=[round(v, 2) for v in yoy],
         labels=labels,
         extra={"highlight_index": len(yoy) - 1, "unit": "% YoY", "zero_line": True},
@@ -48,7 +48,7 @@ def _compute(inputs: dict) -> SignalResult:
 
 SIGNAL = SignalSpec(
     id="yageo_rev_yoy",
-    name="國巨(2327) 月營收 YoY 轉弱",
+    name="國巨(2327) 月營收 YoY",   # 名稱保持中性——「轉弱與否」由燈色判定
     cluster="semi_memory_top",
     tags=("半導體", "被動元件", "MLCC", "月營收", "2327"),
     widget="bar_chart",

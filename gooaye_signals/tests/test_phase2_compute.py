@@ -34,7 +34,7 @@ def _check_yageo() -> None:
     assert yageo._compute(_rev([1, 2, 4, 3, 2])).light == "red"         # 2 連降
     assert yageo._compute(_rev([1.0])).light == "gray"                  # 資料不足
     r = yageo._compute(_rev([5, 4, 3]))
-    assert r.value_label == "+3.0%" and r.extra["highlight_index"] == 2
+    assert r.value_label == "YoY +3.0%" and r.extra["highlight_index"] == 2
     print("  ✓ yageo_rev_yoy 邊界燈號")
 
 
@@ -57,7 +57,7 @@ def _check_ai() -> None:
     assert ai._compute(_ai_closes(5, 1, 0)).light == "green"    # 83%
     assert ai._compute(_ai_closes(0, 0, 6)).light == "gray"     # 全略過
     r = ai._compute(_ai_closes(3, 2, 1))
-    assert r.extra["percent"] == 60.0 and r.value_label == "60%"
+    assert r.extra["percent"] == 60.0 and r.value_label == "廣度 60%"
     print("  ✓ ai_breadth 邊界燈號")
 
 

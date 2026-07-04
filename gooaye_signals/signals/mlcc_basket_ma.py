@@ -22,6 +22,7 @@ BASKET = ("2327.TW", "2492.TW", "3026.TW", "6173.TWO")
 MA_WINDOW = 50
 SLOPE_LOOKBACK = 5        # 50MA 斜率取近幾日
 NEAR_MA_PCT = 1.5         # 距 50MA 在 ±此% 內視為「貼近」（黃燈鬆動）
+OVERHEAT_PCT = 25.0       # 乖離超過此% 加註過熱提醒（燈仍照規則判，僅提示）
 SHOWN_BARS = 60           # sparkline 顯示根數（同時畫籃子與 50MA 虛線）
 
 
@@ -50,15 +51,16 @@ def _compute(inputs: dict) -> SignalResult:
     ma_series = [round(mean(idx[i - MA_WINDOW + 1:i + 1]), 2)
                  for i in range(len(idx) - shown, len(idx))]
 
+    overheat = "・乖離偏大留意回檔" if dist_pct > OVERHEAT_PCT else ""
     return SignalResult(
         light=light,
-        value_label=f"{dist_pct:+.1f}%",
+        value_label=f"距MA {dist_pct:+.1f}%",
         series=series,
         extra={
             "ma_series": ma_series,
             "slope_pct": round(slope_pct, 2),
             "ma_window": MA_WINDOW,
-            "caption": f"實線=籃子、虛線=50MA｜距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
+            "caption": f"實線=籃子、虛線=50MA｜距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日{overheat}",
         },
         detail={"dist_pct": round(dist_pct, 3), "slope_pct": round(slope_pct, 3),
                 "ma_now": round(ma_now, 3)},

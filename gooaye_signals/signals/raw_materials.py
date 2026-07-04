@@ -39,10 +39,10 @@ def _compute(inputs: dict) -> SignalResult:
     light = "green" if above == counted else "red" if above == 0 else "yellow"
     return SignalResult(
         light=light,
-        value_label=f"{above}/{counted} 走揚",
+        value_label=f"{above}/{counted} 站上50MA",
         rows=rows,
         extra={"columns": ["金屬", "價格", "漲跌%", "站上50MA", "趨勢"],
-               "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)"},
+               "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)・漲跌%為單日波動，燈號看均線位置"},
         detail={"above": above, "counted": counted},
     )
 
@@ -59,16 +59,16 @@ SIGNAL = SignalSpec(
     ),
     compute=_compute,
     interpretations={
-        "green": "鈀、銀同步走高，成本推升，支撐漲價邏輯。",
-        "yellow": "金屬價格分歧，成本訊號不明確。",
-        "red": "鈀、銀同步走弱，成本壓力緩解，漲價動能減弱。",
+        "green": "鈀、銀皆站上 50 日均線，成本趨勢向上，支撐漲價邏輯。",
+        "yellow": "一站上一跌破，成本趨勢分歧、訊號不明確。",
+        "red": "鈀、銀皆跌破 50 日均線，成本推力轉弱，漲價故事鬆動。",
         "gray": "金屬報價抓取失敗。",
     },
     episode_ref="?",
     episode_date="2025-05-01",
     cadence="trading_day",
-    track="鈀、銀期貨價——被動元件/半導體的成本推力：金屬漲＝成本推升撐漲價邏輯，金屬跌＝漲價動能減弱。",
-    shape="兩列同綠＝成本推升；轉分歧或同紅＝成本壓力緩解、漲價故事鬆動。",
+    track="鈀、銀期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
+    shape="看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
     order=5,
     in_master=False,
     unit="",

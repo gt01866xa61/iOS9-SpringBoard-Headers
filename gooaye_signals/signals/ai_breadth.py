@@ -43,7 +43,7 @@ def _compute(inputs: dict) -> SignalResult:
     light = "red" if pct < RED_BELOW else "yellow" if pct < YELLOW_BELOW else "green"
     return SignalResult(
         light=light,
-        value_label=f"{pct:.0f}%",
+        value_label=f"廣度 {pct:.0f}%",
         rows=rows,
         extra={
             "percent": pct, "min": 0, "max": 100,
@@ -60,7 +60,7 @@ def _compute(inputs: dict) -> SignalResult:
 
 SIGNAL = SignalSpec(
     id="ai_breadth",
-    name="AI 類股廣度轉弱",
+    name="AI 類股廣度",   # 名稱保持中性——「轉弱與否」由燈色判定
     cluster="semi_memory_top",
     tags=("AI", "半導體", "廣度", "50MA"),
     widget="gauge",
