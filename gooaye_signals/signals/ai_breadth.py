@@ -78,8 +78,6 @@ SIGNAL = SignalSpec(
         "red": "過半 AI 股跌破 50MA，廣度惡化，主升段動能流失。",
         "gray": "股價資料抓取失敗。",
     },
-    episode_ref="EP515",
-    episode_date="2025-07-02",
     cadence="trading_day",
     track="AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
     shape="儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",

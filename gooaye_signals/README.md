@@ -13,6 +13,17 @@
 > 借殼提醒：本 repo 根目錄的 `System/`、`usr/` 是 iOS dyld cache dump，與本專案無關；
 > `crypto_dca_bot/` 是另一個獨立專案。本專案全部在 `gooaye_signals/` 底下。
 
+## ⭐ 設計原則（永遠遵守，凌駕一切）
+
+1. **第一性原理**：先把所有東西砍到剩本質，再一點一點把「真正需要」的補回來。
+   **不做沒意義的事**（例：不為了「有出處欄位」而補假集數——那對數據真實性零貢獻）。
+2. **所有呈現的數據必須同時滿足【真實 × 可規格 × 可溯源】**——這是本專案存在的理由：
+   - **真實**：來自真實資料源（FinMind／yfinance…），絕不用假造／示範數字充當正式內容。
+   - **可規格**：每個數字有精確、可重現的定義（公式寫在該 signal 的 `compute` 與「怎麼看」）。
+   - **可溯源**：能追回原始來源（哪個代碼、哪個資料源、哪個時間點）。
+   
+   **任何無法同時滿足這三點的內容，寧可不顯示，也不掛上去。** 新增訊號前先問自己這三題。
+
 ## 🔑 新增一個訊號（最重要的日常操作）
 
 平台的第一設計原則：**加一個訊號 = 複製一個檔、改它、完成**。零中央清單、零前端、
@@ -20,7 +31,7 @@
 
 1. `cp signals/_template.py signals/<你的id>.py`（或複製最接近的既有訊號檔）。
 2. 編輯那一個檔：`id`(=檔名)、門檻常數、`bindings`(資料源)、純函式 `_compute`、
-   四個 `interpretations`、`episode_ref`/`episode_date`/`cluster`/`widget`/`tags`/`in_master`。
+   四個 `interpretations`、`track`/`shape`/`order`/`cluster`/`widget`/`tags`/`in_master`。
 3. `GOOAYE_DEMO=1 python build.py` → 開 `web/index.html` 確認卡片出現 → 加一條
    `tests/test_phase2_compute.py` 斷言 → commit + push。cron 下輪自動接手。
 

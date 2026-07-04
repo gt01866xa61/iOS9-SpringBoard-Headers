@@ -62,8 +62,6 @@ class SignalSpec:
     bindings: tuple[DataBinding, ...]          # 需要哪些資料
     compute: Callable[[dict], SignalResult]    # 純函式 inputs -> SignalResult
     interpretations: Mapping[Light, str]       # 四個燈號各一句白話（回答：狀態含義）
-    episode_ref: str                           # 提及來源，如 "EP512"，記不清可填 "?"
-    episode_date: str                          # 對應日期 "YYYY-MM-DD"（台北）
     cadence: Cadence                           # 更新節奏
     track: str                                 # 回答①：白話「在盯什麼、為什麼重要」（卡片名稱下方顯示）
     shape: str                                 # 回答②：白話「動起來長什麼樣」（卡片圖表下方顯示）

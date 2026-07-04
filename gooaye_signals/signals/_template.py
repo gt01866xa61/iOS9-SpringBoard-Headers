@@ -3,7 +3,7 @@
 新增訊號 SOP（90% 情境）：
   1. cp signals/_template.py signals/<你的id>.py   （或複製最接近的既有訊號）
   2. 改下面每一處：把 id 設成「新檔名」、填門檻常數、bindings、_compute、
-     四個 interpretations、episode_ref/date、cluster、widget、tags、in_master。
+     四個 interpretations、cluster、widget、tags、in_master。
   3. GOOAYE_DEMO=1 python build.py → 開 web/index.html 確認卡片出現 → 加一條測試 → commit。
 
 三個必答問題（填 docstring 與 metadata）：
@@ -46,8 +46,6 @@ SIGNAL = SignalSpec(
         "red": "（紅燈代表什麼）",
         "gray": "（資料缺漏時顯示什麼）",
     },
-    episode_ref="?",                      # 記不清可填 "?"
-    episode_date="2025-01-01",
     cadence="trading_day",               # daily / trading_day / monthly / manual
     track="（白話：在盯什麼、為什麼重要——會顯示在卡片名稱下方）",
     shape="（白話：動起來長什麼樣、往哪個方向變化算轉弱——會顯示在圖表下方）",

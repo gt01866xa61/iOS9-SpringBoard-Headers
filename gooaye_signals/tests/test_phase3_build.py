@@ -23,6 +23,9 @@ import config  # noqa: E402
 from core.spec import SignalResult  # noqa: E402
 from registry import discover as _real_discover  # noqa: E402
 
+# 燈史導向 gitignore 的 cache/ 暫存檔——測試絕不可刪改 bot 維護的真實 data/history.json
+config.HISTORY_JSON = config.CACHE_DIR / "test_history.json"
+
 REQUIRED_TOP = {"schema_version", "generated_at", "master_light", "clusters", "errors", "changes"}
 
 
