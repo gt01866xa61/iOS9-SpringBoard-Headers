@@ -89,18 +89,25 @@ jobs:
         with:
           enablement: true   # Pages 已由擁有者開通（Source=GitHub Actions）；保留此參數作保險
 
+      # artifact 名稱帶 run_attempt：同一個 run 按 Re-run 時不會與上次嘗試的同名 artifact
+      # 相撞（deploy-pages 找到兩個同名包會直接報錯 "Artifact count is 2"）
       - uses: actions/upload-pages-artifact@v3
         with:
           path: gooaye_signals/web
+          name: pages-${{ github.run_id }}-${{ github.run_attempt }}
 
       # GitHub Pages 發佈偶爾回傳暫時性錯誤（"Deployment failed, try again later"）。
       # 第一次失敗不讓 job 直接掛，隔 20 秒自動重試一次；artifact 已上傳可重用。
       - id: deploy
         uses: actions/deploy-pages@v4
         continue-on-error: true
+        with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Retry Pages deploy if first attempt failed
         if: steps.deploy.outcome == 'failure'
         run: sleep 20
       - name: Deploy to GitHub Pages (retry)
         if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
