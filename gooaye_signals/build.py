@@ -100,6 +100,74 @@ def _atomic_write(path, payload) -> None:
     os.replace(tmp, path)  # 原子替換，前端不會讀到半截檔
 
 
+# === 燈號歷史：反轉觀測的主角是「變化」，每天記一格供前端畫燈帶 + 偵測變燈 ===
+_COLORED = {"green", "yellow", "red"}
+
+
+def _history_write_enabled() -> bool:
+    """demo 模式不落地歷史檔（避免本機測試污染 CI 維護的真實燈史）；測試可用環境變數強制開。"""
+    return (not config.DEMO_MODE) or os.environ.get("GOOAYE_FORCE_HISTORY") == "1"
+
+
+def _load_history() -> dict:
+    try:
+        h = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
+        if isinstance(h, dict):
+            h.setdefault("signals", {})
+            h.setdefault("master", [])
+            return h
+    except (OSError, json.JSONDecodeError):
+        pass
+    return {"signals": {}, "master": []}
+
+
+def _upsert(entries: list, today: str, light: str) -> None:
+    """同日覆蓋、跨日追加，並裁掉超過保留天數的舊紀錄。"""
+    if entries and entries[-1][0] == today:
+        entries[-1][1] = light
+    else:
+        entries.append([today, light])
+    del entries[:-config.HISTORY_KEEP_DAYS]
+
+
+def _prev_light(entries: list, today: str) -> str | None:
+    """回傳「今天以前」最近一筆的燈色（同日多輪更新不算變化）。"""
+    for d, l in reversed(entries):
+        if d != today:
+            return l
+    return None
+
+
+def _apply_history(cards: list[dict], top: str, now) -> tuple[list[dict], str | None]:
+    """把燈史掛到每張卡（history/prev_light/changed），回傳 (changes, master_prev)。"""
+    hist = _load_history()
+    today = now.strftime("%Y-%m-%d")
+    changes: list[dict] = []
+
+    for card in cards:
+        entries = hist["signals"].setdefault(card["id"], [])
+        prev = _prev_light(entries, today)
+        card["prev_light"] = prev
+        card["changed"] = bool(prev and prev != card["light"]
+                               and prev in _COLORED and card["light"] in _COLORED)
+        if card["changed"]:
+            changes.append({"id": card["id"], "name": card["name"],
+                            "from": prev, "to": card["light"]})
+        _upsert(entries, today, card["light"])
+        card["history"] = entries[-config.HISTORY_SHOW_DAYS:]
+
+    master_prev = _prev_light(hist["master"], today)
+    if (master_prev and master_prev != top
+            and master_prev in _COLORED and top in _COLORED):
+        changes.insert(0, {"id": "_master", "name": "總燈號",
+                           "from": master_prev, "to": top})
+    _upsert(hist["master"], today, top)
+
+    if _history_write_enabled():
+        _atomic_write(config.HISTORY_JSON, hist)
+    return changes, master_prev
+
+
 def build_payload() -> tuple[dict, list[dict]]:
     """跑完整條 pipeline，回傳 (payload, cards)。"""
     now = datetime.now(config.TAIPEI_TZ)
@@ -146,6 +214,9 @@ def build_payload() -> tuple[dict, list[dict]]:
     errors = [{"signal_id": c["id"], "message": c["error"], "at": c["updated_at"]}
               for c in cards if c.get("error")]
 
+    # 燈號歷史 + 變化偵測（cards 與 clusters_out 共用同一批 dict，掛上去前端就看得到）
+    changes, master_prev = _apply_history(cards, top, now)
+
     payload = {
         "schema_version": config.SCHEMA_VERSION,
         "generated_at": now.isoformat(timespec="seconds"),
@@ -153,7 +224,9 @@ def build_payload() -> tuple[dict, list[dict]]:
         "tz": "Asia/Taipei (UTC+8)",
         "next_update_hint": config.NEXT_UPDATE_HINT,
         "master_light": top,
+        "master_prev": master_prev,
         "master_reason": top_reason,
+        "changes": changes,
         "clusters": clusters_out,
         "errors": errors,
     }

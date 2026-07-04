@@ -32,11 +32,28 @@
   .clabel{font-size:12px;color:var(--muted)}
   .creason{color:var(--muted);font-size:12px;margin:0 2px 8px}
   .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gray);
-        border-radius:12px;padding:12px 14px;margin:10px 0;overflow:hidden}
+        border-radius:12px;margin:10px 0;overflow:hidden}
   .card.green{border-left-color:var(--green)}
   .card.yellow{border-left-color:var(--yellow)}
   .card.red{border-left-color:var(--red)}
   .card.gray{border-left-color:var(--gray)}
+  /* 三層式窄卡：summary=掃視層，.sbody=點開的自我說明層 */
+  details.card>summary{list-style:none;cursor:pointer;padding:10px 12px;display:block}
+  details.card>summary::-webkit-details-marker{display:none}
+  .srow{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .sdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;align-self:center}
+  .sname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .chg{font-size:11px;color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:600}
+  .chev{color:var(--muted);font-size:9px;flex:0 0 auto;transition:transform .15s}
+  details[open]>summary .chev{transform:rotate(180deg)}
+  .srow2{display:flex;align-items:center;gap:10px;margin-top:7px}
+  .strip{display:inline-flex;gap:1px}
+  .strip i{width:4px;height:12px;border-radius:1px;display:block}
+  .mini{margin-left:auto;flex:0 0 auto}
+  .soneliner{display:block;color:#b9c4d0;font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbody{padding:2px 12px 12px;border-top:1px dashed var(--line)}
+  .banner.alert{background:#3a1214;color:#ffb9b3;border:1px solid #5c1d1d;display:block;font-weight:600}
+  .banner.quiet{background:transparent;border:1px dashed var(--line);color:var(--muted);display:block}
   .hrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
   .hname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .hval{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;flex:0 0 auto}
@@ -75,6 +92,7 @@
   <div id="stale" class="banner stale">資料可能過期，稍後自動更新。</div>
 
   <div id="master" class="master"></div>
+  <div id="changes" class="banner"></div>
   <div id="root"></div>
   <footer id="footer"></footer>
 </div>
@@ -83,12 +101,14 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-07-04T00:27:12+08:00",
-  "generated_at_label": "2026/07/04 00:27 (台北)",
+  "generated_at": "2026-07-04T12:26:47+08:00",
+  "generated_at_label": "2026/07/04 12:26 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
+  "master_prev": null,
   "master_reason": "部分轉弱，尚未確認見頂，留意。",
+  "changes": [],
   "clusters": [
     {
       "id": "semi_memory_top",
@@ -122,7 +142,7 @@
           "cadence": "monthly",
           "episode_ref": "EP512",
           "episode_date": "2025-06-18",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
           "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
           "order": 1,
@@ -173,7 +193,15 @@
           },
           "detail": {
             "consecutive_down_months": 8
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "red"
+            ]
+          ]
         },
         {
           "id": "mlcc_basket_ma",
@@ -190,7 +218,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP512",
           "episode_date": "2025-06-18",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
           "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
           "order": 2,
@@ -339,7 +367,15 @@
             "dist_pct": 0.268,
             "slope_pct": 0.046,
             "ma_now": 100.204
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "yellow"
+            ]
+          ]
         },
         {
           "id": "ai_breadth",
@@ -356,7 +392,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP515",
           "episode_date": "2025-07-02",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
           "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
           "order": 3,
@@ -422,7 +458,15 @@
           "detail": {
             "above": 6,
             "counted": 6
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
         }
       ],
       "supporting": [
@@ -441,7 +485,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP505",
           "episode_date": "2025-04-02",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
           "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
           "order": 4,
@@ -744,7 +788,15 @@
           "detail": {
             "above": 2,
             "counted": 8
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "red"
+            ]
+          ]
         },
         {
           "id": "raw_materials",
@@ -761,7 +813,7 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "鈀、銀期貨價——被動元件/半導體的成本推力：金屬漲＝成本推升撐漲價邏輯，金屬跌＝漲價動能減弱。",
           "shape": "兩列同綠＝成本推升；轉分歧或同紅＝成本壓力緩解、漲價故事鬆動。",
           "order": 5,
@@ -860,7 +912,15 @@
           "detail": {
             "above": 2,
             "counted": 2
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
         },
         {
           "id": "watchlist",
@@ -875,7 +935,7 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-04T00:27:12+08:00",
+          "updated_at": "2026-07-04T12:26:47+08:00",
           "track": "跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
           "order": 6,
@@ -1144,7 +1204,15 @@
           "detail": {
             "above": 6,
             "counted": 7
-          }
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
         }
       ]
     }
@@ -1263,10 +1331,32 @@ function legendHTML(sig){
 }
 
 const CADENCE_LABEL={monthly:"月更(上月數據約每月10日公布)",trading_day:"每交易日更新",daily:"每日更新",manual:"手動更新"};
+const LIGHT_ZH={green:"綠",yellow:"黃",red:"紅",gray:"灰"};
+const SEV={gray:-1,green:0,yellow:1,red:2};
+
+// 燈號歷史帶：一天一格（左舊右新），一眼看出「綠了多久、何時轉色」
+function stripHTML(hist){
+  if(!hist||!hist.length) return "";
+  const cells=hist.map(h=>`<i title="${esc(h[0])} ${LIGHT_ZH[h[1]]||h[1]}" style="background:${COLORS[h[1]]||COLORS.gray}"></i>`).join("");
+  return `<span class="strip" aria-label="近${hist.length}日燈號">${cells}</span>`;
+}
+
+// 掃視層的縮圖：有數列畫迷你走勢；gauge 類畫迷你比例條；表格類略過
+function miniFor(sig){
+  const wd=sig.widget_data||{};
+  if(wd.series&&wd.series.length>1) return miniSpark(wd.series.slice(-24));
+  if(typeof wd.percent==="number"){
+    const p=Math.max(0,Math.min(100,wd.percent));
+    return `<svg viewBox="0 0 60 18" width="60" height="18"><rect x="0" y="6" width="60" height="6" fill="#30363d" rx="3"/><rect x="0" y="6" width="${(p*0.6).toFixed(1)}" height="6" fill="${COLORS[sig.light]||"#484f58"}" rx="3"/></svg>`;
+  }
+  return "";
+}
 
 function renderSignal(sig){
   const body=(WIDGETS[sig.widget]||renderUnknown)(sig.widget_data||{}, sig);
   const badge=sig.stale?'<span class="badge">資料較舊</span>':"";
+  // 變燈徽章：惡化(嚴重度上升)紅底、好轉綠底——反轉觀測的主角是「變化」
+  const chg=sig.changed?`<span class="chg" style="background:${SEV[sig.light]>SEV[sig.prev_light]?COLORS.red:COLORS.green}">${LIGHT_ZH[sig.prev_light]||"?"}→${LIGHT_ZH[sig.light]||"?"}</span>`:"";
   const track=sig.track?`<div class="kv"><span class="klabel">追什麼</span>${esc(sig.track)}</div>`:"";
   const shape=sig.shape?`<div class="kv"><span class="klabel">怎麼看</span>${esc(sig.shape)}</div>`:"";
   // meta：月更訊號標明「資料至哪個月」，其餘標更新節奏，避免把抓取時間誤讀成資料新鮮度
@@ -1274,14 +1364,20 @@ function renderSignal(sig){
   const ls=(sig.widget_data||{}).labels||[];
   const upto=(sig.cadence==="monthly"&&ls.length)?`資料至 ${ls[ls.length-1]} · `:"";
   const ep=[sig.episode_ref,sig.episode_date].filter(x=>x&&x!=="?").join(" ");
-  return `<div class="card ${sig.light}">
-    <div class="hrow"><span class="hname">${esc(sig.name)}${badge}</span><span class="hval">${esc(sig.value_label)}</span></div>
-    ${track}
-    ${body}
-    ${shape}
-    ${legendHTML(sig)}
-    <div class="meta">${esc(upto)}${esc(cad)}${ep?" · "+esc(ep):""}${sig.updated_at?` · 更新 ${esc(sig.updated_at.slice(5,16).replace("T"," "))}`:""}</div>
-  </div>`;
+  return `<details class="card ${sig.light}" data-id="${esc(sig.id)}">
+    <summary>
+      <span class="srow"><span class="sdot" style="background:${COLORS[sig.light]}"></span><span class="sname">${esc(sig.name)}${badge}${chg}</span><span class="hval">${esc(sig.value_label)}</span><span class="chev">▼</span></span>
+      <span class="srow2">${stripHTML(sig.history)}<span class="mini">${miniFor(sig)}</span></span>
+      <span class="soneliner">${esc(sig.interpretation)}</span>
+    </summary>
+    <div class="sbody">
+      ${track}
+      ${body}
+      ${shape}
+      ${legendHTML(sig)}
+      <div class="meta">${esc(upto)}${esc(cad)}${ep?" · "+esc(ep):""}${sig.updated_at?` · 更新 ${esc(sig.updated_at.slice(5,16).replace("T"," "))}`:""}</div>
+    </div>
+  </details>`;
 }
 
 function renderCluster(c){
@@ -1290,21 +1386,43 @@ function renderCluster(c){
   const head=`<div class="chead"><span class="dot" style="background:${COLORS[m.light]}"></span>
     <span class="cname">${esc(c.name)}</span><span class="clabel">· ${esc(m.label)} ${votes}</span></div>
     <div class="creason">${esc(m.reason)}</div>`;
-  const sigs=(c.signals||[]).map(renderSignal).join("");
+  // 今天變燈的卡浮到最上面，其餘依擴充順序
+  const bySort=(a,b)=>((b.changed?1:0)-(a.changed?1:0))||((a.order||0)-(b.order||0));
+  const sigs=(c.signals||[]).slice().sort(bySort).map(renderSignal).join("");
   const sup=(c.supporting||[]).length
-    ? `<details><summary>補充面板（${c.supporting.length}）</summary>${c.supporting.map(renderSignal).join("")}</details>`
+    ? `<details data-id="sup-${esc(c.id)}"><summary>補充面板（${c.supporting.length}）</summary>${c.supporting.slice().sort(bySort).map(renderSignal).join("")}</details>`
     : "";
   return `<div class="cluster">${head}${sigs}${sup}</div>`;
 }
 
 function render(d, live){
+  // 重繪前記住哪些卡是展開的，重繪後還原（自動刷新不打斷閱讀）
+  const keepOpen=new Set([...document.querySelectorAll('details[data-id][open]')].map(e=>e.dataset.id));
+
   const ml=d.master_light||"gray";
   document.getElementById("master").innerHTML=
     `<span class="dot" style="background:${COLORS[ml]}"></span>
      <div><b>總燈號：${esc(d.master_reason||ml)}</b>
      <div class="rr">${d.generated_at_label?("更新於 "+esc(d.generated_at_label)):""}</div></div>`;
+
+  // 第 3 層：今日變化置頂——有變燈大聲喊，沒變一行帶過（看完這行就能關掉）
+  const chg=d.changes||[];
+  const cEl=document.getElementById("changes");
+  if(chg.length){
+    cEl.className="banner alert";
+    cEl.innerHTML="⚠ 今日變化："+chg.map(x=>`${esc(x.name)} ${LIGHT_ZH[x.from]||x.from}→${LIGHT_ZH[x.to]||x.to}`).join("、");
+  }else{
+    cEl.className="banner quiet";
+    cEl.textContent="今日燈號變化：無";
+  }
+
   document.getElementById("root").innerHTML=
     (d.clusters||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(renderCluster).join("");
+
+  keepOpen.forEach(id=>{
+    const el=document.querySelector(`details[data-id="${CSS.escape(id)}"]`);
+    if(el) el.open=true;
+  });
 
   const errs=(d.errors||[]).map(e=>esc(e.signal_id)).join("、");
   document.getElementById("footer").innerHTML=

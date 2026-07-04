@@ -16,18 +16,21 @@ from dataclasses import replace
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 os.environ["GOOAYE_DEMO"] = "1"  # 強制 demo，須在 import config/build 前設定
+os.environ["GOOAYE_FORCE_HISTORY"] = "1"  # demo 預設不寫燈史；測試強制開啟以驗證該邏輯
 
 import build  # noqa: E402
 import config  # noqa: E402
 from core.spec import SignalResult  # noqa: E402
 from registry import discover as _real_discover  # noqa: E402
 
-REQUIRED_TOP = {"schema_version", "generated_at", "master_light", "clusters", "errors"}
+REQUIRED_TOP = {"schema_version", "generated_at", "master_light", "clusters", "errors", "changes"}
 
 
 def _clean() -> None:
     if config.SIGNALS_JSON.exists():
         config.SIGNALS_JSON.unlink()
+    if config.HISTORY_JSON.exists():
+        config.HISTORY_JSON.unlink()
     if config.CACHE_DIR.exists():
         shutil.rmtree(config.CACHE_DIR)
 
@@ -124,11 +127,43 @@ def _check_whole_run_backstop() -> None:
     print("  ✓ 整輪無可用資料 → 保留上一版 signals.json（保底）")
 
 
+def _check_history_and_changes() -> None:
+    """燈號歷史：首輪建檔無變化 → 造昨日不同燈 → 偵測變燈 + 檔案裁剪。"""
+    _clean()
+    assert build.main() == 0
+    data = _load()
+    assert data["changes"] == [], data["changes"]
+    ai = _find_card(data, "ai_breadth")
+    assert len(ai["history"]) == 1 and ai["history"][0][1] == ai["light"]
+    assert ai["changed"] is False and ai["prev_light"] is None
+
+    # 造「昨天 ai_breadth 是紅」→ 今輪(綠)應偵測 紅→綠；yageo 塞 59 筆驗證裁剪
+    hist = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
+    hist["signals"]["ai_breadth"] = [["2000-01-01", "red"]]
+    hist["signals"]["yageo_rev_yoy"] = (
+        [[f"1999-01-{i:02d}", "green"] for i in range(1, 32)]
+        + [[f"1999-02-{i:02d}", "green"] for i in range(1, 29)]
+    )
+    config.HISTORY_JSON.write_text(json.dumps(hist), encoding="utf-8")
+
+    assert build.main() == 0
+    data = _load()
+    ai = _find_card(data, "ai_breadth")
+    assert ai["changed"] is True and ai["prev_light"] == "red", ai["prev_light"]
+    assert any(c["id"] == "ai_breadth" and c["from"] == "red" and c["to"] == ai["light"]
+               for c in data["changes"]), data["changes"]
+    hist2 = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
+    assert len(hist2["signals"]["yageo_rev_yoy"]) <= config.HISTORY_KEEP_DAYS
+    assert len(ai["history"]) <= config.HISTORY_SHOW_DAYS
+    print("  ✓ 燈號歷史：首輪建檔、變燈偵測(紅→綠)、保留天數裁剪")
+
+
 def main() -> int:
     print("Phase 3 驗證中…")
     _check_full_build()
     _check_last_good_stale()
     _check_whole_run_backstop()
+    _check_history_and_changes()
     _clean()
     print("Phase 3 驗證通過")
     return 0

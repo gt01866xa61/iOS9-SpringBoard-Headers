@@ -47,6 +47,13 @@ def _check_index() -> None:
     # 3. 自動刷新 + 回前景刷新
     assert "setInterval(load" in html and "visibilitychange" in html, "缺自動刷新"
 
+    # 3b. 三層式窄卡：details/summary 掃視層、燈帶、變化置頂橫幅、重繪保留展開狀態
+    assert '<details class="card' in html, "缺窄卡 details 結構"
+    assert "stripHTML" in html, "缺燈號歷史帶 renderer"
+    assert 'id="changes"' in html and "今日燈號變化" in html, "缺今日變化橫幅"
+    assert "CSS.escape" in html and "keepOpen" in html, "缺重繪後還原展開狀態"
+    assert "miniFor" in html, "缺掃視層縮圖"
+
     # 4. 內嵌 fallback 是合法 JSON、schema 相符、且與 web/data/signals.json 同構
     m = EMBED_RE.search(html)
     assert m, "找不到 embedded <script>"

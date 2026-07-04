@@ -15,10 +15,11 @@ on:
     branches: [master, "claude/korea-semiconductor-investment-nb8cgk"]
     paths:
       - "gooaye_signals/**"
+      - "!gooaye_signals/data/history.json"   # 燈史由 bot commit，不再觸發（防循環）
       - ".github/workflows/signals.yml"
 
 permissions:
-  contents: read
+  contents: write   # 需要把 data/history.json（燈號歷史）commit 回 repo
   pages: write
   id-token: write
 
@@ -45,6 +46,15 @@ jobs:
       - name: Install deps
         run: pip install -r gooaye_signals/requirements.txt
 
+      # 還原上輪抓取快取（last-good）：來源短暫故障時卡片顯示舊圖+「資料較舊」而非灰燈
+      - name: Restore fetch cache (last-good)
+        uses: actions/cache@v4
+        with:
+          path: gooaye_signals/data/cache
+          key: signals-cache-${{ github.run_id }}
+          restore-keys: |
+            signals-cache-
+
       - name: Build signals + embed fallback
         working-directory: gooaye_signals
         env:
@@ -53,6 +63,18 @@ jobs:
         run: |
           python build.py
           python web/build_embed.py
+
+      # 燈號歷史 commit 回 repo 持久化（GITHUB_TOKEN 的 push 不會再觸發 workflow，無循環風險）
+      - name: Persist light history
+        run: |
+          git config user.name "signals-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gooaye_signals/data/history.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(signals): update light history [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }} || echo "::warning::history push failed (non-fatal)"
+          fi
 
       - uses: actions/configure-pages@v5
         with:

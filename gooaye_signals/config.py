@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 CACHE_DIR = DATA_DIR / "cache"
 SIGNALS_JSON = DATA_DIR / "signals.json"
+HISTORY_JSON = DATA_DIR / "history.json"   # 燈號歷史（CI 每日 commit 回 repo 持久化）
 WEB_DIR = BASE_DIR / "web"
 WEB_DATA_JSON = WEB_DIR / "data" / "signals.json"
 DEMO_FIXTURES_DIR = BASE_DIR / "demo" / "fixtures"
@@ -33,6 +34,10 @@ NEXT_UPDATE_HINT = "平日約每 30 分更新一次，假日每日補跑"
 
 # === 陳舊判定：updated_at 超過該訊號 cadence 的幾倍即視為 stale ===
 STALE_CADENCE_MULTIPLIER = 2
+
+# === 燈號歷史 ===
+HISTORY_KEEP_DAYS = 45    # 檔案保留天數上限
+HISTORY_SHOW_DAYS = 30    # 前端燈帶顯示天數
 
 # === 各 cadence 對應的「新鮮秒數」上限（× STALE_CADENCE_MULTIPLIER 才算舊）===
 CADENCE_SECONDS: dict[str, int] = {
