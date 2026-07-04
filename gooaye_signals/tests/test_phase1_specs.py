@@ -55,8 +55,6 @@ def _check_specs() -> None:
         assert s.track, f"{s.id} 缺 track（追什麼）"
         assert s.shape, f"{s.id} 缺 shape（怎麼看）"
         assert isinstance(s.order, int), f"{s.id} order 需為 int"
-        # episode_date 需可解析（"?" 只允許在 episode_ref）
-        datetime.strptime(s.episode_date, "%Y-%m-%d")
 
     print(f"  ✓ registry 探索 {len(specs)} 個訊號，契約全數通過")
 

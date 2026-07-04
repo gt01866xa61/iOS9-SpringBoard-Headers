@@ -43,8 +43,7 @@ def _run_one(spec: SignalSpec, cache: DayCache) -> dict:
     base = {
         "id": spec.id, "name": spec.name, "widget": spec.widget,
         "tags": list(spec.tags), "in_master": spec.in_master, "unit": spec.unit,
-        "cadence": spec.cadence, "episode_ref": spec.episode_ref,
-        "episode_date": spec.episode_date, "updated_at": now,
+        "cadence": spec.cadence, "updated_at": now,
         # 三個必答問題（①追什麼 ②怎麼看 ③各燈含義）＋擴充順序——spec 層 metadata，永遠新鮮
         "track": spec.track, "shape": spec.shape, "order": spec.order,
         "interpretations": dict(spec.interpretations),
