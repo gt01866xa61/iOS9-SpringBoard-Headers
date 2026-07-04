@@ -1,0 +1,97 @@
+name: build-and-deploy-signals
+
+# 排程算訊號 + 部署網頁到 GitHub Pages。
+# 只上傳 gooaye_signals/web/（含當輪產生的 data/signals.json），System/、usr/ 的 iOS dump 不會被發佈。
+# 注意：schedule 只在預設分支(master)生效；合併到 master 後才會自動定時跑。
+#       上線前想先測，可到 Actions 分頁對這個 workflow 按 "Run workflow" 手動觸發。
+
+on:
+  schedule:
+    - cron: "*/30 1-13 * * 1-5"   # UTC 01–13 週一~五 = 台北 09:00–21:00（台股盤中＋美股盤前）
+    - cron: "30 22 * * *"          # UTC 22:30 = 台北 06:30 每日補跑（美股收盤後）
+  workflow_dispatch: {}
+  push:
+    # master 為唯一部署源：cron 排程只在 master 生效，push 也只認 master，避免與開發分支互相覆蓋。
+    # 開發流程：dev 分支開發 → 本機驗證 → 合併 master → 上線（合併即觸發部署）。
+    branches: [master]
+    paths:
+      - "gooaye_signals/**"
+      - "!gooaye_signals/data/history.json"   # 燈史由 bot commit，不再觸發（防循環）
+      - ".github/workflows/signals.yml"
+
+permissions:
+  contents: write   # 需要把 data/history.json（燈號歷史）commit 回 repo
+  pages: write
+  id-token: write
+
+# 同時間只跑一個 Pages 部署，且不取消進行中的（避免排程與手動觸發互相打架）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: gooaye_signals/requirements.txt
+
+      - name: Install deps
+        run: pip install -r gooaye_signals/requirements.txt
+
+      # 還原上輪抓取快取（last-good）：來源短暫故障時卡片顯示舊圖+「資料較舊」而非灰燈
+      - name: Restore fetch cache (last-good)
+        uses: actions/cache@v4
+        with:
+          path: gooaye_signals/data/cache
+          key: signals-cache-${{ github.run_id }}
+          restore-keys: |
+            signals-cache-
+
+      - name: Build signals + embed fallback
+        working-directory: gooaye_signals
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python build.py
+          python web/build_embed.py
+
+      # 燈號歷史 commit 回 repo 持久化（GITHUB_TOKEN 的 push 不會再觸發 workflow，無循環風險）
+      # 注意：build_embed 會改寫 index.html 弄髒工作區，rebase 前必須先 stash 該檔，
+      #       且 push 可能與開發者推送互撞 → rebase+重試三次
+      - name: Persist light history
+        run: |
+          git config user.name "signals-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gooaye_signals/data/history.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(signals): update light history [skip ci]"
+            git stash push -- gooaye_signals/web/index.html || true
+            ok=0
+            for i in 1 2 3; do
+              if git push origin HEAD:${{ github.ref_name }}; then ok=1; break; fi
+              git pull --rebase origin ${{ github.ref_name }} || true
+            done
+            if [ "$ok" != "1" ]; then echo "::warning::history push failed (non-fatal)"; fi
+            git stash pop || true
+          fi
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # Pages 已由擁有者開通（Source=GitHub Actions）；保留此參數作保險
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: gooaye_signals/web
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

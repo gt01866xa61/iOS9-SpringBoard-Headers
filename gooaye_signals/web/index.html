@@ -1,0 +1,1464 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>股癌訊號燈</title>
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b22; --line:#21262d; --fg:#e6edf3; --muted:#8b949e;
+    --green:#2ea043; --yellow:#d29922; --red:#da3633; --gray:#484f58;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+  h1{font-size:18px;margin:2px 0 2px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .banner{border-radius:8px;padding:8px 10px;font-size:13px;margin:10px 0;display:none}
+  .banner.sample{background:#1c2333;color:#c9d1d9;border:1px solid var(--line);display:block}
+  .banner.stale{background:#3a2d12;color:#f0d9a0;border:1px solid #5c471d;display:block}
+  .master{display:flex;align-items:center;gap:10px;background:var(--card);
+          border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+  .master .dot{width:18px;height:18px;flex:0 0 auto}
+  .master b{font-size:17px}
+  .master .rr{color:var(--muted);font-size:12px;margin-top:2px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .cluster{margin:22px 0 8px}
+  .chead{display:flex;align-items:center;gap:8px;margin:6px 2px}
+  .chead .cname{font-weight:700}
+  .clabel{font-size:12px;color:var(--muted)}
+  .creason{color:var(--muted);font-size:12px;margin:0 2px 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gray);
+        border-radius:12px;margin:10px 0;overflow:hidden}
+  .card.green{border-left-color:var(--green)}
+  .card.yellow{border-left-color:var(--yellow)}
+  .card.red{border-left-color:var(--red)}
+  .card.gray{border-left-color:var(--gray)}
+  /* 三層式窄卡：summary=掃視層，.sbody=點開的自我說明層 */
+  details.card>summary{list-style:none;cursor:pointer;padding:10px 12px;display:block}
+  details.card>summary::-webkit-details-marker{display:none}
+  .srow{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .sdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;align-self:center}
+  .sname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .chg{font-size:11px;color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:600}
+  .chev{color:var(--muted);font-size:9px;flex:0 0 auto;transition:transform .15s}
+  details[open]>summary .chev{transform:rotate(180deg)}
+  .srow2{display:flex;align-items:center;gap:10px;margin-top:7px}
+  .strip{display:inline-flex;gap:1px}
+  .strip i{width:4px;height:12px;border-radius:1px;display:block}
+  .mini{margin-left:auto;flex:0 0 auto}
+  .soneliner{display:block;color:#b9c4d0;font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbody{padding:2px 12px 12px;border-top:1px dashed var(--line)}
+  .banner.alert{background:#3a1214;color:#ffb9b3;border:1px solid #5c1d1d;display:block;font-weight:600}
+  .banner.quiet{background:transparent;border:1px dashed var(--line);color:var(--muted);display:block}
+  .hrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+  .hname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hval{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;flex:0 0 auto}
+  .badge{font-size:11px;background:var(--yellow);color:#000;border-radius:6px;padding:1px 6px;margin-left:6px}
+  .viz{margin:8px 0 4px}
+  .viz svg{display:block}
+  .interp{color:#c9d1d9;font-size:13px;margin-top:6px}
+  .kv{font-size:12.5px;color:#b9c4d0;margin-top:7px;line-height:1.5}
+  .klabel{display:inline-block;font-size:10px;color:var(--muted);border:1px solid var(--line);
+          border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px;letter-spacing:1px}
+  .legend{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px;
+          display:flex;flex-direction:column;gap:4px}
+  .lg{display:flex;gap:7px;align-items:flex-start;font-size:12px;color:var(--muted);opacity:.5}
+  .lg .rdot{margin-top:4px;flex:0 0 auto}
+  .lg.cur{opacity:1;color:var(--fg)}
+  .nowtag{font-size:10px;background:var(--line);border-radius:4px;padding:0 4px;margin-right:5px;white-space:nowrap}
+  .meta{color:var(--muted);font-size:11px;margin-top:8px}
+  details{margin:6px 0 2px}
+  summary{color:var(--muted);font-size:13px;cursor:pointer;padding:6px 2px}
+  table.qt{width:100%;border-collapse:collapse;font-size:12px}
+  table.qt th{color:var(--muted);font-weight:500;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+  table.qt th:first-child{text-align:left}
+  table.qt td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  table.qt td:first-child{text-align:left}
+  .rdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  footer{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
+  .err{color:#f0a1a1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>股癌訊號燈</h1>
+  <div class="sub">《股癌》觀測訊號彙整 · 紅黃綠燈一眼看</div>
+
+  <div id="sample" class="banner sample">尚未連上即時資料，顯示內建快取（稍後自動更新）。</div>
+  <div id="stale" class="banner stale">資料可能過期，稍後自動更新。</div>
+
+  <div id="master" class="master"></div>
+  <div id="changes" class="banner"></div>
+  <div id="root"></div>
+  <footer id="footer"></footer>
+</div>
+
+<!-- 內建 fallback：抓得到雲端資料就用雲端，抓不到就退回這份，頁面永不空白。build_embed.py 會更新它。 -->
+<script id="embedded" type="application/json">
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-04T12:51:14+08:00",
+  "generated_at_label": "2026/07/04 12:51 (台北)",
+  "tz": "Asia/Taipei (UTC+8)",
+  "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
+  "master_light": "yellow",
+  "master_prev": null,
+  "master_reason": "部分轉弱，尚未確認見頂，留意。",
+  "changes": [],
+  "clusters": [
+    {
+      "id": "semi_memory_top",
+      "name": "半導體 / 記憶體循環見頂觀察",
+      "order": 1,
+      "master": {
+        "light": "yellow",
+        "label": "留意轉弱",
+        "reason": "部分轉弱，尚未確認見頂，留意。",
+        "votes": {
+          "red": 1,
+          "yellow": 1,
+          "green": 1,
+          "gray": 0
+        }
+      },
+      "signals": [
+        {
+          "id": "yageo_rev_yoy",
+          "name": "國巨(2327) 月營收 YoY",
+          "widget": "bar_chart",
+          "tags": [
+            "半導體",
+            "被動元件",
+            "MLCC",
+            "月營收",
+            "2327"
+          ],
+          "in_master": true,
+          "unit": "% YoY",
+          "cadence": "monthly",
+          "episode_ref": "EP512",
+          "episode_date": "2025-06-18",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
+          "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
+          "order": 1,
+          "interpretations": {
+            "green": "國巨營收年增仍在擴張，被動元件需求未見反轉。",
+            "yellow": "YoY 首度轉弱，觀察是否為趨勢起點，可能只是單月雜訊。",
+            "red": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
+            "gray": "月營收資料尚未更新或抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "red",
+          "value_label": "YoY -3.1%",
+          "interpretation": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
+          "widget_data": {
+            "series": [
+              12.4,
+              9.8,
+              5.1,
+              6.0,
+              3.2,
+              1.1,
+              -0.4,
+              -1.8,
+              -2.5,
+              -2.9,
+              -3.0,
+              -3.1
+            ],
+            "labels": [
+              "2025-07",
+              "2025-08",
+              "2025-09",
+              "2025-10",
+              "2025-11",
+              "2025-12",
+              "2026-01",
+              "2026-02",
+              "2026-03",
+              "2026-04",
+              "2026-05",
+              "2026-06"
+            ],
+            "highlight_index": 11,
+            "unit": "% YoY",
+            "zero_line": true
+          },
+          "detail": {
+            "consecutive_down_months": 8
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "red"
+            ]
+          ]
+        },
+        {
+          "id": "mlcc_basket_ma",
+          "name": "被動元件籃子 vs 50MA",
+          "widget": "sparkline",
+          "tags": [
+            "半導體",
+            "被動元件",
+            "MLCC",
+            "50MA"
+          ],
+          "in_master": true,
+          "unit": "%",
+          "cadence": "trading_day",
+          "episode_ref": "EP512",
+          "episode_date": "2025-06-18",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
+          "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
+          "order": 2,
+          "interpretations": {
+            "green": "被動元件籃站穩 50MA 且向上，漲價題材仍有資金追捧。",
+            "yellow": "籃子貼近 50MA 或斜率轉平，漲價題材推力鈍化，觀察是否失守。",
+            "red": "籃子跌破 50MA 且均線下彎，漲價新聞不再帶動股價，資金退潮。",
+            "gray": "被動元件股價資料抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "yellow",
+          "value_label": "距MA +0.3%",
+          "interpretation": "籃子貼近 50MA 或斜率轉平，漲價題材推力鈍化，觀察是否失守。",
+          "widget_data": {
+            "series": [
+              99.22,
+              99.33,
+              99.46,
+              99.61,
+              99.77,
+              99.93,
+              100.1,
+              100.26,
+              100.42,
+              100.56,
+              100.69,
+              100.8,
+              100.89,
+              100.95,
+              100.99,
+              101.0,
+              100.98,
+              100.93,
+              100.86,
+              100.77,
+              100.65,
+              100.52,
+              100.37,
+              100.21,
+              100.04,
+              99.87,
+              99.71,
+              99.56,
+              99.41,
+              99.29,
+              99.18,
+              99.1,
+              99.04,
+              99.01,
+              99.0,
+              99.02,
+              99.07,
+              99.15,
+              99.25,
+              99.37,
+              99.51,
+              99.66,
+              99.82,
+              99.98,
+              100.15,
+              100.31,
+              100.47,
+              100.61,
+              100.73,
+              100.83,
+              100.91,
+              100.97,
+              101.0,
+              101.0,
+              100.97,
+              100.92,
+              100.84,
+              100.73,
+              100.61,
+              100.47
+            ],
+            "ma_series": [
+              99.8,
+              99.8,
+              99.8,
+              99.8,
+              99.81,
+              99.83,
+              99.85,
+              99.87,
+              99.9,
+              99.93,
+              99.96,
+              100.0,
+              100.03,
+              100.07,
+              100.1,
+              100.13,
+              100.15,
+              100.17,
+              100.19,
+              100.2,
+              100.2,
+              100.2,
+              100.2,
+              100.19,
+              100.17,
+              100.15,
+              100.12,
+              100.1,
+              100.06,
+              100.03,
+              100.0,
+              99.96,
+              99.93,
+              99.9,
+              99.87,
+              99.85,
+              99.83,
+              99.81,
+              99.8,
+              99.79,
+              99.8,
+              99.8,
+              99.81,
+              99.83,
+              99.85,
+              99.88,
+              99.91,
+              99.94,
+              99.97,
+              100.01,
+              100.04,
+              100.08,
+              100.11,
+              100.13,
+              100.16,
+              100.18,
+              100.19,
+              100.2,
+              100.21,
+              100.2
+            ],
+            "slope_pct": 0.05,
+            "ma_window": 50,
+            "caption": "距MA +0.3%、MA斜率 +0.05%/5日",
+            "note": "實線＝籃子價格、灰虛線＝50日均線"
+          },
+          "detail": {
+            "dist_pct": 0.268,
+            "slope_pct": 0.046,
+            "ma_now": 100.204
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "yellow"
+            ]
+          ]
+        },
+        {
+          "id": "ai_breadth",
+          "name": "AI 類股廣度",
+          "widget": "gauge",
+          "tags": [
+            "AI",
+            "半導體",
+            "廣度",
+            "50MA"
+          ],
+          "in_master": true,
+          "unit": "%",
+          "cadence": "trading_day",
+          "episode_ref": "EP515",
+          "episode_date": "2025-07-02",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
+          "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
+          "order": 3,
+          "interpretations": {
+            "green": "多數 AI 權值仍站上 50MA，主升段結構完整。",
+            "yellow": "AI 籃廣度轉中性，領軍股撐盤、跟風股走弱，動能鈍化。",
+            "red": "過半 AI 股跌破 50MA，廣度惡化，主升段動能流失。",
+            "gray": "股價資料抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "green",
+          "value_label": "廣度 100%",
+          "interpretation": "多數 AI 權值仍站上 50MA，主升段結構完整。",
+          "widget_data": {
+            "rows": [
+              {
+                "symbol": "NVDA",
+                "above": true
+              },
+              {
+                "symbol": "AVGO",
+                "above": true
+              },
+              {
+                "symbol": "TSM",
+                "above": true
+              },
+              {
+                "symbol": "2330.TW",
+                "above": true
+              },
+              {
+                "symbol": "6669.TW",
+                "above": true
+              },
+              {
+                "symbol": "2327.TW",
+                "above": true
+              }
+            ],
+            "percent": 100.0,
+            "min": 0,
+            "max": 100,
+            "bands": [
+              {
+                "to": 40.0,
+                "light": "red"
+              },
+              {
+                "to": 60.0,
+                "light": "yellow"
+              },
+              {
+                "to": 100,
+                "light": "green"
+              }
+            ],
+            "caption": "6/6 檔站上 50MA",
+            "unit": "%"
+          },
+          "detail": {
+            "above": 6,
+            "counted": 6
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
+        }
+      ],
+      "supporting": [
+        {
+          "id": "memory_rs",
+          "name": "記憶體循環相對強度",
+          "widget": "table",
+          "tags": [
+            "記憶體",
+            "DRAM",
+            "NAND",
+            "南韓擴產"
+          ],
+          "in_master": false,
+          "unit": "",
+          "cadence": "trading_day",
+          "episode_ref": "EP505",
+          "episode_date": "2025-04-02",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
+          "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
+          "order": 4,
+          "interpretations": {
+            "green": "記憶體族群普遍站上均線，循環仍強，擴產利空尚未反映到股價。",
+            "yellow": "記憶體族群強弱分歧，留意是否開始領跌。",
+            "red": "多數記憶體股跌破均線，循環轉弱，與韓廠大擴產的見頂邏輯呼應。",
+            "gray": "記憶體股報價抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "red",
+          "value_label": "2/8 站上50MA",
+          "interpretation": "多數記憶體股跌破均線，循環轉弱，與韓廠大擴產的見頂邏輯呼應。",
+          "widget_data": {
+            "rows": [
+              {
+                "cells": [
+                  "美光 MU",
+                  "167.57",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  155.938,
+                  156.48,
+                  157.078,
+                  157.726,
+                  158.415,
+                  159.138,
+                  159.884,
+                  160.641,
+                  161.4,
+                  162.148,
+                  162.876,
+                  163.573,
+                  164.23,
+                  164.838,
+                  165.391,
+                  165.883,
+                  166.311,
+                  166.672,
+                  166.968,
+                  167.198,
+                  167.368,
+                  167.482,
+                  167.547,
+                  167.572
+                ]
+              },
+              {
+                "cells": [
+                  "晟碟 SNDK",
+                  "83.79",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  77.969,
+                  78.24,
+                  78.539,
+                  78.863,
+                  79.208,
+                  79.569,
+                  79.942,
+                  80.321,
+                  80.7,
+                  81.074,
+                  81.438,
+                  81.787,
+                  82.115,
+                  82.419,
+                  82.696,
+                  82.942,
+                  83.155,
+                  83.336,
+                  83.484,
+                  83.599,
+                  83.684,
+                  83.741,
+                  83.774,
+                  83.786
+                ]
+              },
+              {
+                "cells": [
+                  "三星電子",
+                  "50794.29",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  52380.016,
+                  52331.825,
+                  52316.618,
+                  52330.548,
+                  52368.962,
+                  52426.527,
+                  52497.38,
+                  52575.289,
+                  52653.828,
+                  52726.552,
+                  52787.177,
+                  52829.756,
+                  52848.84,
+                  52839.634,
+                  52798.123,
+                  52721.192,
+                  52606.703,
+                  52453.562,
+                  52261.745,
+                  52032.3,
+                  51767.318,
+                  51469.875,
+                  51143.945,
+                  50794.295
+                ]
+              },
+              {
+                "cells": [
+                  "SK海力士",
+                  "130613.90",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  134691.47,
+                  134567.55,
+                  134528.446,
+                  134564.267,
+                  134663.045,
+                  134811.07,
+                  134993.263,
+                  135193.601,
+                  135395.558,
+                  135582.562,
+                  135738.455,
+                  135847.944,
+                  135897.018,
+                  135873.344,
+                  135766.603,
+                  135568.778,
+                  135274.378,
+                  134880.587,
+                  134387.344,
+                  133797.342,
+                  133115.96,
+                  132351.106,
+                  131513.002,
+                  130613.9
+                ]
+              },
+              {
+                "cells": [
+                  "南亞科",
+                  "43.54",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  44.897,
+                  44.856,
+                  44.843,
+                  44.855,
+                  44.888,
+                  44.937,
+                  44.998,
+                  45.065,
+                  45.132,
+                  45.194,
+                  45.246,
+                  45.283,
+                  45.299,
+                  45.291,
+                  45.256,
+                  45.19,
+                  45.091,
+                  44.96,
+                  44.796,
+                  44.599,
+                  44.372,
+                  44.117,
+                  43.838,
+                  43.538
+                ]
+              },
+              {
+                "cells": [
+                  "華邦電",
+                  "18.14",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  18.707,
+                  18.69,
+                  18.685,
+                  18.689,
+                  18.703,
+                  18.724,
+                  18.749,
+                  18.777,
+                  18.805,
+                  18.831,
+                  18.853,
+                  18.868,
+                  18.875,
+                  18.871,
+                  18.856,
+                  18.829,
+                  18.788,
+                  18.733,
+                  18.665,
+                  18.583,
+                  18.488,
+                  18.382,
+                  18.266,
+                  18.141
+                ]
+              },
+              {
+                "cells": [
+                  "威剛",
+                  "65.31",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  67.346,
+                  67.284,
+                  67.264,
+                  67.282,
+                  67.332,
+                  67.406,
+                  67.497,
+                  67.597,
+                  67.698,
+                  67.791,
+                  67.869,
+                  67.924,
+                  67.949,
+                  67.937,
+                  67.883,
+                  67.784,
+                  67.637,
+                  67.44,
+                  67.194,
+                  66.899,
+                  66.558,
+                  66.176,
+                  65.757,
+                  65.307
+                ]
+              },
+              {
+                "cells": [
+                  "群聯",
+                  "362.82",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  374.143,
+                  373.799,
+                  373.69,
+                  373.79,
+                  374.064,
+                  374.475,
+                  374.981,
+                  375.538,
+                  376.099,
+                  376.618,
+                  377.051,
+                  377.355,
+                  377.492,
+                  377.426,
+                  377.129,
+                  376.58,
+                  375.762,
+                  374.668,
+                  373.298,
+                  371.659,
+                  369.767,
+                  367.642,
+                  365.314,
+                  362.816
+                ]
+              }
+            ],
+            "columns": [
+              "標的",
+              "價格",
+              "漲跌%",
+              "站上50MA",
+              "趨勢"
+            ],
+            "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)"
+          },
+          "detail": {
+            "above": 2,
+            "counted": 8
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "red"
+            ]
+          ]
+        },
+        {
+          "id": "raw_materials",
+          "name": "原物料成本（鈀 / 銀）",
+          "widget": "table",
+          "tags": [
+            "原物料",
+            "鈀",
+            "銀",
+            "成本"
+          ],
+          "in_master": false,
+          "unit": "",
+          "cadence": "trading_day",
+          "episode_ref": "?",
+          "episode_date": "2025-05-01",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "鈀、銀期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
+          "shape": "看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
+          "order": 5,
+          "interpretations": {
+            "green": "鈀、銀皆站上 50 日均線，成本趨勢向上，支撐漲價邏輯。",
+            "yellow": "一站上一跌破，成本趨勢分歧、訊號不明確。",
+            "red": "鈀、銀皆跌破 50 日均線，成本推力轉弱，漲價故事鬆動。",
+            "gray": "金屬報價抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "green",
+          "value_label": "2/2 站上50MA",
+          "interpretation": "鈀、銀皆站上 50 日均線，成本趨勢向上，支撐漲價邏輯。",
+          "widget_data": {
+            "rows": [
+              {
+                "cells": [
+                  "鈀 Palladium",
+                  "1396.43",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  1299.486,
+                  1303.998,
+                  1308.98,
+                  1314.379,
+                  1320.128,
+                  1326.15,
+                  1332.363,
+                  1338.676,
+                  1344.998,
+                  1351.236,
+                  1357.303,
+                  1363.111,
+                  1368.583,
+                  1373.652,
+                  1378.259,
+                  1382.36,
+                  1385.924,
+                  1388.937,
+                  1391.396,
+                  1393.319,
+                  1394.733,
+                  1395.684,
+                  1396.228,
+                  1396.433
+                ]
+              },
+              {
+                "cells": [
+                  "銀 Silver",
+                  "41.89",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  38.985,
+                  39.12,
+                  39.269,
+                  39.431,
+                  39.604,
+                  39.785,
+                  39.971,
+                  40.16,
+                  40.35,
+                  40.537,
+                  40.719,
+                  40.893,
+                  41.058,
+                  41.21,
+                  41.348,
+                  41.471,
+                  41.578,
+                  41.668,
+                  41.742,
+                  41.8,
+                  41.842,
+                  41.871,
+                  41.887,
+                  41.893
+                ]
+              }
+            ],
+            "columns": [
+              "金屬",
+              "價格",
+              "漲跌%",
+              "站上50MA",
+              "趨勢"
+            ],
+            "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)・漲跌%為單日波動，燈號看均線位置"
+          },
+          "detail": {
+            "above": 2,
+            "counted": 2
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
+        },
+        {
+          "id": "watchlist",
+          "name": "觀測名單",
+          "widget": "table",
+          "tags": [
+            "觀測名單",
+            "個股體檢"
+          ],
+          "in_master": false,
+          "unit": "",
+          "cadence": "trading_day",
+          "episode_ref": "?",
+          "episode_date": "2025-05-01",
+          "updated_at": "2026-07-04T12:51:14+08:00",
+          "track": "跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
+          "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
+          "order": 6,
+          "interpretations": {
+            "green": "觀測名單多數站上均線，個股體質偏強。",
+            "yellow": "觀測名單強弱互見，分歧加大。",
+            "red": "觀測名單多數跌破均線，個股體質轉弱。",
+            "gray": "觀測名單報價抓取失敗。"
+          },
+          "ok": true,
+          "stale": false,
+          "error": null,
+          "light": "green",
+          "value_label": "6/7 站上50MA",
+          "interpretation": "觀測名單多數站上均線，個股體質偏強。",
+          "widget_data": {
+            "rows": [
+              {
+                "cells": [
+                  "國巨",
+                  "502.36",
+                  "-0.1%"
+                ],
+                "dot": "green",
+                "spark": [
+                  495.371,
+                  495.749,
+                  496.245,
+                  496.845,
+                  497.532,
+                  498.288,
+                  499.091,
+                  499.919,
+                  500.749,
+                  501.559,
+                  502.326,
+                  503.028,
+                  503.646,
+                  504.163,
+                  504.565,
+                  504.84,
+                  504.981,
+                  504.984,
+                  504.849,
+                  504.58,
+                  504.183,
+                  503.671,
+                  503.057,
+                  502.358
+                ]
+              },
+              {
+                "cells": [
+                  "華新科",
+                  "180.85",
+                  "-0.1%"
+                ],
+                "dot": "green",
+                "spark": [
+                  178.334,
+                  178.47,
+                  178.648,
+                  178.864,
+                  179.112,
+                  179.384,
+                  179.673,
+                  179.971,
+                  180.27,
+                  180.561,
+                  180.837,
+                  181.09,
+                  181.313,
+                  181.499,
+                  181.643,
+                  181.742,
+                  181.793,
+                  181.794,
+                  181.746,
+                  181.649,
+                  181.506,
+                  181.322,
+                  181.101,
+                  180.849
+                ]
+              },
+              {
+                "cells": [
+                  "台積電",
+                  "1256.79",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  1169.537,
+                  1173.598,
+                  1178.082,
+                  1182.941,
+                  1188.115,
+                  1193.535,
+                  1199.126,
+                  1204.808,
+                  1210.498,
+                  1216.113,
+                  1221.572,
+                  1226.8,
+                  1231.725,
+                  1236.287,
+                  1240.433,
+                  1244.124,
+                  1247.332,
+                  1250.043,
+                  1252.257,
+                  1253.987,
+                  1255.26,
+                  1256.116,
+                  1256.605,
+                  1256.79
+                ]
+              },
+              {
+                "cells": [
+                  "南亞科",
+                  "43.54",
+                  "-0.7%"
+                ],
+                "dot": "red",
+                "spark": [
+                  44.897,
+                  44.856,
+                  44.843,
+                  44.855,
+                  44.888,
+                  44.937,
+                  44.998,
+                  45.065,
+                  45.132,
+                  45.194,
+                  45.246,
+                  45.283,
+                  45.299,
+                  45.291,
+                  45.256,
+                  45.19,
+                  45.091,
+                  44.96,
+                  44.796,
+                  44.599,
+                  44.372,
+                  44.117,
+                  43.838,
+                  43.538
+                ]
+              },
+              {
+                "cells": [
+                  "緯穎",
+                  "2792.87",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  2598.972,
+                  2607.995,
+                  2617.961,
+                  2628.759,
+                  2640.256,
+                  2652.301,
+                  2664.725,
+                  2677.351,
+                  2689.995,
+                  2702.473,
+                  2714.605,
+                  2726.222,
+                  2737.167,
+                  2747.304,
+                  2756.518,
+                  2764.72,
+                  2771.849,
+                  2777.873,
+                  2782.793,
+                  2786.637,
+                  2789.466,
+                  2791.368,
+                  2792.456,
+                  2792.866
+                ]
+              },
+              {
+                "cells": [
+                  "NVDA",
+                  "1117.15",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  1039.589,
+                  1043.198,
+                  1047.184,
+                  1051.503,
+                  1056.102,
+                  1060.92,
+                  1065.89,
+                  1070.94,
+                  1075.998,
+                  1080.989,
+                  1085.842,
+                  1090.489,
+                  1094.867,
+                  1098.922,
+                  1102.607,
+                  1105.888,
+                  1108.739,
+                  1111.149,
+                  1113.117,
+                  1114.655,
+                  1115.786,
+                  1116.547,
+                  1116.982,
+                  1117.146
+                ]
+              },
+              {
+                "cells": [
+                  "美光",
+                  "167.57",
+                  "+0.0%"
+                ],
+                "dot": "green",
+                "spark": [
+                  155.938,
+                  156.48,
+                  157.078,
+                  157.726,
+                  158.415,
+                  159.138,
+                  159.884,
+                  160.641,
+                  161.4,
+                  162.148,
+                  162.876,
+                  163.573,
+                  164.23,
+                  164.838,
+                  165.391,
+                  165.883,
+                  166.311,
+                  166.672,
+                  166.968,
+                  167.198,
+                  167.368,
+                  167.482,
+                  167.547,
+                  167.572
+                ]
+              }
+            ],
+            "columns": [
+              "標的",
+              "價格",
+              "漲跌%",
+              "站上50MA",
+              "趨勢"
+            ],
+            "caption": "點＝收盤站上(綠)/跌破(紅) 50MA・線＝近月走勢方向(綠漲紅跌)"
+          },
+          "detail": {
+            "above": 6,
+            "counted": 7
+          },
+          "prev_light": null,
+          "changed": false,
+          "history": [
+            [
+              "2026-07-04",
+              "green"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
+</script>
+
+<script>
+const SCHEMA = 1;
+const REFRESH_MS = 3 * 60 * 1000;
+const STALE_MIN = 90;
+const COLORS = {green:"#2ea043", yellow:"#d29922", red:"#da3633", gray:"#484f58"};
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ===== Widget 分派：唯一「每種顯示」的程式碼。新增用既有 widget 的訊號不用碰這裡。 ===== */
+const WIDGETS = {
+  light_card: (wd) => wd && wd.big ? `<div class="viz"><b>${esc(wd.big)}</b></div>` : "",
+  bar_chart:  (wd) => barSVG(wd.series || [], wd.labels || [], wd),
+  gauge:      (wd) => gaugeSVG(wd.percent, wd),
+  sparkline:  (wd) => sparkSVG(wd.series || [], wd) + (wd.note?`<div class="meta" style="margin-top:0">${esc(wd.note)}</div>`:""),
+  table:      (wd) => tableHTML(wd.columns || [], wd.rows || [], wd.caption),
+};
+function renderUnknown(_wd, sig){ return `<div class="interp">尚未支援的 widget：${esc(sig.widget)}</div>`; }
+
+function barSVG(series, labels, wd){
+  if(!series.length) return "";
+  const W=320,H=120,pad=20;
+  const max=Math.max(...series,0), min=Math.min(...series,0), range=(max-min)||1;
+  const bw=(W-2*pad)/series.length;
+  const y0=H-pad-((0-min)/range)*(H-2*pad);
+  let bars="";
+  series.forEach((v,i)=>{
+    const x=pad+i*bw+bw*0.15, w=bw*0.7;
+    const yv=H-pad-((v-min)/range)*(H-2*pad);
+    const top=Math.min(yv,y0), h=Math.max(Math.abs(yv-y0),1);
+    const hl=(i===wd.highlight_index);
+    const col=v<0?(hl?"#f0a1a1":"#da3633"):(hl?"#7ee2a0":"#2ea043");
+    bars+=`<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="1"/>`;
+  });
+  const zero=wd.zero_line?`<line x1="${pad}" y1="${y0.toFixed(1)}" x2="${W-pad}" y2="${y0.toFixed(1)}" stroke="#8b949e" stroke-dasharray="3 3"/>`:"";
+  const idxs=[0,Math.floor(series.length/2),series.length-1];
+  const anc=(i)=> i===0?"start" : i===series.length-1?"end" : "middle";
+  const lx=(i)=> i===0?pad : i===series.length-1?(W-pad) : (pad+i*bw+bw/2);
+  const lbls=idxs.map(i=>labels[i]?`<text x="${lx(i).toFixed(1)}" y="${H-4}" fill="#8b949e" font-size="9" text-anchor="${anc(i)}">${esc(labels[i])}</text>`:"").join("");
+  return `<div class="viz"><svg viewBox="0 0 ${W} ${H}" width="100%">${zero}${bars}${lbls}</svg></div>`;
+}
+
+function gaugeSVG(pct, wd){
+  if(pct==null) return "";
+  const W=320,H=68,pad=12,bw=W-2*pad,y=30;
+  const bands=wd.bands||[{to:100,light:"green"}];
+  let segs="",prev=0;
+  bands.forEach(b=>{
+    const x1=pad+bw*prev/100, x2=pad+bw*b.to/100;
+    segs+=`<rect x="${x1.toFixed(1)}" y="${y}" width="${(x2-x1).toFixed(1)}" height="10" fill="${COLORS[b.light]||"#484f58"}" opacity="0.55"/>`;
+    prev=b.to;
+  });
+  const mx=pad+bw*Math.max(0,Math.min(100,pct))/100;
+  const marker=`<line x1="${mx.toFixed(1)}" y1="${y-8}" x2="${mx.toFixed(1)}" y2="${y+18}" stroke="#e6edf3" stroke-width="2"/>`;
+  const ticks=[40,60].map(t=>`<text x="${(pad+bw*t/100).toFixed(1)}" y="${H-4}" fill="#8b949e" font-size="9" text-anchor="middle">${t}</text>`).join("");
+  const cap=wd.caption?`<text x="${W/2}" y="14" fill="#8b949e" font-size="11" text-anchor="middle">${esc(wd.caption)}</text>`:"";
+  return `<div class="viz"><svg viewBox="0 0 ${W} ${H}" width="100%">${cap}${segs}${marker}${ticks}</svg></div>`;
+}
+
+function sparkSVG(series, wd){
+  if(!series || series.length<2) return "";
+  const W=320,H=64,pad=6;
+  // 若後端有給 ma_series（如 50MA），與主線共用同一座標刻度，畫成灰虛線
+  const ma=(wd.ma_series && wd.ma_series.length===series.length)?wd.ma_series:null;
+  const all=ma?series.concat(ma):series;
+  const max=Math.max(...all),min=Math.min(...all),range=(max-min)||1;
+  const step=(W-2*pad)/(series.length-1);
+  const pt=(v,i)=>`${(pad+i*step).toFixed(1)},${(H-pad-((v-min)/range)*(H-2*pad)).toFixed(1)}`;
+  const col=series[series.length-1]>=series[0]?"#2ea043":"#da3633";
+  const maLine=ma?`<polyline points="${ma.map(pt).join(" ")}" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>`:"";
+  const cap=wd.caption?`<text x="6" y="12" fill="#8b949e" font-size="10.5">${esc(wd.caption)}</text>`:"";
+  return `<div class="viz"><svg viewBox="0 0 ${W} ${H}" width="100%">${maLine}<polyline points="${series.map(pt).join(" ")}" fill="none" stroke="${col}" stroke-width="2"/>${cap}</svg></div>`;
+}
+
+function miniSpark(s){
+  if(!s || s.length<2) return "";
+  const W=60,H=18;
+  const max=Math.max(...s),min=Math.min(...s),range=(max-min)||1;
+  const step=W/(s.length-1);
+  const pts=s.map((v,i)=>`${(i*step).toFixed(1)},${(H-((v-min)/range)*H).toFixed(1)}`).join(" ");
+  const col=s[s.length-1]>=s[0]?"#2ea043":"#da3633";
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5"/></svg>`;
+}
+
+function tableHTML(cols, rows, caption){
+  if(!rows.length) return "";
+  const cap=caption?`<div class="meta" style="margin:2px 0 6px">${esc(caption)}</div>`:"";
+  const head=`<tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>`;
+  const body=rows.map(r=>{
+    const cells=(r.cells||[]).map(c=>`<td>${esc(c)}</td>`).join("");
+    const dot=r.dot?`<td><span class="rdot" style="background:${COLORS[r.dot]||"#484f58"}"></span></td>`:"<td></td>";
+    const sp=`<td>${miniSpark(r.spark||[])}</td>`;
+    return `<tr>${cells}${dot}${sp}</tr>`;
+  }).join("");
+  return `<div class="viz">${cap}<table class="qt">${head}${body}</table></div>`;
+}
+
+/* ===== 卡片 / cluster / 整頁 ===== */
+function legendHTML(sig){
+  // ③各狀態含義：三燈全列出、當前燈高亮＋「現在」標記。舊資料沒有 interpretations 時退回單句。
+  const it=sig.interpretations;
+  if(!it) return sig.interpretation?`<div class="interp">${esc(sig.interpretation)}</div>`:"";
+  const keys=["green","yellow","red"]; if(sig.light==="gray") keys.push("gray");
+  const rows=keys.map(k=>{
+    const cur=(k===sig.light);
+    return `<div class="lg ${cur?"cur":""}"><span class="rdot" style="background:${COLORS[k]}"></span>
+      <span>${cur?'<span class="nowtag">現在</span>':""}${esc(it[k]||"")}</span></div>`;
+  }).join("");
+  return `<div class="legend">${rows}</div>`;
+}
+
+const CADENCE_LABEL={monthly:"月更(上月數據約每月10日公布)",trading_day:"每交易日更新",daily:"每日更新",manual:"手動更新"};
+const LIGHT_ZH={green:"綠",yellow:"黃",red:"紅",gray:"灰"};
+const SEV={gray:-1,green:0,yellow:1,red:2};
+
+// 燈號歷史帶：固定 30 格、一天一格（左舊右新）；未累積的日子先鋪暗格，燈史逐日填滿
+const STRIP_SLOTS=30;
+function stripHTML(hist){
+  if(!hist||!hist.length) return "";
+  const pad=Math.max(0,STRIP_SLOTS-hist.length);
+  const empty='<i style="background:#21262d"></i>'.repeat(pad);
+  const cells=hist.slice(-STRIP_SLOTS).map(h=>`<i title="${esc(h[0])} ${LIGHT_ZH[h[1]]||h[1]}" style="background:${COLORS[h[1]]||COLORS.gray}"></i>`).join("");
+  return `<span class="strip" aria-label="近${STRIP_SLOTS}日燈號">${empty}${cells}</span>`;
+}
+
+// 掃視層的縮圖：有數列畫迷你走勢；gauge 類畫迷你比例條；表格類略過
+function miniFor(sig){
+  const wd=sig.widget_data||{};
+  if(wd.series&&wd.series.length>1) return miniSpark(wd.series.slice(-24));
+  if(typeof wd.percent==="number"){
+    const p=Math.max(0,Math.min(100,wd.percent));
+    return `<svg viewBox="0 0 60 18" width="60" height="18"><rect x="0" y="6" width="60" height="6" fill="#30363d" rx="3"/><rect x="0" y="6" width="${(p*0.6).toFixed(1)}" height="6" fill="${COLORS[sig.light]||"#484f58"}" rx="3"/></svg>`;
+  }
+  return "";
+}
+
+function renderSignal(sig){
+  const body=(WIDGETS[sig.widget]||renderUnknown)(sig.widget_data||{}, sig);
+  const badge=sig.stale?'<span class="badge">資料較舊</span>':"";
+  // 變燈徽章：惡化(嚴重度上升)紅底、好轉綠底——反轉觀測的主角是「變化」
+  const chg=sig.changed?`<span class="chg" style="background:${SEV[sig.light]>SEV[sig.prev_light]?COLORS.red:COLORS.green}">${LIGHT_ZH[sig.prev_light]||"?"}→${LIGHT_ZH[sig.light]||"?"}</span>`:"";
+  const track=sig.track?`<div class="kv"><span class="klabel">追什麼</span>${esc(sig.track)}</div>`:"";
+  const shape=sig.shape?`<div class="kv"><span class="klabel">怎麼看</span>${esc(sig.shape)}</div>`:"";
+  // meta：月更訊號標明「資料至哪個月」，其餘標更新節奏，避免把抓取時間誤讀成資料新鮮度
+  const cad=CADENCE_LABEL[sig.cadence]||sig.cadence;
+  const ls=(sig.widget_data||{}).labels||[];
+  const upto=(sig.cadence==="monthly"&&ls.length)?`資料至 ${ls[ls.length-1]} · `:"";
+  // 集數不明("?")時連日期一起隱藏——沒頭沒尾的孤兒日期比沒有更糟
+  const ep=(sig.episode_ref&&sig.episode_ref!=="?")?[sig.episode_ref,sig.episode_date].filter(Boolean).join(" "):"";
+  return `<details class="card ${sig.light}" data-id="${esc(sig.id)}">
+    <summary>
+      <span class="srow"><span class="sdot" style="background:${COLORS[sig.light]}"></span><span class="sname">${esc(sig.name)}${badge}${chg}</span><span class="hval">${esc(sig.value_label)}</span><span class="chev">▼</span></span>
+      <span class="srow2">${stripHTML(sig.history)}<span class="mini">${miniFor(sig)}</span></span>
+      <span class="soneliner">${esc(sig.interpretation)}</span>
+    </summary>
+    <div class="sbody">
+      ${track}
+      ${body}
+      ${shape}
+      ${legendHTML(sig)}
+      <div class="meta">${esc(upto)}${esc(cad)}${ep?" · "+esc(ep):""}${sig.updated_at?` · 更新 ${esc(sig.updated_at.slice(5,16).replace("T"," "))}`:""}</div>
+    </div>
+  </details>`;
+}
+
+function renderCluster(c){
+  const m=c.master||{light:"gray",label:"",reason:""};
+  const votes=m.votes?`（紅${m.votes.red||0} 黃${m.votes.yellow||0} 綠${m.votes.green||0}）`:"";
+  const head=`<div class="chead"><span class="dot" style="background:${COLORS[m.light]}"></span>
+    <span class="cname">${esc(c.name)}</span><span class="clabel">· ${esc(m.label)} ${votes}</span></div>
+    <div class="creason">${esc(m.reason)}</div>`;
+  // 今天變燈的卡浮到最上面，其餘依擴充順序
+  const bySort=(a,b)=>((b.changed?1:0)-(a.changed?1:0))||((a.order||0)-(b.order||0));
+  const sigs=(c.signals||[]).slice().sort(bySort).map(renderSignal).join("");
+  const sup=(c.supporting||[]).length
+    ? `<details data-id="sup-${esc(c.id)}"><summary>補充面板（${c.supporting.length}）</summary>${c.supporting.slice().sort(bySort).map(renderSignal).join("")}</details>`
+    : "";
+  return `<div class="cluster">${head}${sigs}${sup}</div>`;
+}
+
+function render(d, live){
+  // 重繪前記住哪些卡是展開的，重繪後還原（自動刷新不打斷閱讀）
+  const keepOpen=new Set([...document.querySelectorAll('details[data-id][open]')].map(e=>e.dataset.id));
+
+  const ml=d.master_light||"gray";
+  document.getElementById("master").innerHTML=
+    `<span class="dot" style="background:${COLORS[ml]}"></span>
+     <div><b>總燈號：${esc(d.master_reason||ml)}</b>
+     <div class="rr">${d.generated_at_label?("更新於 "+esc(d.generated_at_label)):""}</div></div>`;
+
+  // 第 3 層：今日變化置頂——有變燈大聲喊，沒變一行帶過（看完這行就能關掉）
+  const chg=d.changes||[];
+  const cEl=document.getElementById("changes");
+  if(chg.length){
+    cEl.className="banner alert";
+    cEl.innerHTML="⚠ 今日變化："+chg.map(x=>`${esc(x.name)} ${LIGHT_ZH[x.from]||x.from}→${LIGHT_ZH[x.to]||x.to}`).join("、");
+  }else{
+    cEl.className="banner quiet";
+    cEl.textContent="今日燈號變化：無";
+  }
+
+  document.getElementById("root").innerHTML=
+    (d.clusters||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(renderCluster).join("");
+
+  keepOpen.forEach(id=>{
+    const el=document.querySelector(`details[data-id="${CSS.escape(id)}"]`);
+    if(el) el.open=true;
+  });
+
+  const errs=(d.errors||[]).map(e=>esc(e.signal_id)).join("、");
+  document.getElementById("footer").innerHTML=
+    (errs?`<div class="err">資料來源異常：${errs}</div>`:"")+
+    `<div>${esc(d.next_update_hint||"")}</div>`+
+    `<div>${esc(d.tz||"")}　資料來源：FinMind / yfinance（延遲約 15 分）</div>`;
+
+  // banners
+  document.getElementById("sample").style.display = live ? "none" : "block";
+  let staleShow=false;
+  if(live && d.generated_at){
+    const ageMin=(Date.now()-Date.parse(d.generated_at))/60000;
+    staleShow = ageMin > STALE_MIN;
+  }
+  document.getElementById("stale").style.display = staleShow ? "block" : "none";
+}
+
+async function load(){
+  let data=JSON.parse(document.getElementById("embedded").textContent);
+  let live=false;
+  try{
+    const r=await fetch("data/signals.json?t="+Date.now(), {cache:"no-store"});
+    if(r.ok){ const j=await r.json(); if(j && j.schema_version===SCHEMA){ data=j; live=true; } }
+  }catch(_){}
+  render(data, live);
+}
+
+load();
+setInterval(load, REFRESH_MS);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) load(); });
+window.addEventListener("focus", load);
+</script>
+</body>
+</html>
