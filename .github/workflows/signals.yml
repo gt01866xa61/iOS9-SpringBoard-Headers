@@ -11,8 +11,9 @@ on:
     - cron: "30 22 * * *"          # UTC 22:30 = 台北 06:30 每日補跑（美股收盤後）
   workflow_dispatch: {}
   push:
-    # 開發階段：dev 分支的推送也觸發部署（每次改動即時上線看效果）；合併 master 後可移除 dev 分支
-    branches: [master, "claude/korea-semiconductor-investment-nb8cgk"]
+    # master 為唯一部署源：cron 排程只在 master 生效，push 也只認 master，避免與開發分支互相覆蓋。
+    # 開發流程：dev 分支開發 → 本機驗證 → 合併 master → 上線（合併即觸發部署）。
+    branches: [master]
     paths:
       - "gooaye_signals/**"
       - "!gooaye_signals/data/history.json"   # 燈史由 bot commit，不再觸發（防循環）
