@@ -51,7 +51,7 @@ def _compute(inputs: dict) -> SignalResult:
     ma_series = [round(mean(idx[i - MA_WINDOW + 1:i + 1]), 2)
                  for i in range(len(idx) - shown, len(idx))]
 
-    overheat = "・乖離偏大留意回檔" if dist_pct > OVERHEAT_PCT else ""
+    overheat = "・乖離偏大，留意均值回歸回檔" if dist_pct > OVERHEAT_PCT else ""
     return SignalResult(
         light=light,
         value_label=f"距MA {dist_pct:+.1f}%",
@@ -60,7 +60,9 @@ def _compute(inputs: dict) -> SignalResult:
             "ma_series": ma_series,
             "slope_pct": round(slope_pct, 2),
             "ma_window": MA_WINDOW,
-            "caption": f"實線=籃子、虛線=50MA｜距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日{overheat}",
+            # caption 進 SVG（空間有限只放數字）；note 是圖下方 HTML 行（會換行，放圖例與提醒）
+            "caption": f"距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
+            "note": f"實線＝籃子價格、灰虛線＝50日均線{overheat}",
         },
         detail={"dist_pct": round(dist_pct, 3), "slope_pct": round(slope_pct, 3),
                 "ma_now": round(ma_now, 3)},

@@ -101,8 +101,8 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-07-04T12:40:06+08:00",
-  "generated_at_label": "2026/07/04 12:40 (台北)",
+  "generated_at": "2026-07-04T12:51:14+08:00",
+  "generated_at_label": "2026/07/04 12:51 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
@@ -142,7 +142,7 @@
           "cadence": "monthly",
           "episode_ref": "EP512",
           "episode_date": "2025-06-18",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
           "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
           "order": 1,
@@ -218,7 +218,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP512",
           "episode_date": "2025-06-18",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
           "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
           "order": 2,
@@ -361,7 +361,8 @@
             ],
             "slope_pct": 0.05,
             "ma_window": 50,
-            "caption": "實線=籃子、虛線=50MA｜距MA +0.3%、MA斜率 +0.05%/5日"
+            "caption": "距MA +0.3%、MA斜率 +0.05%/5日",
+            "note": "實線＝籃子價格、灰虛線＝50日均線"
           },
           "detail": {
             "dist_pct": 0.268,
@@ -392,7 +393,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP515",
           "episode_date": "2025-07-02",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
           "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
           "order": 3,
@@ -485,7 +486,7 @@
           "cadence": "trading_day",
           "episode_ref": "EP505",
           "episode_date": "2025-04-02",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
           "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
           "order": 4,
@@ -813,7 +814,7 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "鈀、銀期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
           "shape": "看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
           "order": 5,
@@ -935,7 +936,7 @@
           "cadence": "trading_day",
           "episode_ref": "?",
           "episode_date": "2025-05-01",
-          "updated_at": "2026-07-04T12:40:06+08:00",
+          "updated_at": "2026-07-04T12:51:14+08:00",
           "track": "跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
           "order": 6,
@@ -1233,7 +1234,7 @@ const WIDGETS = {
   light_card: (wd) => wd && wd.big ? `<div class="viz"><b>${esc(wd.big)}</b></div>` : "",
   bar_chart:  (wd) => barSVG(wd.series || [], wd.labels || [], wd),
   gauge:      (wd) => gaugeSVG(wd.percent, wd),
-  sparkline:  (wd) => sparkSVG(wd.series || [], wd),
+  sparkline:  (wd) => sparkSVG(wd.series || [], wd) + (wd.note?`<div class="meta" style="margin-top:0">${esc(wd.note)}</div>`:""),
   table:      (wd) => tableHTML(wd.columns || [], wd.rows || [], wd.caption),
 };
 function renderUnknown(_wd, sig){ return `<div class="interp">尚未支援的 widget：${esc(sig.widget)}</div>`; }
@@ -1366,7 +1367,8 @@ function renderSignal(sig){
   const cad=CADENCE_LABEL[sig.cadence]||sig.cadence;
   const ls=(sig.widget_data||{}).labels||[];
   const upto=(sig.cadence==="monthly"&&ls.length)?`資料至 ${ls[ls.length-1]} · `:"";
-  const ep=[sig.episode_ref,sig.episode_date].filter(x=>x&&x!=="?").join(" ");
+  // 集數不明("?")時連日期一起隱藏——沒頭沒尾的孤兒日期比沒有更糟
+  const ep=(sig.episode_ref&&sig.episode_ref!=="?")?[sig.episode_ref,sig.episode_date].filter(Boolean).join(" "):"";
   return `<details class="card ${sig.light}" data-id="${esc(sig.id)}">
     <summary>
       <span class="srow"><span class="sdot" style="background:${COLORS[sig.light]}"></span><span class="sname">${esc(sig.name)}${badge}${chg}</span><span class="hval">${esc(sig.value_label)}</span><span class="chev">▼</span></span>
