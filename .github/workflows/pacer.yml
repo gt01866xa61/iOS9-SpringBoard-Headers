@@ -1,0 +1,70 @@
+name: pacer
+
+# 接力節拍器 —— GitHub cron 丟包的備援。
+#
+# 為什麼存在：GitHub 官方文件明載 schedule 事件高負載時會延遲甚至直接丟棄；
+# 實測 2026-07-06（週一）本 repo 排程投遞率 ~1/14，改離峰分鐘後仍連三班未發車。
+# 訊號燈的核心承諾是盤中即時，不能只靠 cron。
+#
+# 怎麼運作：每當 build-and-deploy-signals 跑完（不論成敗），本 workflow 接手——
+#   交易時段內（台北 09–21:59 平日）：睡 22 分鐘後用 GITHUB_TOKEN 補發下一班
+#   （workflow_dispatch 是 GITHUB_TOKEN 防遞迴規則的官方例外，會正常開新 run）。
+#   窗外但下一個平日窗口在 5.5 小時內（如台北 06:47 每日班次跑完）：睡到 09:17 開鏈。
+#   其餘（深夜/週末）：直接結束，鏈自然斷，隔天早上每日班次重啟。
+#
+# 防失控三道閘：
+#   1. 發車前重查時段——鏈在窗外自動死亡，每日至多 ~26 班。
+#   2. 發車前查 signals.yml 是否已有 queued/in_progress——cron 若自己來了就不重複發。
+#   3. concurrency cancel-in-progress——多條鏈收斂成一條（新完成的 run 取代還在睡的）。
+
+on:
+  workflow_run:
+    workflows: [build-and-deploy-signals]
+    types: [completed]
+
+permissions:
+  actions: write   # gh workflow run 需要
+
+concurrency:
+  group: pacer
+  cancel-in-progress: true
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 睡到下一班發車時間，補發 signals build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 目標時刻：窗內 → 22 分鐘後；平日窗前且 5.5h 內 → 當日 01:17Z；其餘 → 0（不接力）
+          target=$(python3 - <<'PYEOF'
+          import datetime as d
+          now = d.datetime.now(d.timezone.utc)
+          if now.weekday() < 5 and 1 <= now.hour <= 13:
+              print(int((now + d.timedelta(minutes=22)).timestamp()))
+          else:
+              nxt = now.replace(hour=1, minute=17, second=0, microsecond=0)
+              while nxt <= now or nxt.weekday() >= 5:
+                  nxt = (nxt + d.timedelta(days=1)).replace(hour=1, minute=17)
+              print(int(nxt.timestamp()) if (nxt - now).total_seconds() <= 5.5 * 3600 else 0)
+          PYEOF
+          )
+          if [ "$target" = "0" ]; then echo "窗外且下一窗太遠，鏈結束"; exit 0; fi
+          wait=$(( target - $(date -u +%s) ))
+          echo "睡 ${wait}s 後發車（$(date -u -d @$target '+%F %T')Z＝台北 $(date -u -d @"$((target+28800))" '+%H:%M')）"
+          [ "$wait" -gt 0 ] && sleep "$wait"
+
+          # 醒來重查：仍在交易時段才發車（睡眠可能跨日/跨窗）
+          h=$(date -u +%H); dow=$(date -u +%u)
+          if [ "$dow" -ge 6 ] || [ "$((10#$h))" -lt 1 ] || [ "$((10#$h))" -gt 13 ]; then
+            echo "醒來已在窗外，鏈結束"; exit 0
+          fi
+
+          # cron 若自己發車了就不重複（queued 或 in_progress 皆算）
+          q=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=queued&per_page=1" --jq .total_count)
+          r=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=in_progress&per_page=1" --jq .total_count)
+          if [ "${q:-0}" -gt 0 ] || [ "${r:-0}" -gt 0 ]; then echo "已有班次在跑/排隊，跳過"; exit 0; fi
+
+          gh workflow run signals.yml --ref master -R "$GITHUB_REPOSITORY"
+          echo "已補發下一班"
