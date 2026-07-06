@@ -54,6 +54,9 @@ def _check_index() -> None:
     assert "CSS.escape" in html and "keepOpen" in html, "缺重繪後還原展開狀態"
     assert "miniFor" in html, "缺掃視層縮圖"
 
+    # 3c. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
+    assert "maxAsof" in html and "資料至" in html, "缺表格列資料至（asof）標示"
+
     # 4. 內嵌 fallback 是合法 JSON、schema 相符、且與 web/data/signals.json 同構
     m = EMBED_RE.search(html)
     assert m, "找不到 embedded <script>"

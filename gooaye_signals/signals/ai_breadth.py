@@ -12,7 +12,7 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
-from core.indicators import above_ma
+from core.indicators import above_ma, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數 ===
@@ -23,8 +23,7 @@ YELLOW_BELOW = 60.0       # < 此% → YELLOW，否則 GREEN
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # inputs["closes"] = {symbol: [close, ...]}（舊→新）
-    closes = inputs.get("closes") or {}
+    closes, _ = unpack_closes(inputs.get("closes"))
     above = counted = 0
     rows: list[dict] = []
     for sym in BASKET:
@@ -41,6 +40,11 @@ def _compute(inputs: dict) -> SignalResult:
 
     pct = round(100.0 * above / counted, 1)
     light = "red" if pct < RED_BELOW else "yellow" if pct < YELLOW_BELOW else "green"
+    # 缺料透明化：分母少於籃子全數時明講，廣度 % 的基底不能悄悄改變
+    missing = len(BASKET) - counted
+    caption = f"{above}/{counted} 檔站上 {MA_WINDOW}MA"
+    if missing:
+        caption += f"（{missing} 檔暫缺料）"
     return SignalResult(
         light=light,
         value_label=f"廣度 {pct:.0f}%",
@@ -52,7 +56,7 @@ def _compute(inputs: dict) -> SignalResult:
                 {"to": YELLOW_BELOW, "light": "yellow"},
                 {"to": 100, "light": "green"},
             ],
-            "caption": f"{above}/{counted} 檔站上 {MA_WINDOW}MA", "unit": "%",
+            "caption": caption, "unit": "%",
         },
         detail={"above": above, "counted": counted},
     )

@@ -9,7 +9,7 @@
 """
 from __future__ import annotations
 
-from core.indicators import above_ma, breadth_light, quote_row
+from core.indicators import above_ma, breadth_light, quote_row, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 標的（yfinance 代碼 → 顯示名）===
@@ -27,12 +27,12 @@ MA_WINDOW = 50
 
 
 def _compute(inputs: dict) -> SignalResult:
-    closes = inputs.get("closes") or {}
+    closes, asof = unpack_closes(inputs.get("closes"))
     rows: list[dict] = []
     above = counted = 0
     for sym, name in NAMES.items():
         series = closes.get(sym) or []
-        rows.append(quote_row(name, series, MA_WINDOW))
+        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, "")))
         amv = above_ma(series, MA_WINDOW)
         if amv is not None:
             counted += 1

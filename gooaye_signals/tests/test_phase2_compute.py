@@ -58,7 +58,13 @@ def _check_ai() -> None:
     assert ai._compute(_ai_closes(0, 0, 6)).light == "gray"     # 全略過
     r = ai._compute(_ai_closes(3, 2, 1))
     assert r.extra["percent"] == 60.0 and r.value_label == "廣度 60%"
-    print("  ✓ ai_breadth 邊界燈號")
+    # 缺料透明化：1 檔太短被略過 → caption 明講、不悄悄改分母
+    assert "1 檔暫缺料" in r.extra["caption"], r.extra["caption"]
+    assert "暫缺" not in ai._compute(_ai_closes(5, 1, 0)).extra["caption"]
+    # fetcher 新形狀 {"series": ..., "asof": ...} 同樣可算（與舊形狀同結果）
+    new_shape = {"closes": {"series": _ai_closes(3, 2, 1)["closes"], "asof": {}}}
+    assert ai._compute(new_shape).extra["percent"] == 60.0
+    print("  ✓ ai_breadth 邊界燈號＋缺料揭露＋新舊 fetch 形狀")
 
 
 def _mlcc_closes(kind: str) -> dict:
@@ -97,7 +103,16 @@ def _check_support_panels() -> None:
     # table widget 需帶 columns + rows
     r = mem._compute(all_up(mem.NAMES))
     assert r.extra.get("columns") and len(r.rows) == len(mem.NAMES)
-    print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）")
+
+    # 資料至（asof）：新形狀帶日期 → 每列 quote_row 帶 asof，凍結市場（如美股休市）可自我說明
+    syms = list(mem.NAMES)
+    dated = {"closes": {"series": {s: UP for s in syms},
+                        "asof": {s: ("2026-07-03" if s == "MU" else "2026-07-06") for s in syms}}}
+    rows = mem._compute(dated).rows
+    by_first = {r["cells"][0]: r for r in rows}
+    assert by_first[mem.NAMES["MU"]]["asof"] == "2026-07-03"
+    assert by_first[mem.NAMES["2408.TW"]]["asof"] == "2026-07-06"
+    print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期")
 
 
 def _check_demo_pipeline() -> None:

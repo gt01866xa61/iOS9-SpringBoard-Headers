@@ -13,7 +13,7 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
-from core.indicators import basket_index, ma_slope_pct, mean
+from core.indicators import basket_index, ma_slope_pct, mean, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數 ===
@@ -27,8 +27,7 @@ SHOWN_BARS = 60           # sparkline 顯示根數（同時畫籃子與 50MA 虛
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # inputs["closes"] = {symbol: [close, ...]}（舊→新）
-    closes = inputs.get("closes") or {}
+    closes, _ = unpack_closes(inputs.get("closes"))
     idx = basket_index([closes.get(s) or [] for s in BASKET])
     if len(idx) < MA_WINDOW:
         return SignalResult(light="gray")
@@ -52,6 +51,9 @@ def _compute(inputs: dict) -> SignalResult:
                  for i in range(len(idx) - shown, len(idx))]
 
     overheat = "・乖離偏大，留意均值回歸回檔" if dist_pct > OVERHEAT_PCT else ""
+    # 缺料透明化：籃子少檔要明講，等權指數的組成不能悄悄改變
+    used = sum(1 for s in BASKET if closes.get(s))
+    lack = f"・{len(BASKET) - used} 檔暫缺料，籃子以 {used} 檔計" if used < len(BASKET) else ""
     return SignalResult(
         light=light,
         value_label=f"距MA {dist_pct:+.1f}%",
@@ -62,7 +64,7 @@ def _compute(inputs: dict) -> SignalResult:
             "ma_window": MA_WINDOW,
             # caption 進 SVG（空間有限只放數字）；note 是圖下方 HTML 行（會換行，放圖例與提醒）
             "caption": f"距MA {dist_pct:+.1f}%、MA斜率 {slope_pct:+.2f}%/{SLOPE_LOOKBACK}日",
-            "note": f"實線＝籃子價格、灰虛線＝50日均線{overheat}",
+            "note": f"實線＝籃子價格、灰虛線＝50日均線{overheat}{lack}",
         },
         detail={"dist_pct": round(dist_pct, 3), "slope_pct": round(slope_pct, 3),
                 "ma_now": round(ma_now, 3)},

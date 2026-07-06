@@ -78,6 +78,7 @@
   table.qt th:first-child{text-align:left}
   table.qt td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
   table.qt td:first-child{text-align:left}
+  table.qt .asof{color:var(--muted);font-size:10px;line-height:1.3;white-space:nowrap}
   .rdot{width:9px;height:9px;border-radius:50%;display:inline-block}
   footer{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
   .err{color:#f0a1a1}
@@ -101,14 +102,45 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-07-04T22:26:12+08:00",
-  "generated_at_label": "2026/07/04 22:26 (台北)",
+  "generated_at": "2026-07-06T15:04:01+08:00",
+  "generated_at_label": "2026/07/06 15:04 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
-  "master_prev": null,
+  "master_prev": "green",
   "master_reason": "部分轉弱，尚未確認見頂，留意。",
-  "changes": [],
+  "changes": [
+    {
+      "id": "_master",
+      "name": "總燈號",
+      "from": "green",
+      "to": "yellow"
+    },
+    {
+      "id": "memory_rs",
+      "name": "記憶體循環相對強度",
+      "from": "green",
+      "to": "red"
+    },
+    {
+      "id": "mlcc_basket_ma",
+      "name": "被動元件籃子 vs 50MA",
+      "from": "green",
+      "to": "yellow"
+    },
+    {
+      "id": "raw_materials",
+      "name": "原物料成本（鈀 / 銀）",
+      "from": "red",
+      "to": "green"
+    },
+    {
+      "id": "yageo_rev_yoy",
+      "name": "國巨(2327) 月營收 YoY",
+      "from": "green",
+      "to": "red"
+    }
+  ],
   "clusters": [
     {
       "id": "semi_memory_top",
@@ -140,7 +172,7 @@
           "in_master": true,
           "unit": "% YoY",
           "cadence": "monthly",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
           "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
           "order": 1,
@@ -192,11 +224,15 @@
           "detail": {
             "consecutive_down_months": 8
           },
-          "prev_light": null,
-          "changed": false,
+          "prev_light": "green",
+          "changed": true,
           "history": [
             [
               "2026-07-04",
+              "green"
+            ],
+            [
+              "2026-07-06",
               "red"
             ]
           ]
@@ -214,7 +250,7 @@
           "in_master": true,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
           "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
           "order": 2,
@@ -365,11 +401,15 @@
             "slope_pct": 0.046,
             "ma_now": 100.204
           },
-          "prev_light": null,
-          "changed": false,
+          "prev_light": "green",
+          "changed": true,
           "history": [
             [
               "2026-07-04",
+              "green"
+            ],
+            [
+              "2026-07-06",
               "yellow"
             ]
           ]
@@ -387,7 +427,7 @@
           "in_master": true,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
           "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
           "order": 3,
@@ -454,11 +494,15 @@
             "above": 6,
             "counted": 6
           },
-          "prev_light": null,
+          "prev_light": "green",
           "changed": false,
           "history": [
             [
               "2026-07-04",
+              "green"
+            ],
+            [
+              "2026-07-06",
               "green"
             ]
           ]
@@ -478,7 +522,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
           "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
           "order": 4,
@@ -528,7 +572,8 @@
                   167.482,
                   167.547,
                   167.572
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -562,7 +607,8 @@
                   83.741,
                   83.774,
                   83.786
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -596,7 +642,8 @@
                   51469.875,
                   51143.945,
                   50794.295
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -630,7 +677,8 @@
                   132351.106,
                   131513.002,
                   130613.9
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -664,7 +712,8 @@
                   44.117,
                   43.838,
                   43.538
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -698,7 +747,8 @@
                   18.382,
                   18.266,
                   18.141
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -732,7 +782,8 @@
                   66.176,
                   65.757,
                   65.307
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -766,7 +817,8 @@
                   367.642,
                   365.314,
                   362.816
-                ]
+                ],
+                "asof": ""
               }
             ],
             "columns": [
@@ -782,11 +834,15 @@
             "above": 2,
             "counted": 8
           },
-          "prev_light": null,
-          "changed": false,
+          "prev_light": "green",
+          "changed": true,
           "history": [
             [
               "2026-07-04",
+              "green"
+            ],
+            [
+              "2026-07-06",
               "red"
             ]
           ]
@@ -804,7 +860,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "鈀、銀期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
           "shape": "看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
           "order": 5,
@@ -854,7 +910,8 @@
                   1395.684,
                   1396.228,
                   1396.433
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -888,7 +945,8 @@
                   41.871,
                   41.887,
                   41.893
-                ]
+                ],
+                "asof": ""
               }
             ],
             "columns": [
@@ -904,11 +962,15 @@
             "above": 2,
             "counted": 2
           },
-          "prev_light": null,
-          "changed": false,
+          "prev_light": "red",
+          "changed": true,
           "history": [
             [
               "2026-07-04",
+              "red"
+            ],
+            [
+              "2026-07-06",
               "green"
             ]
           ]
@@ -924,7 +986,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-04T22:26:12+08:00",
+          "updated_at": "2026-07-06T15:04:01+08:00",
           "track": "跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
           "order": 6,
@@ -974,7 +1036,8 @@
                   503.671,
                   503.057,
                   502.358
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1008,7 +1071,8 @@
                   181.322,
                   181.101,
                   180.849
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1042,7 +1106,8 @@
                   1256.116,
                   1256.605,
                   1256.79
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1076,7 +1141,8 @@
                   44.117,
                   43.838,
                   43.538
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1110,7 +1176,8 @@
                   2791.368,
                   2792.456,
                   2792.866
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1144,7 +1211,8 @@
                   1116.547,
                   1116.982,
                   1117.146
-                ]
+                ],
+                "asof": ""
               },
               {
                 "cells": [
@@ -1178,7 +1246,8 @@
                   167.482,
                   167.547,
                   167.572
-                ]
+                ],
+                "asof": ""
               }
             ],
             "columns": [
@@ -1194,11 +1263,15 @@
             "above": 6,
             "counted": 7
           },
-          "prev_light": null,
+          "prev_light": "green",
           "changed": false,
           "history": [
             [
               "2026-07-04",
+              "green"
+            ],
+            [
+              "2026-07-06",
               "green"
             ]
           ]
@@ -1296,8 +1369,12 @@ function tableHTML(cols, rows, caption){
   if(!rows.length) return "";
   const cap=caption?`<div class="meta" style="margin:2px 0 6px">${esc(caption)}</div>`:"";
   const head=`<tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>`;
+  // 資料日落後於全表最新日的列（如美股休市時的凍結報價）標「資料至 MM-DD」，
+  // 凍結是市場沒開、不是系統沒更新——時效自我說明
+  const maxAsof=rows.reduce((m,r)=>r.asof&&r.asof>m?r.asof:m,"");
   const body=rows.map(r=>{
-    const cells=(r.cells||[]).map(c=>`<td>${esc(c)}</td>`).join("");
+    const lag=r.asof&&maxAsof&&r.asof<maxAsof;
+    const cells=(r.cells||[]).map((c,i)=>`<td>${esc(c)}${(i===0&&lag)?`<div class="asof">資料至 ${esc(r.asof.slice(5))}</div>`:""}</td>`).join("");
     const dot=r.dot?`<td><span class="rdot" style="background:${COLORS[r.dot]||"#484f58"}"></span></td>`:"<td></td>";
     const sp=`<td>${miniSpark(r.spark||[])}</td>`;
     return `<tr>${cells}${dot}${sp}</tr>`;

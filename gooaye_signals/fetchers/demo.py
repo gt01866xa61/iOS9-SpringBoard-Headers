@@ -14,9 +14,13 @@ def _finmind_revenue(params: Mapping[str, object], fixture: dict) -> list:
 
 
 def _yf_close(params: Mapping[str, object], fixture: dict) -> dict:
-    """回傳 {symbol: [close, ...]}（舊→新），缺的 symbol 給空 list。"""
+    """回傳 {"series": {symbol: [close, ...]}, "asof": {}}（舊→新），缺的 symbol 給空 list。
+
+    fixtures 是合成數列、沒有真實日期，asof 一律留空（不捏造日期）——「資料至」標示只在
+    live 模式出現。
+    """
     symbols = params.get("symbols", [])
-    return {s: fixture.get(s, []) for s in symbols}
+    return {"series": {s: fixture.get(s, []) for s in symbols}, "asof": {}}
 
 
 DEMO_SHAPERS = {

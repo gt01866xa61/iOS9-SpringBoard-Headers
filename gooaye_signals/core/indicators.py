@@ -63,6 +63,19 @@ def basket_index(series_list: Sequence[Sequence[float]]) -> list[float]:
     return [mean(col) for col in zip(*norm)]
 
 
+def unpack_closes(data: object) -> tuple[dict, dict]:
+    """把 yf_close 的回傳拆成 (series, asof)，新舊兩種形狀都吃。
+
+    新：{"series": {sym: [...]}, "asof": {sym: "YYYY-MM-DD"}}
+    舊：{sym: [...]}（相容改版前的 last-good 快取與手寫測資）→ asof 給空 dict。
+    """
+    if not isinstance(data, dict) or not data:
+        return {}, {}
+    if isinstance(data.get("series"), dict):
+        return data["series"], data.get("asof") or {}
+    return data, {}
+
+
 def breadth_light(above: int, counted: int,
                   red_below: float = 40.0, yellow_below: float = 60.0) -> str:
     """站上均線比例 → 燈號（廣度邏輯，也給支援面板當概況燈用）。"""
@@ -73,10 +86,14 @@ def breadth_light(above: int, counted: int,
 
 
 def quote_row(name: str, series: Sequence[float],
-              window: int = 50, spark_n: int = 24) -> dict:
-    """把一檔的價格序列轉成 table widget 的一列：名稱／價格／漲跌%／站上均線點／迷你走勢。"""
+              window: int = 50, spark_n: int = 24, asof: str = "") -> dict:
+    """把一檔的價格序列轉成 table widget 的一列：名稱／價格／漲跌%／站上均線點／迷你走勢。
+
+    asof＝該檔最後收盤日（yf_close 提供）。前端把落後於全表最新日的列標「資料至 MM-DD」，
+    休市中的市場（如美股假日）報價凍結時使用者能一眼看出是市場沒開、不是系統沒更新。
+    """
     if not series:
-        return {"cells": [name, "—", "—"], "dot": "gray", "spark": []}
+        return {"cells": [name, "—", "—"], "dot": "gray", "spark": [], "asof": asof}
     price = series[-1]
     chg = pct_change(series)
     amv = above_ma(series, window)
@@ -85,4 +102,5 @@ def quote_row(name: str, series: Sequence[float],
         "cells": [name, f"{price:.2f}", "—" if chg is None else f"{chg:+.1f}%"],
         "dot": dot,
         "spark": [round(float(x), 3) for x in series[-spark_n:]],
+        "asof": asof,
     }
