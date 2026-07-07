@@ -3,12 +3,18 @@ name: pacer
 # 接力節拍器 —— GitHub cron 丟包的備援。
 #
 # 為什麼存在：GitHub 官方文件明載 schedule 事件高負載時會延遲甚至直接丟棄；
-# 實測 2026-07-06（週一）本 repo 排程投遞率 ~1/14，改離峰分鐘後仍連三班未發車。
+# 實測 2026-07-06（週一）本 repo 排程投遞率 ~1/14，改離峰分鐘後仍大量丟班。
 # 訊號燈的核心承諾是盤中即時，不能只靠 cron。
 #
-# 怎麼運作：每當 build-and-deploy-signals 跑完（不論成敗），本 workflow 接手——
-#   交易時段內（台北 09–21:59 平日）：睡 22 分鐘後用 GITHUB_TOKEN 補發下一班
-#   （workflow_dispatch 是 GITHUB_TOKEN 防遞迴規則的官方例外，會正常開新 run）。
+# 環的形狀（兩條邊都是明確 workflow_dispatch）：
+#   build 最後一步發車 pacer → pacer 睡到下一班時間 → 發車 build → 循環。
+#   ⚠ 不能靠 workflow_run 級聯：實測 GITHUB_TOKEN 補發的班次「本身會跑」
+#   （workflow_dispatch 是防遞迴例外），但「它跑完」不會再觸發 workflow_run
+#   （2026-07-06/07 三次鏈全數精確斷在補發班之後）。下方 workflow_run 觸發
+#   僅作 push/cron 班次的冗餘入口。
+#
+# 睡眠邏輯：
+#   交易時段內（台北 09–21:59 平日）：睡 22 分鐘後補發下一班。
 #   窗外但下一個平日窗口在 5.5 小時內（如台北 06:47 每日班次跑完）：睡到 09:17 開鏈。
 #   其餘（深夜/週末）：直接結束，鏈自然斷，隔天早上每日班次重啟。
 #
@@ -18,7 +24,8 @@ name: pacer
 #   3. concurrency cancel-in-progress——多條鏈收斂成一條（新完成的 run 取代還在睡的）。
 
 on:
-  workflow_run:
+  workflow_dispatch: {}   # 主入口：build 最後一步明確發車
+  workflow_run:           # 冗餘入口：push/cron 觸發的 build 跑完也會接（補發班不會）
     workflows: [build-and-deploy-signals]
     types: [completed]
 
@@ -66,5 +73,10 @@ jobs:
           r=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=in_progress&per_page=1" --jq .total_count)
           if [ "${q:-0}" -gt 0 ] || [ "${r:-0}" -gt 0 ]; then echo "已有班次在跑/排隊，跳過"; exit 0; fi
 
-          gh workflow run signals.yml --ref master -R "$GITHUB_REPOSITORY"
-          echo "已補發下一班"
+          for i in 1 2 3; do
+            if gh workflow run signals.yml --ref master -R "$GITHUB_REPOSITORY"; then
+              echo "已補發下一班"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::warning::補發失敗——接力暫停，待下一班 cron/push 重啟"

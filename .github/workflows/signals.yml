@@ -25,6 +25,7 @@ permissions:
   contents: write   # 需要把 data/history.json（燈號歷史）commit 回 repo
   pages: write
   id-token: write
+  actions: write    # 最後一步發車 pacer 接力（gh workflow run）
 
 # 同時間只跑一個 Pages 部署，且不取消進行中的（避免排程與手動觸發互相打架）
 concurrency:
@@ -124,3 +125,21 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # 接力環的關鍵一棒：明確發車 pacer（不能靠 workflow_run 級聯——實測
+      # GITHUB_TOKEN 補發的班次「本身會跑」但「跑完不會再觸發 workflow_run」，
+      # 鏈 3/3 都精確斷在補發班之後；workflow_dispatch 事件本身是防遞迴例外，
+      # 所以 build→pacer、pacer→build 兩條邊都改走明確 dispatch，環才閉合）。
+      # if: always()——build 中途失敗也要接棒，鏈不因單輪故障而死。
+      - name: Relay to pacer
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in 1 2 3; do
+            if gh workflow run pacer.yml --ref master -R "$GITHUB_REPOSITORY"; then
+              echo "pacer 已接棒"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::warning::pacer 接棒失敗——接力暫停，待下一班 cron/push 重啟"

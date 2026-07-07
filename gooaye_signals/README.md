@@ -104,9 +104,11 @@ python -m http.server                    # 開 http://localhost:8000/web/ 看儀
    等綠勾。完成後點出現的 `page_url`，或直接開上面的網址。
 5. **讓它自動定時更新**：把這個分支合併到 `master`（開 PR → 核准合併）。**排程 (cron) 只在
    master 生效**，合併後才會平日每 30 分、每日再補跑一次自動更新。
-   觸發是雙軌的：cron（分鐘取 17/47 避開 GitHub 尖峰丟包）＋ `pacer.yml` 接力（每輪
-   build 完成後，交易時段內 22 分鐘自動補發下一班；早上的每日班次負責開鏈）。GitHub
-   cron 實測會大量丟班（2026-07-06 上午 14 班只發 1 班），pacer 是主保證、cron 是冗餘。
+   觸發是「接力環」：build 最後一步發車 `pacer.yml`，pacer 交易時段內睡 22 分鐘再發車
+   build，兩條邊都走明確 workflow_dispatch（GITHUB_TOKEN 補發的班次跑完不會觸發
+   workflow_run——實測三次鏈全斷在這，所以不能靠級聯）。cron（17/47 離峰分鐘）與
+   push 是環的重啟入口；GitHub cron 實測大量丟班（2026-07-06 上午 14 班只發 1 班），
+   環是主保證、cron 是冗餘。
 6. **加到手機主畫面**：iPhone Safari → 分享 → 加入主畫面；Android Chrome → ⋮ → 加到主畫面。
    之後點圖示打開就是雲端最後一次跑出來的最新燈號，不用開電腦。
 
