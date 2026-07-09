@@ -19,9 +19,14 @@ name: pacer
 #   其餘（深夜/週末）：直接結束，鏈自然斷，隔天早上每日班次重啟。
 #
 # 防失控三道閘：
-#   1. 發車前重查時段——鏈在窗外自動死亡，每日至多 ~26 班。
+#   1. 發車前重查時段——鏈在窗外自動死亡，每日至多 ~36 棒。
 #   2. 發車前查 signals.yml 是否已有 queued/in_progress——cron 若自己來了就不重複發。
 #   3. concurrency cancel-in-progress——多條鏈收斂成一條（新完成的 run 取代還在睡的）。
+#
+# 鏈的存活保證（2026-07-09 佇列取消事故後加固）：每一棒在窗內睡醒後「永遠自派
+# 下一棒」，不依賴 build 是否真的跑起來；build 健康時其 Relay 棒會取代自派棒。
+# 唯一救不了的情況：pacer 自己也拿不到 runner（GitHub 全面故障）→ 靠 cron/push/
+# 每日班次在故障復原後重啟，期間頁面 stale 橫幅誠實示警。
 
 on:
   workflow_dispatch: {}   # 主入口：build 最後一步明確發車
@@ -68,15 +73,34 @@ jobs:
             echo "醒來已在窗外，鏈結束"; exit 0
           fi
 
-          # cron 若自己發車了就不重複（queued 或 in_progress 皆算）
-          q=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=queued&per_page=1" --jq .total_count)
-          r=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=in_progress&per_page=1" --jq .total_count)
-          if [ "${q:-0}" -gt 0 ] || [ "${r:-0}" -gt 0 ]; then echo "已有班次在跑/排隊，跳過"; exit 0; fi
+          # cron 若自己發車了就不重複（queued 或 in_progress 皆算）；
+          # 查詢偶發失敗不視為有班（|| echo 0）——寧可多發一班靠 concurrency 收斂，
+          # 也不讓一次 API 抖動殺死整條鏈
+          q=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=queued&per_page=1" --jq .total_count 2>/dev/null || echo 0)
+          r=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/signals.yml/runs?status=in_progress&per_page=1" --jq .total_count 2>/dev/null || echo 0)
+          if [ "${q:-0}" -gt 0 ] || [ "${r:-0}" -gt 0 ]; then
+            echo "已有班次在跑/排隊，本輪不發 build"
+          else
+            sent=0
+            for i in 1 2 3; do
+              if gh workflow run signals.yml --ref master -R "$GITHUB_REPOSITORY"; then
+                sent=1; echo "已補發下一班 build"; break
+              fi
+              sleep 5
+            done
+            [ "$sent" = "1" ] || echo "::warning::build 補發失敗"
+          fi
 
+          # 自派下一棒 pacer——鏈的存活不能依賴「build 有跑起來」：2026-07-09 實測
+          # GitHub runner 供應異常時，build job 在佇列排 15 分鐘拿不到 runner 被平台
+          # 取消、零 step 執行，build 端的 Relay 與 workflow_run 兩條邊都不會發生，
+          # 鏈就死了。自派讓每一棒睡醒後永遠有下一棒；build 健康時它的 Relay 棒
+          # （較新）會透過 concurrency 取代這根自派棒，節奏仍錨定 build 完成時間。
+          ok=0
           for i in 1 2 3; do
-            if gh workflow run signals.yml --ref master -R "$GITHUB_REPOSITORY"; then
-              echo "已補發下一班"; exit 0
+            if gh workflow run pacer.yml --ref master -R "$GITHUB_REPOSITORY"; then
+              ok=1; echo "已自派下一棒"; break
             fi
             sleep 5
           done
-          echo "::warning::補發失敗——接力暫停，待下一班 cron/push 重啟"
+          [ "$ok" = "1" ] || echo "::warning::自派失敗——若 build 也沒跑起來，鏈將暫停待 cron/push 重啟"

@@ -106,9 +106,11 @@ python -m http.server                    # 開 http://localhost:8000/web/ 看儀
    master 生效**，合併後才會平日每 30 分、每日再補跑一次自動更新。
    觸發是「接力環」：build 最後一步發車 `pacer.yml`，pacer 交易時段內睡 22 分鐘再發車
    build，兩條邊都走明確 workflow_dispatch（GITHUB_TOKEN 補發的班次跑完不會觸發
-   workflow_run——實測三次鏈全斷在這，所以不能靠級聯）。cron（17/47 離峰分鐘）與
-   push 是環的重啟入口；GitHub cron 實測大量丟班（2026-07-06 上午 14 班只發 1 班），
-   環是主保證、cron 是冗餘。
+   workflow_run——實測三次鏈全斷在這，所以不能靠級聯）。此外每棒 pacer 睡醒後
+   一律自派下一棒——build 可能在佇列階段就被平台取消（2026-07-09 實測 runner 供應
+   異常，排 15 分鐘被砍、零 step 執行），鏈的存活不能依賴 build 有跑起來。cron
+   （17/47 離峰分鐘）與 push 是環的重啟入口；GitHub cron 實測大量丟班（2026-07-06
+   上午 14 班只發 1 班），環是主保證、cron 是冗餘。
 6. **加到手機主畫面**：iPhone Safari → 分享 → 加入主畫面；Android Chrome → ⋮ → 加到主畫面。
    之後點圖示打開就是雲端最後一次跑出來的最新燈號，不用開電腦。
 
