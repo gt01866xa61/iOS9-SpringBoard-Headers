@@ -10,14 +10,14 @@ from __future__ import annotations
 from core.indicators import above_ma, breadth_light, quote_row, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
-# === 標的（yfinance 代碼 → 顯示名）===
+# === 標的（yfinance 代碼 → 顯示名；表格會顯示成「名稱(代號)」）===
 WATCH = {
     "2327.TW": "國巨",
     "2492.TW": "華新科",
     "2330.TW": "台積電",
     "2408.TW": "南亞科",
     "6669.TW": "緯穎",
-    "NVDA": "NVDA",
+    "NVDA": "輝達",
     "MU": "美光",
 }
 MA_WINDOW = 50
@@ -29,7 +29,7 @@ def _compute(inputs: dict) -> SignalResult:
     above = counted = 0
     for sym, name in WATCH.items():
         series = closes.get(sym) or []
-        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, "")))
+        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, ""), symbol=sym))
         amv = above_ma(series, MA_WINDOW)
         if amv is not None:
             counted += 1
@@ -67,7 +67,7 @@ SIGNAL = SignalSpec(
         "gray": "觀測名單報價抓取失敗。",
     },
     cadence="trading_day",
-    track="跨主題最想快速體檢的個股（國巨、華新科、台積電、南亞科、緯穎、NVDA、美光）——最快的一眼個股體檢。",
+    track="跨主題最想快速體檢的個股（國巨(2327)、華新科(2492)、台積電(2330)、南亞科(2408)、緯穎(6669)、輝達(NVDA)、美光(MU)）——最快的一眼個股體檢。",
     shape="一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
     order=6,
     in_master=False,

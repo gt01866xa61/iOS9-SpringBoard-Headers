@@ -11,10 +11,10 @@ from __future__ import annotations
 from core.indicators import above_ma, quote_row, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
-# === 標的（yfinance 期貨代碼 → 顯示名）===
+# === 標的（yfinance 期貨代碼 → 顯示名；表格會顯示成「名稱(代號)」）===
 NAMES = {
-    "PA=F": "鈀 Palladium",
-    "SI=F": "銀 Silver",
+    "PA=F": "鈀",
+    "SI=F": "銀",
 }
 MA_WINDOW = 50
 
@@ -25,7 +25,7 @@ def _compute(inputs: dict) -> SignalResult:
     above = counted = 0
     for sym, name in NAMES.items():
         series = closes.get(sym) or []
-        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, "")))
+        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, ""), symbol=sym))
         amv = above_ma(series, MA_WINDOW)
         if amv is not None:
             counted += 1
@@ -64,7 +64,7 @@ SIGNAL = SignalSpec(
         "gray": "金屬報價抓取失敗。",
     },
     cadence="trading_day",
-    track="鈀、銀期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
+    track="鈀(PA=F)、銀(SI=F)期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
     shape="看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
     order=5,
     in_master=False,

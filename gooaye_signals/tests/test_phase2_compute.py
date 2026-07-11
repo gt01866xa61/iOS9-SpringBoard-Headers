@@ -110,9 +110,10 @@ def _check_support_panels() -> None:
                         "asof": {s: ("2026-07-03" if s == "MU" else "2026-07-06") for s in syms}}}
     rows = mem._compute(dated).rows
     by_first = {r["cells"][0]: r for r in rows}
-    assert by_first[mem.NAMES["MU"]]["asof"] == "2026-07-03"
-    assert by_first[mem.NAMES["2408.TW"]]["asof"] == "2026-07-06"
-    print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期")
+    # 名稱後掛上抓價代號（可溯源）：「美光 (MU)」「南亞科 (2408.TW)」；空格＝手機斷行點
+    assert by_first[f'{mem.NAMES["MU"]} (MU)']["asof"] == "2026-07-03"
+    assert by_first[f'{mem.NAMES["2408.TW"]} (2408.TW)']["asof"] == "2026-07-06"
+    print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期＋名稱掛代號")
 
 
 def _check_demo_pipeline() -> None:

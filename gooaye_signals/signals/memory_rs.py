@@ -12,10 +12,10 @@ from __future__ import annotations
 from core.indicators import above_ma, breadth_light, quote_row, unpack_closes
 from core.spec import DataBinding, SignalResult, SignalSpec
 
-# === 標的（yfinance 代碼 → 顯示名）===
+# === 標的（yfinance 代碼 → 顯示名；表格會顯示成「名稱(代號)」）===
 NAMES = {
-    "MU": "美光 MU",
-    "SNDK": "晟碟 SNDK",
+    "MU": "美光",
+    "SNDK": "晟碟",
     "005930.KS": "三星電子",
     "000660.KS": "SK海力士",
     "2408.TW": "南亞科",
@@ -32,7 +32,7 @@ def _compute(inputs: dict) -> SignalResult:
     above = counted = 0
     for sym, name in NAMES.items():
         series = closes.get(sym) or []
-        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, "")))
+        rows.append(quote_row(name, series, MA_WINDOW, asof=asof.get(sym, ""), symbol=sym))
         amv = above_ma(series, MA_WINDOW)
         if amv is not None:
             counted += 1
@@ -70,7 +70,7 @@ SIGNAL = SignalSpec(
         "gray": "記憶體股報價抓取失敗。",
     },
     cadence="trading_day",
-    track="記憶體族群（美光、晟碟、三星、SK海力士、南亞科、華邦、威剛、群聯）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
+    track="記憶體族群（美光(MU)、晟碟(SNDK)、三星、SK海力士、南亞科(2408)、華邦(2344)、威剛(3260)、群聯(8299)）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
     shape="表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
     order=4,
     in_master=False,

@@ -86,20 +86,25 @@ def breadth_light(above: int, counted: int,
 
 
 def quote_row(name: str, series: Sequence[float],
-              window: int = 50, spark_n: int = 24, asof: str = "") -> dict:
+              window: int = 50, spark_n: int = 24, asof: str = "",
+              symbol: str = "") -> dict:
     """把一檔的價格序列轉成 table widget 的一列：名稱／價格／漲跌%／站上均線點／迷你走勢。
 
     asof＝該檔最後收盤日（yf_close 提供）。前端把落後於全表最新日的列標「資料至 MM-DD」，
     休市中的市場（如美股假日）報價凍結時使用者能一眼看出是市場沒開、不是系統沒更新。
+    symbol＝抓價用的真實代號（yfinance ticker），顯示成「名稱 (代號)」——每一列都能
+    直接溯源到報價來源。名稱與代號之間留空格，窄螢幕（手機）可在此自然斷行，
+    避免長代號把表格撐出畫面。
     """
+    label = f"{name} ({symbol})" if symbol else name
     if not series:
-        return {"cells": [name, "—", "—"], "dot": "gray", "spark": [], "asof": asof}
+        return {"cells": [label, "—", "—"], "dot": "gray", "spark": [], "asof": asof}
     price = series[-1]
     chg = pct_change(series)
     amv = above_ma(series, window)
     dot = "gray" if amv is None else ("green" if amv else "red")
     return {
-        "cells": [name, f"{price:.2f}", "—" if chg is None else f"{chg:+.1f}%"],
+        "cells": [label, f"{price:.2f}", "—" if chg is None else f"{chg:+.1f}%"],
         "dot": dot,
         "spark": [round(float(x), 3) for x in series[-spark_n:]],
         "asof": asof,
