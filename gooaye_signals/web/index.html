@@ -1286,7 +1286,8 @@
 <script>
 const SCHEMA = 1;
 const REFRESH_MS = 3 * 60 * 1000;
-const STALE_MIN = 90;
+const STALE_MIN = 90;          // 平日盤中（台北 09–22 週一~五）：超過 90 分算異常
+const STALE_OFF_MIN = 26 * 60; // 夜間/週末只有每日 06:47 保底班：超過 26 小時才算異常
 const COLORS = {green:"#2ea043", yellow:"#d29922", red:"#da3633", gray:"#484f58"};
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
@@ -1500,10 +1501,15 @@ function render(d, live){
 
   // banners
   document.getElementById("sample").style.display = live ? "none" : "block";
+  // 過期橫幅＝「系統沒在它該更新的時候更新」的異常警報，不是「現在不是更新時段」。
+  // 平日盤中每 ~23 分一班 → 90 分算異常；夜間與週末只有每日早上保底班 → 26 小時才算異常
+  //（週末休市，資料本來就停在週六早上，不該嚇人）。時區用固定 UTC+8 計算。
   let staleShow=false;
   if(live && d.generated_at){
     const ageMin=(Date.now()-Date.parse(d.generated_at))/60000;
-    staleShow = ageMin > STALE_MIN;
+    const tp=new Date(Date.now()+8*3600*1000);
+    const inWindow=tp.getUTCDay()>=1 && tp.getUTCDay()<=5 && tp.getUTCHours()>=9 && tp.getUTCHours()<22;
+    staleShow = ageMin > (inWindow ? STALE_MIN : STALE_OFF_MIN);
   }
   document.getElementById("stale").style.display = staleShow ? "block" : "none";
 }
