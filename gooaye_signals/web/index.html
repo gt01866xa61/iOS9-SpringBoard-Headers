@@ -15,7 +15,7 @@
        font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
        -webkit-font-smoothing:antialiased}
   .wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
-  h1{font-size:18px;margin:2px 0 2px;letter-spacing:.5px}
+  h1{font-size:20px;font-weight:800;margin:2px 0 2px;letter-spacing:.5px}
   .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
   .banner{border-radius:8px;padding:8px 10px;font-size:13px;margin:10px 0;display:none}
   .banner.sample{background:#1c2333;color:#c9d1d9;border:1px solid var(--line);display:block}
@@ -26,11 +26,20 @@
   .master b{font-size:17px}
   .master .rr{color:var(--muted);font-size:12px;margin-top:2px}
   .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-  .cluster{margin:22px 0 8px}
-  .chead{display:flex;align-items:center;gap:8px;margin:6px 2px}
-  .chead .cname{font-weight:700}
-  .clabel{font-size:12px;color:var(--muted)}
-  .creason{color:var(--muted);font-size:12px;margin:0 2px 8px}
+  /* 主題區塊＝有自己底色與邊框的「段落容器」——區塊界線一眼可見；
+     層級：h1 頁標 > .cname 主題大標(粗大+色點+狀態膠囊) > 卡片名(子標) */
+  .cluster{background:#10141c;border:1px solid var(--line);border-radius:14px;
+           padding:2px 10px 10px;margin:24px 0}
+  .chead{display:flex;align-items:center;gap:9px;margin:12px 2px 2px;flex-wrap:wrap}
+  .chead .dot{width:14px;height:14px}
+  .chead .cname{font-weight:800;font-size:16.5px;letter-spacing:.3px}
+  .cpill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .cvotes{font-size:11.5px;color:var(--muted)}
+  .creason{color:var(--muted);font-size:12px;margin:3px 2px 8px}
+  /* 補充面板＝區塊內的摺疊托盤，不再是漂浮的一行字 */
+  .cluster>details:not(.card){margin:10px 0 2px}
+  .cluster>details:not(.card)>summary{border:1px dashed var(--line);border-radius:10px;
+           padding:8px 12px;background:rgba(255,255,255,.02)}
   .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gray);
         border-radius:12px;margin:10px 0;overflow:hidden}
   .card.green{border-left-color:var(--green)}
@@ -102,8 +111,8 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T19:52:51+08:00",
-  "generated_at_label": "2026/07/12 19:52 (台北)",
+  "generated_at": "2026-07-12T20:17:36+08:00",
+  "generated_at_label": "2026/07/12 20:17 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
@@ -166,7 +175,7 @@
           "in_master": true,
           "unit": "% YoY",
           "cadence": "monthly",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
           "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
           "order": 1,
@@ -272,7 +281,7 @@
           "in_master": true,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
           "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
           "order": 2,
@@ -477,7 +486,7 @@
           "in_master": true,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
           "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
           "order": 3,
@@ -600,7 +609,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "記憶體族群（美光(MU)、晟碟(SNDK)、三星、SK海力士、南亞科(2408)、華邦(2344)、威剛(3260)、群聯(8299)）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
           "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
           "order": 4,
@@ -966,7 +975,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "鈀(PA=F)、銀(SI=F)期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
           "shape": "看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
           "order": 5,
@@ -1120,7 +1129,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "跨主題最想快速體檢的個股（國巨(2327)、華新科(2492)、台積電(2330)、南亞科(2408)、緯穎(6669)、輝達(NVDA)、美光(MU)）——最快的一眼個股體檢。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
           "order": 6,
@@ -1470,7 +1479,7 @@
           "in_master": true,
           "unit": "% YoY",
           "cadence": "monthly",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "導線架龍頭順德(2351)每月營收年增率(YoY)——缺貨與漲價最終都要灌進營收，是「交期還緊不緊」最可溯源的硬數據；導線架是封測獲利行情能否延續的先行溫度計。",
           "shape": "長條逐月墊高＝漲價缺貨仍在收斂進財報；一根根往下、由正轉負＝上游瓶頸緩解，封測行情延續性打折。",
           "order": 7,
@@ -1544,7 +1553,7 @@
           "in_master": true,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "導線架四雄（順德(2351)、長科(6548)、界霖(5285)、一詮(2486)）等權股價籃對 50 日均線的位置與斜率——「最缺不一定最漲」，缺貨是基本面，這條線看資金面到底買不買單。",
           "shape": "籃子貼著均線橫盤＝資金還沒回來；跌破且均線下彎＝題材失寵；站穩且向上＝資金開始買單缺貨故事。",
           "order": 8,
@@ -1719,7 +1728,7 @@
           "in_master": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-07-12T19:52:51+08:00",
+          "updated_at": "2026-07-12T20:17:36+08:00",
           "track": "導線架四雄逐檔體檢＋銅期貨(HG=F)——導線架報價隨國際銅價連動：股票列看誰站上均線，銅列看成本推力還在不在。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA；銅列走揚＝成本推升撐漲價、走弱＝漲價動能減弱（銅不計入本卡燈號）。",
           "order": 9,
@@ -2110,15 +2119,20 @@ function renderSignal(sig){
 
 function renderCluster(c){
   const m=c.master||{light:"gray",label:"",reason:""};
-  const votes=m.votes?`（紅${m.votes.red||0} 黃${m.votes.yellow||0} 綠${m.votes.green||0}）`:"";
-  const head=`<div class="chead"><span class="dot" style="background:${COLORS[m.light]}"></span>
-    <span class="cname">${esc(c.name)}</span><span class="clabel">· ${esc(m.label)} ${votes}</span></div>
+  const votes=m.votes?`紅${m.votes.red||0}・黃${m.votes.yellow||0}・綠${m.votes.green||0}`:"";
+  // 主題大標：色點 + 粗大名稱 + 狀態膠囊（顏色永遠伴隨文字，不單靠色）
+  const pc=COLORS[m.light]||COLORS.gray;
+  const pillFg=(m.light==="gray")?"#8b949e":pc;
+  const head=`<div class="chead"><span class="dot" style="background:${pc}"></span>
+    <span class="cname">${esc(c.name)}</span>
+    <span class="cpill" style="background:${pc}20;color:${pillFg};border:1px solid ${pc}55">${esc(m.label)}</span>
+    <span class="cvotes">${esc(votes)}</span></div>
     <div class="creason">${esc(m.reason)}</div>`;
   // 今天變燈的卡浮到最上面，其餘依擴充順序
   const bySort=(a,b)=>((b.changed?1:0)-(a.changed?1:0))||((a.order||0)-(b.order||0));
   const sigs=(c.signals||[]).slice().sort(bySort).map(renderSignal).join("");
   const sup=(c.supporting||[]).length
-    ? `<details data-id="sup-${esc(c.id)}"><summary>補充面板（${c.supporting.length}）</summary>${c.supporting.slice().sort(bySort).map(renderSignal).join("")}</details>`
+    ? `<details data-id="sup-${esc(c.id)}"><summary>補充面板（${c.supporting.length}）· 佐證用，不計入主燈</summary>${c.supporting.slice().sort(bySort).map(renderSignal).join("")}</details>`
     : "";
   return `<div class="cluster">${head}${sigs}${sup}</div>`;
 }
