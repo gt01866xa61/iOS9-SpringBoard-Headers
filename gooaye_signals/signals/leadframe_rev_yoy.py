@@ -1,13 +1,15 @@
-"""Signal 7 — 順德(2351) 月營收 YoY（導線架景氣的先行溫度計）。
+"""Signal 7 — 導線架四雄營收動能（產業級的先行溫度計）。
 
-追什麼：導線架龍頭順德(2351)每月營收年增率(YoY)。導線架是傳統封裝（功率/車用/
-        PMIC）的上游瓶頸，缺貨與漲價最終都要灌進營收——這是「交期還緊不緊」
-        最可溯源的硬數據。順德為功率導線架全球市占第一（逾 17%）。
-長相　：近 12 個月 YoY 長條圖，最新月高亮。動起來＝連續幾根往下掉、由正轉負。
-狀態　：🟢 未連降＝上游動能延續；🟡 連降 1 月＝動能鈍化；🔴 連降 ≥2 月＝瓶頸緩解/需求轉弱。
-資料　：FinMind 月營收（回傳已對齊、舊→新的 (month, yoy%)）。約每月 10 號更新。
-來源　：股癌 EP678——導線架可當封測強度的先行指標，lead time 若續拉，
-        封測的獲利行情就有延續性。
+追什麼：導線架四雄各自的月營收年增率(YoY)動能。缺貨與漲價最終都要灌進營收——
+        這是「交期還緊不緊」最可溯源的硬數據。四家並列而非只看龍頭：單一公司的
+        轉單、基期、副業雜訊（順德含文具、一詮多 LED 支架）騙不了整排，
+        「全面延續還是一家獨撐」一眼可辨。
+長相　：表格——每列一家：最新 YoY、連降月數、動能燈點、近 12 月 YoY 迷你走勢。
+狀態　：每家依「連降幾月」給動能燈（綠 0／黃 1／紅 ≥2），整卡照主燈真值表彙總：
+        🟢 全綠＝全面延續；🟡 任一黃/紅＝開始鈍化；🔴 ≥2 家紅＝產業級轉弱。
+資料　：FinMind 月營收（各家 (month, yoy%)，舊→新）。約每月 10 號更新，
+        各家公布有先後，晚報的列會標「至X月」。
+來源　：股癌 EP678——導線架可當封測強度的先行指標。
 """
 from __future__ import annotations
 
@@ -15,54 +17,86 @@ from core.indicators import consec_declines
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數（single source of truth）===
-STOCK_ID = "2351"
-BARS_SHOWN = 12          # 顯示月數
-RED_CONSEC = 2           # YoY 連降幾月 = RED
+# (FinMind stock_id, 顯示名)——id 即 FinMind 查詢代號，列列可溯源
+COMPANIES = (("2351", "順德"), ("6548", "長科"), ("5285", "界霖"), ("2486", "一詮"))
+BARS = 12                # 迷你走勢顯示月數
+RED_CONSEC = 2           # 單家 YoY 連降幾月 = 該家紅點
 
 
 def _compute(inputs: dict) -> SignalResult:
-    # inputs["rev"] = [[month "YYYY-MM", yoy%], ...] 已對齊、舊→新（FinMind adapter 產出）
-    rev = list(inputs.get("rev") or [])[-BARS_SHOWN:]
-    if len(rev) < 2:
-        return SignalResult(light="gray")
-    labels = [str(m) for m, _ in rev]
-    yoy = [float(v) for _, v in rev]
+    rows: list[dict] = []
+    reds = yellows = greens = 0
+    latest_months: list[str] = []
 
-    consec = consec_declines(yoy)
-    light = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
+    parsed: dict[str, list] = {}
+    for sid, _ in COMPANIES:
+        rev = list(inputs.get(f"r{sid}") or [])[-BARS:]
+        parsed[sid] = rev
+        if len(rev) >= 2:
+            latest_months.append(str(rev[-1][0]))
+    max_month = max(latest_months) if latest_months else ""
+
+    for sid, name in COMPANIES:
+        rev = parsed[sid]
+        if len(rev) < 2:
+            rows.append({"cells": [f"{name} ({sid})", "—", "—"], "dot": "gray", "spark": []})
+            continue
+        yoy = [float(v) for _, v in rev]
+        consec = consec_declines(yoy)
+        dot = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
+        reds += int(dot == "red")
+        yellows += int(dot == "yellow")
+        greens += int(dot == "green")
+        # 各家公布有先後：資料月份落後於同表最新月的，明講「至X月」
+        month = str(rev[-1][0])
+        lag = f"（至{int(month[-2:])}月）" if month < max_month else ""
+        rows.append({
+            "cells": [f"{name} ({sid})", f"{yoy[-1]:+.1f}%{lag}",
+                      f"連降{consec}月" if consec else "未連降"],
+            "dot": dot,
+            "spark": [round(v, 2) for v in yoy],
+        })
+
+    counted = reds + yellows + greens
+    if counted == 0:
+        return SignalResult(light="gray", rows=rows,
+                            extra={"columns": ["公司", "最新YoY", "動能", "燈", "近12月"]})
+
+    # 與主燈同一張真值表：≥2 紅→紅；任一紅/黃→黃；全綠→綠
+    light = "red" if reds >= 2 else ("yellow" if (reds or yellows) else "green")
+    caption = "點＝動能燈（綠 未連降・黃 連降1月・紅 連降≥2月）・線＝近12月YoY走勢"
+    if counted < len(COMPANIES):
+        caption += f"・{len(COMPANIES) - counted} 家暫缺料"
     return SignalResult(
         light=light,
-        value_label=f"YoY {yoy[-1]:+.1f}%",
-        series=[round(v, 2) for v in yoy],
-        labels=labels,
-        extra={"highlight_index": len(yoy) - 1, "unit": "% YoY", "zero_line": True},
-        detail={"consecutive_down_months": consec},
+        value_label=f"{greens}/{counted} 擴張中",
+        rows=rows,
+        extra={"columns": ["公司", "最新YoY", "動能", "燈", "近12月"], "caption": caption},
+        detail={"greens": greens, "yellows": yellows, "reds": reds, "counted": counted},
     )
 
 
 SIGNAL = SignalSpec(
     id="leadframe_rev_yoy",
-    name="順德(2351) 月營收 YoY",   # 名稱保持中性——「延續與否」由燈色判定
+    name="導線架四雄營收動能",
     cluster="leadframe_osat",
-    tags=("導線架", "封測", "功率元件", "月營收", "2351"),
-    widget="bar_chart",
-    bindings=(
-        DataBinding(
-            key="rev",
-            source="finmind_revenue",
-            params={"stock_id": STOCK_ID, "months": BARS_SHOWN + 2},
-        ),
+    tags=("導線架", "封測", "功率元件", "月營收"),
+    widget="table",
+    bindings=tuple(
+        DataBinding(key=f"r{sid}", source="finmind_revenue",
+                    params={"stock_id": sid, "months": BARS + 2})
+        for sid, _ in COMPANIES
     ),
     compute=_compute,
     interpretations={
-        "green": "順德營收年增仍在擴張，導線架缺貨/漲價動能延續，封測行情有基本面支撐。",
-        "yellow": "YoY 首度轉弱，觀察是否為上游動能鈍化的起點，可能只是單月雜訊。",
-        "red": "YoY 連 2 個月以上走低，導線架瓶頸緩解或需求轉弱，封測先行指標轉負。",
+        "green": "四家營收年增全數延續，缺貨/漲價全面灌進財報，封測行情有基本面支撐。",
+        "yellow": "部分公司營收動能鈍化——觀察是全面轉弱的起點，還是單一公司的雜訊。",
+        "red": "兩家以上 YoY 連降 2 個月，產業級動能轉弱，封測先行指標轉負。",
         "gray": "月營收資料尚未更新或抓取失敗。",
     },
     cadence="monthly",
-    track="導線架龍頭順德(2351)每月營收年增率(YoY)——缺貨與漲價最終都要灌進營收，是「交期還緊不緊」最可溯源的硬數據；導線架是封測獲利行情能否延續的先行溫度計。",
-    shape="長條逐月墊高＝漲價缺貨仍在收斂進財報；一根根往下、由正轉負＝上游瓶頸緩解，封測行情延續性打折。",
+    track="導線架四雄（順德(2351)、長科(6548)、界霖(5285)、一詮(2486)）各自的月營收 YoY 動能——缺貨與漲價最終都要灌進營收；四家並列看「全面延續還是一家獨撐」，單一公司的轉單、基期、副業雜訊（順德含文具、一詮多 LED 支架）騙不了整排。",
+    shape="每列一家：點＝動能燈（綠 未連降／黃 連降1月／紅 連降≥2月），線＝近12月 YoY 走勢；紅點變多＝產業級轉弱，只有一家紅＝公司個案。",
     order=7,
     in_master=True,
     unit="% YoY",

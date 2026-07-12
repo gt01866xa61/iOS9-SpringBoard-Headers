@@ -119,13 +119,34 @@ def _check_support_panels() -> None:
     print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期＋名稱掛代號")
 
 
+def _lf_rev_inputs(yoys_by_sid: dict) -> dict:
+    """組四家營收輸入：{sid: [yoy...]} → {"r<sid>": [[月, yoy], ...]}。"""
+    return {f"r{sid}": [[f"2026-{i+1:02d}", v] for i, v in enumerate(ys)]
+            for sid, ys in yoys_by_sid.items()}
+
+
 def _check_leadframe() -> None:
     """導線架 cluster 三訊號：核心燈色邊界（compute 與既有訊號同構，抽測關鍵行為）。"""
-    # 順德月營收 YoY：連降 0/1/2 月 → 綠/黃/紅
-    assert lf_rev._compute(_rev([1, 2, 3, 4])).light == "green"
-    assert lf_rev._compute(_rev([1, 2, 3, 2])).light == "yellow"
-    assert lf_rev._compute(_rev([1, 2, 4, 3, 2])).light == "red"
-    assert lf_rev._compute(_rev([1.0])).light == "gray"
+    up, down1, down2 = [1, 2, 3, 4], [1, 2, 3, 2], [1, 2, 4, 3, 2]
+    sids = [sid for sid, _ in lf_rev.COMPANIES]
+
+    # 四家營收動能：全綠→綠；一家連降1月→黃；兩家連降≥2月→紅（同主燈真值表）
+    r = lf_rev._compute(_lf_rev_inputs({s: up for s in sids}))
+    assert r.light == "green" and r.value_label == "4/4 擴張中", (r.light, r.value_label)
+    assert len(r.rows) == 4 and r.rows[0]["dot"] == "green"
+    r = lf_rev._compute(_lf_rev_inputs({sids[0]: down1, sids[1]: up, sids[2]: up, sids[3]: up}))
+    assert r.light == "yellow", r.light
+    r = lf_rev._compute(_lf_rev_inputs({sids[0]: down2, sids[1]: down2, sids[2]: up, sids[3]: up}))
+    assert r.light == "red" and r.value_label == "2/4 擴張中", (r.light, r.value_label)
+    # 一家沒資料 → 該列 gray、不計分母、caption 揭露
+    r = lf_rev._compute(_lf_rev_inputs({sids[0]: up, sids[1]: up, sids[2]: up}))
+    assert r.light == "green" and "1 家暫缺料" in r.extra["caption"], r.extra["caption"]
+    assert lf_rev._compute({}).light == "gray"
+    # 晚報透明化：一家資料只到前一個月 → 該列 YoY 標「至X月」
+    late = _lf_rev_inputs({s: up for s in sids})
+    late[f"r{sids[3]}"] = late[f"r{sids[3]}"][:-1]   # 一詮少最新月
+    r = lf_rev._compute(late)
+    assert "（至3月）" in r.rows[3]["cells"][1], r.rows[3]["cells"]
 
     # 四雄籃：強升/強跌/貼均線 → 綠/紅/黃
     up = {"closes": {s: [100.0 + i for i in range(60)] for s in lf_basket.BASKET}}
