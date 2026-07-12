@@ -227,6 +227,24 @@
         "2026-07-12",
         "yellow"
       ]
+    ],
+    "leadframe_basket_ma": [
+      [
+        "2026-07-12",
+        "green"
+      ]
+    ],
+    "leadframe_rev_yoy": [
+      [
+        "2026-07-12",
+        "green"
+      ]
+    ],
+    "leadframe_watch": [
+      [
+        "2026-07-12",
+        "green"
+      ]
     ]
   },
   "master": [
