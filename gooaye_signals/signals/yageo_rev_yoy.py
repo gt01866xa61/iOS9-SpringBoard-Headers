@@ -3,7 +3,8 @@
 追什麼：龍頭國巨(2327)每月營收的年增率(YoY)，是被動元件需求的風向球，也是最難
         作假的硬數據；龍頭營收轉降常領先股價。
 長相　：近 12 個月 YoY 長條圖，最新月高亮。動起來＝連續幾根往下掉、由正轉負。
-狀態　：🟢 未連降/高檔＝需求熱；🟡 連降 1 月＝動能鈍化；🔴 連降 ≥2 月＝營收動能反轉。
+狀態　：🟢 未連降且 YoY>0＝需求熱；🟡 連降 1 月或年減中＝動能鈍化；
+        🔴 連降 ≥2 月＝營收動能反轉。
 資料　：FinMind 月營收（回傳已對齊、舊→新的 (month, yoy%)）。約每月 10 號更新。
 來源　：股癌 EP512 (2025-06-18)。
 
@@ -29,7 +30,13 @@ def _compute(inputs: dict) -> SignalResult:
     yoy = [float(v) for _, v in rev]
 
     consec = consec_declines(yoy)
-    light = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
+    # 綠＝動能與水位都要：未連降「且」YoY 為正——年減中就算降幅收斂也只給黃
+    if consec >= RED_CONSEC:
+        light = "red"
+    elif consec == 1 or yoy[-1] <= 0:
+        light = "yellow"
+    else:
+        light = "green"
     return SignalResult(
         light=light,
         value_label=f"YoY {yoy[-1]:+.1f}%",
@@ -56,7 +63,7 @@ SIGNAL = SignalSpec(
     compute=_compute,
     interpretations={
         "green": "國巨營收年增仍在擴張，被動元件需求未見反轉。",
-        "yellow": "YoY 首度轉弱，觀察是否為趨勢起點，可能只是單月雜訊。",
+        "yellow": "YoY 首度轉弱或仍在年減——觀察是否為趨勢起點，可能只是單月雜訊。",
         "red": "YoY 連 2 個月以上走低，記憶體/被動元件循環見頂訊號浮現。",
         "gray": "月營收資料尚未更新或抓取失敗。",
     },

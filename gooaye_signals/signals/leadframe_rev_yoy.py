@@ -5,7 +5,8 @@
         轉單、基期、副業雜訊（順德含文具、一詮多 LED 支架）騙不了整排，
         「全面延續還是一家獨撐」一眼可辨。
 長相　：表格——每列一家：最新 YoY、連降月數、動能燈點、近 12 月 YoY 迷你走勢。
-狀態　：每家依「連降幾月」給動能燈（綠 0／黃 1／紅 ≥2），整卡照主燈真值表彙總：
+狀態　：每家動能燈＝動能與水位並看：綠＝未連降且 YoY>0（真擴張）；黃＝連降 1 月
+        或年減中（YoY≤0）；紅＝連降 ≥2 月。整卡照主燈真值表彙總：
         🟢 全綠＝全面延續；🟡 任一黃/紅＝開始鈍化；🔴 ≥2 家紅＝產業級轉弱。
 資料　：FinMind 月營收（各家 (month, yoy%)，舊→新）。約每月 10 號更新，
         各家公布有先後，晚報的列會標「至X月」。
@@ -43,7 +44,16 @@ def _compute(inputs: dict) -> SignalResult:
             continue
         yoy = [float(v) for _, v in rev]
         consec = consec_declines(yoy)
-        dot = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
+        # 綠＝動能與水位都要：未連降「且」YoY 為正——年減中就算降幅收斂也只給黃，
+        # 否則會出現「營收年減、卡片卻說擴張」的自相矛盾
+        if consec >= RED_CONSEC:
+            dot, momo = "red", f"連降{consec}月"
+        elif consec == 1:
+            dot, momo = "yellow", "連降1月"
+        elif yoy[-1] <= 0:
+            dot, momo = "yellow", "年減中"
+        else:
+            dot, momo = "green", "擴張中"
         reds += int(dot == "red")
         yellows += int(dot == "yellow")
         greens += int(dot == "green")
@@ -51,8 +61,7 @@ def _compute(inputs: dict) -> SignalResult:
         month = str(rev[-1][0])
         lag = f"（至{int(month[-2:])}月）" if month < max_month else ""
         rows.append({
-            "cells": [f"{name} ({sid})", f"{yoy[-1]:+.1f}%{lag}",
-                      f"連降{consec}月" if consec else "未連降"],
+            "cells": [f"{name} ({sid})", f"{yoy[-1]:+.1f}%{lag}", momo],
             "dot": dot,
             "spark": [round(v, 2) for v in yoy],
         })
@@ -64,7 +73,10 @@ def _compute(inputs: dict) -> SignalResult:
 
     # 與主燈同一張真值表：≥2 紅→紅；任一紅/黃→黃；全綠→綠
     light = "red" if reds >= 2 else ("yellow" if (reds or yellows) else "green")
-    caption = "點＝動能燈（綠 未連降・黃 連降1月・紅 連降≥2月）・線＝近12月YoY走勢"
+    caption = ("點＝動能燈（綠 擴張中・黃 連降1月/年減中・紅 連降≥2月）"
+               "・線＝近12月YoY走勢")
+    if max_month:
+        caption += f"・資料至 {max_month}"
     if counted < len(COMPANIES):
         caption += f"・{len(COMPANIES) - counted} 家暫缺料"
     return SignalResult(
@@ -89,8 +101,8 @@ SIGNAL = SignalSpec(
     ),
     compute=_compute,
     interpretations={
-        "green": "四家營收年增全數延續，缺貨/漲價全面灌進財報，封測行情有基本面支撐。",
-        "yellow": "部分公司營收動能鈍化——觀察是全面轉弱的起點，還是單一公司的雜訊。",
+        "green": "四家 YoY 全數為正且未連降，缺貨/漲價全面灌進財報，封測行情有基本面支撐。",
+        "yellow": "部分公司動能鈍化或仍在年減——觀察是全面轉弱的起點，還是個別公司的雜訊。",
         "red": "兩家以上 YoY 連降 2 個月，產業級動能轉弱，封測先行指標轉負。",
         "gray": "月營收資料尚未更新或抓取失敗。",
     },

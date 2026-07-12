@@ -32,10 +32,11 @@ def _rev(yoys: list[float]) -> dict:
 
 
 def _check_yageo() -> None:
-    assert yageo._compute(_rev([1, 2, 3, 4])).light == "green"          # 0 連降
+    assert yageo._compute(_rev([1, 2, 3, 4])).light == "green"          # 0 連降且為正
     assert yageo._compute(_rev([1, 2, 3, 2])).light == "yellow"         # 1 連降
     assert yageo._compute(_rev([1, 2, 4, 3, 2])).light == "red"         # 2 連降
     assert yageo._compute(_rev([1.0])).light == "gray"                  # 資料不足
+    assert yageo._compute(_rev([-5, -4, -3])).light == "yellow"         # 年減中：降幅收斂≠擴張，水位守門
     r = yageo._compute(_rev([5, 4, 3]))
     assert r.value_label == "YoY +3.0%" and r.extra["highlight_index"] == 2
     print("  ✓ yageo_rev_yoy 邊界燈號")
@@ -138,9 +139,14 @@ def _check_leadframe() -> None:
     assert r.light == "yellow", r.light
     r = lf_rev._compute(_lf_rev_inputs({sids[0]: down2, sids[1]: down2, sids[2]: up, sids[3]: up}))
     assert r.light == "red" and r.value_label == "2/4 擴張中", (r.light, r.value_label)
-    # 一家沒資料 → 該列 gray、不計分母、caption 揭露
+    # 年減中（YoY<0 但未連降）→ 該家黃、格子標「年減中」——水位守門，不得亮綠說擴張
+    r = lf_rev._compute(_lf_rev_inputs({sids[0]: [-5, -4, -3], sids[1]: up, sids[2]: up, sids[3]: up}))
+    assert r.light == "yellow" and r.rows[0]["dot"] == "yellow", (r.light, r.rows[0])
+    assert r.rows[0]["cells"][2] == "年減中", r.rows[0]["cells"]
+    # 一家沒資料 → 該列 gray、不計分母、caption 揭露；caption 帶「資料至」溯源
     r = lf_rev._compute(_lf_rev_inputs({sids[0]: up, sids[1]: up, sids[2]: up}))
     assert r.light == "green" and "1 家暫缺料" in r.extra["caption"], r.extra["caption"]
+    assert "資料至 2026-04" in r.extra["caption"], r.extra["caption"]
     assert lf_rev._compute({}).light == "gray"
     # 晚報透明化：一家資料只到前一個月 → 該列 YoY 標「至X月」
     late = _lf_rev_inputs({s: up for s in sids})
