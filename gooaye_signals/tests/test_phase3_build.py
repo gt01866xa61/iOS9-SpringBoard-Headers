@@ -74,7 +74,16 @@ def _check_full_build() -> None:
     assert [c["id"] for c in cl["supporting"]] == ["memory_rs", "raw_materials", "watchlist"]
     assert _find_card(data, "yageo_rev_yoy")["light"] == "red"
     assert not config.SIGNALS_JSON.with_suffix(".json.tmp").exists(), "殘留 .tmp（原子寫失敗）"
-    print("  ✓ 全流程 demo build → schema-valid、主燈黃、原子寫")
+
+    # 第二 cluster（導線架/封測）：order=2 排第二、demo 全綠；總燈仍取較嚴重的黃且點名主題
+    assert len(data["clusters"]) == 2, [c["id"] for c in data["clusters"]]
+    cl2 = data["clusters"][1]
+    assert cl2["id"] == "leadframe_osat"
+    assert [c["id"] for c in cl2["signals"]] == ["leadframe_rev_yoy", "leadframe_basket_ma"]
+    assert [c["id"] for c in cl2["supporting"]] == ["leadframe_watch"]
+    assert cl2["master"]["light"] == "green", cl2["master"]
+    assert "半導體" in data["master_reason"], data["master_reason"]
+    print("  ✓ 全流程 demo build → schema-valid、雙 cluster、主燈黃、原子寫")
 
 
 def _check_last_good_stale() -> None:

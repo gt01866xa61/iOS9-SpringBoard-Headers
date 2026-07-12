@@ -60,16 +60,30 @@
 | 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ 已上線；**每30分自動更新需合併 master**（cron 只在預設分支生效），開發分支目前為 push 即部署 |
 | 6+ | 擴充驗證（口述新訊號逐一加，如 `rates_macro` cluster） | ⬜ 持續 |
 
-## 首版種子訊號（cluster：半導體 / 記憶體循環見頂觀察）
+## 訊號清單
+
+### cluster 1：半導體 / 記憶體循環見頂觀察
 
 計入主燈（名稱一律中性，「轉弱與否」由燈色判定）：
 - `yageo_rev_yoy`（bar_chart）國巨(2327) 月營收 YoY。
 - `mlcc_basket_ma`（sparkline）被動四雄籃 vs 50MA。
 - `ai_breadth`（gauge）AI 類股廣度（站上 50MA 比例）。
 
-主燈：🔴 ≥2 紅＝主升段尾聲警示｜🟡 任一紅/黃＝留意轉弱｜🟢 全綠＝循環健康。
+佐證面板（`in_master=False`）：記憶體相對強度、原物料(鈀/銀)、觀測名單。
 
-佐證面板（`in_master=False`，Phase 2 加）：記憶體相對強度、原物料(鈀/銀)、觀測名單。
+### cluster 2：導線架 / 封測供應鏈觀察（EP678，Phase 6 首個擴充）
+
+核心觀點：導線架是傳統封裝的上游瓶頸、封測獲利行情能否延續的先行溫度計；
+但「產業缺貨（基本面）與股價表現（資金面）是兩條線」——所以拆成兩條線各一個訊號。
+
+計入主燈：
+- `leadframe_rev_yoy`（bar_chart）順德(2351) 月營收 YoY——基本面線：缺貨漲價最終灌進營收。
+- `leadframe_basket_ma`（sparkline）導線架四雄籃 vs 50MA——資金面線：最缺不一定最漲。
+
+佐證面板：`leadframe_watch` 四雄逐檔體檢＋銅(HG=F，成本推力參考、不計入燈號)。
+四雄代號已逐檔查證交易所：順德 2351.TW、長科 6548.TWO（上櫃）、界霖 5285.TW、一詮 2486.TW。
+
+主燈真值表（各 cluster 共用）：🔴 ≥2 紅｜🟡 任一紅/黃｜🟢 全綠；總燈取各 cluster 最高嚴重度。
 
 ## 開發與驗證
 

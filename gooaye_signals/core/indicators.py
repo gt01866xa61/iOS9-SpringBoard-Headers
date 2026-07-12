@@ -63,6 +63,20 @@ def basket_index(series_list: Sequence[Sequence[float]]) -> list[float]:
     return [mean(col) for col in zip(*norm)]
 
 
+def consec_declines(seq: Sequence[float], eps: float = 0.0) -> int:
+    """序列尾端「連續下滑」的期數（後值 − 前值 < eps 視為下滑）。
+
+    月營收 YoY 類訊號的共用核心：連降幾個月決定燈色。
+    """
+    n = 0
+    for i in range(len(seq) - 1, 0, -1):
+        if seq[i] - seq[i - 1] < eps:
+            n += 1
+        else:
+            break
+    return n
+
+
 def unpack_closes(data: object) -> tuple[dict, dict]:
     """把 yf_close 的回傳拆成 (series, asof)，新舊兩種形狀都吃。
 

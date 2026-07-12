@@ -11,13 +11,13 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
+from core.indicators import consec_declines
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數（single source of truth）===
 STOCK_ID = "2327"
 BARS_SHOWN = 12          # 顯示月數
 RED_CONSEC = 2           # YoY 連降幾月 = RED
-DECLINE_EPS = 0.0        # YoY 差 < EPS 視為下滑
 
 
 def _compute(inputs: dict) -> SignalResult:
@@ -28,13 +28,7 @@ def _compute(inputs: dict) -> SignalResult:
     labels = [str(m) for m, _ in rev]
     yoy = [float(v) for _, v in rev]
 
-    consec = 0
-    for i in range(len(yoy) - 1, 0, -1):
-        if yoy[i] - yoy[i - 1] < DECLINE_EPS:
-            consec += 1
-        else:
-            break
-
+    consec = consec_declines(yoy)
     light = "red" if consec >= RED_CONSEC else "yellow" if consec == 1 else "green"
     return SignalResult(
         light=light,

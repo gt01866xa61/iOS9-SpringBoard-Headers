@@ -208,7 +208,8 @@ def build_payload() -> tuple[dict, list[dict]]:
             "supporting": [c for c in group if not c["in_master"]],
         })
 
-    top_reason = next((c["master"]["reason"] for c in clusters_out
+    # 總燈 reason 點名是哪個主題在響——多 cluster 後「部分轉弱」不指名會看不懂
+    top_reason = next((f"「{c['name']}」{c['master']['label']}。" for c in clusters_out
                        if c["master"]["light"] == top), "")
     errors = [{"signal_id": c["id"], "message": c["error"], "at": c["updated_at"]}
               for c in cards if c.get("error")]

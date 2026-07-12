@@ -28,9 +28,20 @@ CLUSTERS: tuple[ClusterSpec, ...] = (
         },
         order=1,
     ),
+    ClusterSpec(
+        id="leadframe_osat",
+        name="導線架 / 封測供應鏈觀察",
+        master_label={
+            "red": "上游動能反轉警示",
+            "yellow": "基本面與資金面分歧",
+            "green": "上游缺貨動能延續",
+            "gray": "資料不足",
+        },
+        order=2,
+    ),
     # 未來 cluster 直接在這裡 append 一列，例如：
     # ClusterSpec(id="rates_macro", name="利率 / 總經觀察",
-    #             master_label={...}, order=2),
+    #             master_label={...}, order=3),
 )
 
 CLUSTER_IDS: frozenset[str] = frozenset(c.id for c in CLUSTERS)
@@ -52,12 +63,14 @@ def master_light(cards: list[dict]) -> tuple[str, str, dict]:
     lit = [c["light"] for c in cards if c.get("in_master")]
     votes = {k: lit.count(k) for k in ("red", "yellow", "green", "gray")}
 
+    # reason 用主題中性的措辭——同一張真值表服務所有 cluster，主題味由各
+    # cluster 的 master_label 提供（多 cluster 後不能再寫死單一主題的語彙）
     if votes["red"] >= 2:
-        light, reason = "red", f"{votes['red']} 項亮紅：主升段尾聲警示。"
+        light, reason = "red", f"{votes['red']} 項主燈訊號亮紅，警訊成立。"
     elif votes["red"] or votes["yellow"]:
-        light, reason = "yellow", "部分轉弱，尚未確認見頂，留意。"
+        light, reason = "yellow", "部分主燈訊號轉弱或分歧，留意。"
     elif lit and all(x == "green" for x in lit):
-        light, reason = "green", "計入主燈的訊號全綠，循環結構健康。"
+        light, reason = "green", "計入主燈的訊號全綠。"
     else:
         light, reason = "gray", "主燈訊號資料不足。"
 

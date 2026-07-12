@@ -12,6 +12,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import config
 import signals.ai_breadth as ai
+import signals.leadframe_basket_ma as lf_basket
+import signals.leadframe_rev_yoy as lf_rev
+import signals.leadframe_watch as lf_watch
 import signals.mlcc_basket_ma as mlcc
 import signals.yageo_rev_yoy as yageo
 from fetchers import SOURCE_REGISTRY
@@ -116,6 +119,31 @@ def _check_support_panels() -> None:
     print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期＋名稱掛代號")
 
 
+def _check_leadframe() -> None:
+    """導線架 cluster 三訊號：核心燈色邊界（compute 與既有訊號同構，抽測關鍵行為）。"""
+    # 順德月營收 YoY：連降 0/1/2 月 → 綠/黃/紅
+    assert lf_rev._compute(_rev([1, 2, 3, 4])).light == "green"
+    assert lf_rev._compute(_rev([1, 2, 3, 2])).light == "yellow"
+    assert lf_rev._compute(_rev([1, 2, 4, 3, 2])).light == "red"
+    assert lf_rev._compute(_rev([1.0])).light == "gray"
+
+    # 四雄籃：強升/強跌/貼均線 → 綠/紅/黃
+    up = {"closes": {s: [100.0 + i for i in range(60)] for s in lf_basket.BASKET}}
+    down = {"closes": {s: [200.0 - i for i in range(60)] for s in lf_basket.BASKET}}
+    flat = {"closes": {s: [150.0 + (i % 2) for i in range(60)] for s in lf_basket.BASKET}}
+    assert lf_basket._compute(up).light == "green"
+    assert lf_basket._compute(down).light == "red"
+    assert lf_basket._compute(flat).light == "yellow"
+
+    # 體檢表：銅列只顯示、不投票——四雄全站上 + 銅跌破 → 仍是綠、分母只算 4
+    closes = {s: UP for s in lf_watch.STOCKS}
+    closes["HG=F"] = DOWN
+    r = lf_watch._compute({"closes": closes})
+    assert r.light == "green" and r.value_label == "4/4 站上50MA", (r.light, r.value_label)
+    assert len(r.rows) == 5, "銅列要顯示在表格裡"
+    print("  ✓ 導線架三訊號（順德YoY / 四雄籃 / 體檢表銅不投票）")
+
+
 def _check_demo_pipeline() -> None:
     """用 demo fixtures 跑一遍所有 signal 的 fetch→compute，驗證離線全流程 + 預期燈號。"""
     cache = DayCache(config.CACHE_DIR, demo=True, fixtures_dir=config.DEMO_FIXTURES_DIR)
@@ -129,6 +157,10 @@ def _check_demo_pipeline() -> None:
     assert lights["mlcc_basket_ma"] == "yellow", lights
     assert lights["ai_breadth"] == "green", lights
     assert lights["memory_rs"] in {"red", "yellow", "green"}, lights
+    # 導線架 cluster demo：fixtures 設計成全綠（cluster2 綠 → 總燈仍由 cluster1 的黃決定）
+    assert lights["leadframe_rev_yoy"] == "green", lights
+    assert lights["leadframe_basket_ma"] == "green", lights
+    assert lights["leadframe_watch"] == "green", lights
     assert all(v != "gray" for v in lights.values()), f"demo 有訊號 gray：{lights}"
     print(f"  ✓ demo 全流程離線通過：{lights}")
 
@@ -139,6 +171,7 @@ def main() -> int:
     _check_ai()
     _check_mlcc()
     _check_support_panels()
+    _check_leadframe()
     _check_demo_pipeline()
     print("Phase 2 驗證通過")
     return 0
