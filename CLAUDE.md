@@ -21,3 +21,10 @@
 ## 4. Repo 借殼提示
 
 本 repo 名為 `iOS9-SpringBoard-Headers`，根目錄的 `System/` 與 `usr/` 是 iOS dyld cache dump，**與 bot 無關，不要動**。所有 bot code 都在 `crypto_dca_bot/` 底下。
+
+## 5. 股癌訊號燈（gooaye_signals/）
+
+- 專案脈絡讀 `gooaye_signals/README.md`；多 agent 交接讀根目錄 `HANDOFF.md`。
+- **分工鐵律（使用者明訂）**：使用者口述訊號、agent 實作——交付到「訊號忠實呈現
+  （追什麼／怎麼看／各燈含義）」為止。**不提供投資判斷、不附下單建議、
+  不加投資面的免責叮嚀**；卡片文案只呈現節目觀點與可溯源數據。
