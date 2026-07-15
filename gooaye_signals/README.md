@@ -85,6 +85,22 @@
 佐證面板：`leadframe_watch` 四雄逐檔體檢＋銅(HG=F，成本推力參考、不計入燈號)。
 四雄代號已逐檔查證交易所：順德 2351.TW、長科 6548.TWO（上櫃）、界霖 5285.TW、一詮 2486.TW。
 
+### cluster 3：地端 / 混合雲 AI 觀察（Satya 反向資訊悖論文後的討論串）
+
+核心問題：「企業自建/地端 AI 這條路燒不燒得起來」——拆成「有人真的掏錢了嗎」
+（訂單）與「有人敢具名站台嗎」（名單），加一支提前聞味道的股價溫度計。
+
+計入主燈：
+- `onprem_basket_ma`（sparkline）DELL＋HPE 等權籃 vs 50MA——資金面即時溫度計。
+- `onprem_ai_orders`（table，手動季更）HPE 單季 AI 訂單為主軸（官方：backlog 主要
+  企業+主權）、Dell 對照；±20% QoQ 三態，預設黃＝「未驗證，維持吃力不討好假設」。
+
+佐證面板：`onprem_events` 事件簿（近 180 天正負淨值給燈，逐筆附出處）、
+`menlo_opensource` Menlo 開源占比（半年更，19→13→11 敘事照妖鏡）。
+
+新資料源 `manual_series`：讀 repo 內 `data/manual/<key>.json`——給「無公開 API 但有
+公開出處」的季度/事件型數據用，每點必附 src，財報後手動補一筆。
+
 主燈真值表（各 cluster 共用）：🔴 ≥2 紅｜🟡 任一紅/黃｜🟢 全綠；總燈取各 cluster 最高嚴重度。
 
 ## 開發與驗證

@@ -76,14 +76,21 @@ def _check_full_build() -> None:
     assert not config.SIGNALS_JSON.with_suffix(".json.tmp").exists(), "殘留 .tmp（原子寫失敗）"
 
     # 第二 cluster（導線架/封測）：order=2 排第二、demo 全綠；總燈仍取較嚴重的黃且點名主題
-    assert len(data["clusters"]) == 2, [c["id"] for c in data["clusters"]]
+    assert len(data["clusters"]) == 3, [c["id"] for c in data["clusters"]]
     cl2 = data["clusters"][1]
     assert cl2["id"] == "leadframe_osat"
     assert [c["id"] for c in cl2["signals"]] == ["leadframe_rev_yoy", "leadframe_basket_ma"]
     assert [c["id"] for c in cl2["supporting"]] == ["leadframe_watch"]
     assert cl2["master"]["light"] == "green", cl2["master"]
     assert "半導體" in data["master_reason"], data["master_reason"]
-    print("  ✓ 全流程 demo build → schema-valid、雙 cluster、主燈黃、原子寫")
+
+    # 第三 cluster（地端/混合雲）：籃綠＋訂單黃 → 主題黃（未驗證預設）
+    cl3 = data["clusters"][2]
+    assert cl3["id"] == "onprem_hybrid"
+    assert [c["id"] for c in cl3["signals"]] == ["onprem_basket_ma", "onprem_ai_orders"]
+    assert [c["id"] for c in cl3["supporting"]] == ["onprem_events", "menlo_opensource"]
+    assert cl3["master"]["light"] == "yellow", cl3["master"]
+    print("  ✓ 全流程 demo build → schema-valid、三 cluster、主燈黃、原子寫")
 
 
 def _check_last_good_stale() -> None:

@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Callable, Mapping
 
 from fetchers.finmind import fetch_revenue
+from fetchers.manual_src import fetch_manual
 from fetchers.yfinance_src import fetch_close
 
 
@@ -26,5 +27,6 @@ def _stub(name: str) -> Callable[[Mapping[str, object]], object]:
 SOURCE_REGISTRY: dict[str, Callable[[Mapping[str, object]], object]] = {
     "finmind_revenue": fetch_revenue,   # TW 月營收（回傳已換算 YoY）
     "yf_close": fetch_close,            # TW/美/韓股 + 金屬收盤序列
+    "manual_series": fetch_manual,      # 手動維護序列（data/manual/*.json，逐點附出處）
     "fred": _stub("fred"),              # 選配：總經序列（未接）
 }

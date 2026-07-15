@@ -1,0 +1,22 @@
+{
+  "note": "每季財報後手動補一筆（HPE 約 3/6/9/12 月、Dell 約 2/5/8/11 月發布）。金額單位＝十億美元。orders_b＝單季 AI 系統新訂單；backlog_b＝期末未出貨訂單。每點必附 src。",
+  "as_of": "2026-06-01",
+  "hpe": [
+    {"q": "FY25Q3", "orders_b": null, "backlog_b": 3.7,
+     "src": "HPE FY25Q3 earnings（investors.hpe.com 逐字稿；futurumgroup.com）"},
+    {"q": "FY25Q4", "orders_b": 1.9, "backlog_b": null,
+     "src": "HPE FY25Q4 earnings 2025-12（futurumgroup.com；兩來源 1.9-2.0，取保守值）"},
+    {"q": "FY26Q1", "orders_b": null, "backlog_b": 5.0,
+     "src": "HPE FY26Q1 earnings 2026-03（官方稱 backlog 創高突破 $5B，取 5.0 保守值；fool.com 逐字稿）"},
+    {"q": "FY26Q2", "orders_b": 1.8, "backlog_b": 5.9,
+     "src": "HPE FY26Q2 earnings 2026-06-01 官方新聞稿（businesswire.com；backlog primarily enterprise and sovereign）"}
+  ],
+  "dell": [
+    {"q": "FY26Q3", "orders_b": 12.3, "backlog_b": 18.4,
+     "src": "Dell FY26Q3 earnings 2025-11-25（SEC 8-K Ex.99.1；finance.yahoo.com）"},
+    {"q": "FY26Q4", "orders_b": 34.1, "backlog_b": 43.0,
+     "src": "Dell FY26Q4 earnings 2026-02-26（dell.com 新聞稿；SEC 8-K）"},
+    {"q": "FY27Q1", "orders_b": 24.4, "backlog_b": 51.3,
+     "src": "Dell FY27Q1 earnings 2026-05-28（dell.com；SEC 8-K；cnbc.com）"}
+  ]
+}

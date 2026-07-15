@@ -15,7 +15,11 @@ import signals.ai_breadth as ai
 import signals.leadframe_basket_ma as lf_basket
 import signals.leadframe_rev_yoy as lf_rev
 import signals.leadframe_watch as lf_watch
+import signals.menlo_opensource as menlo
 import signals.mlcc_basket_ma as mlcc
+import signals.onprem_ai_orders as oo
+import signals.onprem_basket_ma as ob
+import signals.onprem_events as oe
 import signals.yageo_rev_yoy as yageo
 from fetchers import SOURCE_REGISTRY
 from fetchers.cache import DayCache
@@ -171,6 +175,57 @@ def _check_leadframe() -> None:
     print("  ✓ 導線架三訊號（順德YoY / 四雄籃 / 體檢表銅不投票）")
 
 
+def _check_onprem() -> None:
+    """地端/混合雲 cluster 四訊號：核心燈色邊界。"""
+    # 訂單動能：HPE QoQ ±20% 三態；缺季跳過以已知相鄰比較；Dell 不影響卡燈
+    def orders(hpe_pair, dell_last="green隨便"):
+        return {"orders": {
+            "as_of": "2026-06-01",
+            "hpe": [{"q": "Q1", "orders_b": hpe_pair[0], "backlog_b": 3.0, "src": "t"},
+                    {"q": "Qx", "orders_b": None, "backlog_b": 4.0, "src": "t"},
+                    {"q": "Q2", "orders_b": hpe_pair[1], "backlog_b": 5.0, "src": "t"}],
+            "dell": [{"q": "Q1", "orders_b": 10.0, "backlog_b": 20.0, "src": "t"},
+                     {"q": "Q2", "orders_b": 5.0, "backlog_b": 25.0, "src": "t"}],
+        }}
+    assert oo._compute(orders((1.0, 1.3))).light == "green"    # +30% 放量
+    assert oo._compute(orders((1.9, 1.8))).light == "yellow"   # -5% 平
+    assert oo._compute(orders((2.0, 1.5))).light == "red"      # -25% 反向
+    r = oo._compute(orders((1.9, 1.8)))
+    assert r.rows[1]["dot"] == "red", r.rows[1]                # Dell -50% 紅點但不計卡燈
+    assert r.value_label.startswith("HPE $1.8B"), r.value_label
+    assert oo._compute({}).light == "gray"
+
+    # 事件簿：窗內淨值三態＋窗外事件不計
+    def ev(dirs_in, dirs_out=()):
+        # 事件擺在 as_of 前 1-3 個月，穩居 180 天窗內
+        events = [{"date": f"2026-0{i+4}-01", "camp": "t", "dir": d, "what": "w", "src": "s"}
+                  for i, d in enumerate(dirs_in)]
+        events += [{"date": "2024-01-01", "camp": "t", "dir": d, "what": "舊", "src": "s"}
+                   for d in dirs_out]
+        return {"events": {"as_of": "2026-07-01", "events": events}}
+    assert oe._compute(ev(["+", "+", "+"])).light == "green"           # net +3
+    assert oe._compute(ev(["+", "+", "-"])).light == "yellow"          # net +1
+    assert oe._compute(ev(["-", "-", "-"])).light == "red"             # net -3
+    assert oe._compute(ev(["+"], dirs_out=["+", "+", "+"])).light == "yellow"  # 窗外不計
+    assert oe._compute({}).light == "gray"
+
+    # Menlo：回升/持平/續降
+    def mn(vals):
+        return {"menlo": {"series": [{"label": f"p{i}", "pct": v, "src": "t"}
+                                     for i, v in enumerate(vals)]}}
+    assert menlo._compute(mn([13, 11])).light == "red"
+    assert menlo._compute(mn([11, 11.5])).light == "yellow"
+    assert menlo._compute(mn([11, 14])).light == "green"
+    assert menlo._compute(mn([11])).light == "gray"
+
+    # 地端籃：與其他籃同構，抽測綠/紅
+    up = {"closes": {s: [100.0 + i for i in range(60)] for s in ob.BASKET}}
+    down = {"closes": {s: [200.0 - i for i in range(60)] for s in ob.BASKET}}
+    assert ob._compute(up).light == "green"
+    assert ob._compute(down).light == "red"
+    print("  ✓ 地端/混合雲四訊號（訂單±20%三態 / 事件簿窗與淨值 / Menlo方向 / 籃）")
+
+
 def _check_demo_pipeline() -> None:
     """用 demo fixtures 跑一遍所有 signal 的 fetch→compute，驗證離線全流程 + 預期燈號。"""
     cache = DayCache(config.CACHE_DIR, demo=True, fixtures_dir=config.DEMO_FIXTURES_DIR)
@@ -188,6 +243,11 @@ def _check_demo_pipeline() -> None:
     assert lights["leadframe_rev_yoy"] == "green", lights
     assert lights["leadframe_basket_ma"] == "green", lights
     assert lights["leadframe_watch"] == "green", lights
+    # 地端/混合雲 cluster demo：籃綠＋訂單黃（未放量預設）＋事件黃＋Menlo紅
+    assert lights["onprem_basket_ma"] == "green", lights
+    assert lights["onprem_ai_orders"] == "yellow", lights
+    assert lights["onprem_events"] == "yellow", lights
+    assert lights["menlo_opensource"] == "red", lights
     assert all(v != "gray" for v in lights.values()), f"demo 有訊號 gray：{lights}"
     print(f"  ✓ demo 全流程離線通過：{lights}")
 
@@ -199,6 +259,7 @@ def main() -> int:
     _check_mlcc()
     _check_support_panels()
     _check_leadframe()
+    _check_onprem()
     _check_demo_pipeline()
     print("Phase 2 驗證通過")
     return 0

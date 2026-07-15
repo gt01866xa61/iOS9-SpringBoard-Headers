@@ -23,7 +23,13 @@ def _yf_close(params: Mapping[str, object], fixture: dict) -> dict:
     return {"series": {s: fixture.get(s, []) for s in symbols}, "asof": {}}
 
 
+def _manual_series(params: Mapping[str, object], fixture: dict) -> object:
+    """回傳 fixtures 裡以 key 為鍵的整包 payload（與 live 讀 data/manual/<key>.json 同構）。"""
+    return fixture.get(str(params["key"]), {})
+
+
 DEMO_SHAPERS = {
     "finmind_revenue": _finmind_revenue,
     "yf_close": _yf_close,
+    "manual_series": _manual_series,
 }

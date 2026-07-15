@@ -1,0 +1,105 @@
+{
+ "hpe_dell_ai_orders": {
+  "as_of": "2026-06-01",
+  "hpe": [
+   {
+    "q": "Q1",
+    "orders_b": null,
+    "backlog_b": 3.7,
+    "src": "demo"
+   },
+   {
+    "q": "Q2",
+    "orders_b": 1.9,
+    "backlog_b": 5.0,
+    "src": "demo"
+   },
+   {
+    "q": "Q3",
+    "orders_b": 1.8,
+    "backlog_b": 5.9,
+    "src": "demo"
+   }
+  ],
+  "dell": [
+   {
+    "q": "Q1",
+    "orders_b": 12.3,
+    "backlog_b": 18.4,
+    "src": "demo"
+   },
+   {
+    "q": "Q2",
+    "orders_b": 34.1,
+    "backlog_b": 43.0,
+    "src": "demo"
+   },
+   {
+    "q": "Q3",
+    "orders_b": 24.4,
+    "backlog_b": 51.3,
+    "src": "demo"
+   }
+  ]
+ },
+ "onprem_events": {
+  "as_of": "2026-07-14",
+  "events": [
+   {
+    "date": "2026-06-01",
+    "camp": "GCP",
+    "dir": "+",
+    "what": "demo 正向事件A",
+    "src": "demo"
+   },
+   {
+    "date": "2026-05-01",
+    "camp": "AWS",
+    "dir": "+",
+    "what": "demo 正向事件B",
+    "src": "demo"
+   },
+   {
+    "date": "2026-04-01",
+    "camp": "產業",
+    "dir": "-",
+    "what": "demo 反向事件C",
+    "src": "demo"
+   },
+   {
+    "date": "2026-03-01",
+    "camp": "MSFT",
+    "dir": "0",
+    "what": "demo 敘事事件D",
+    "src": "demo"
+   },
+   {
+    "date": "2025-01-01",
+    "camp": "AWS",
+    "dir": "+",
+    "what": "demo 窗外舊事件（不計）",
+    "src": "demo"
+   }
+  ]
+ },
+ "menlo_opensource": {
+  "as_of": "2025-12-09",
+  "series": [
+   {
+    "label": "2024-11",
+    "pct": 19,
+    "src": "demo"
+   },
+   {
+    "label": "2025-07",
+    "pct": 13,
+    "src": "demo"
+   },
+   {
+    "label": "2025-12",
+    "pct": 11,
+    "src": "demo"
+   }
+  ]
+ }
+}

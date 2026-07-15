@@ -40,9 +40,20 @@ CLUSTERS: tuple[ClusterSpec, ...] = (
         },
         order=2,
     ),
+    ClusterSpec(
+        id="onprem_hybrid",
+        name="地端 / 混合雲 AI 觀察",
+        master_label={
+            "red": "劇本反向",
+            "yellow": "未驗證，維持假設",   # 預設狀態：沒看到大量拉貨前，先假設吃力不討好
+            "green": "劇本點火",
+            "gray": "資料不足",
+        },
+        order=3,
+    ),
     # 未來 cluster 直接在這裡 append 一列，例如：
     # ClusterSpec(id="rates_macro", name="利率 / 總經觀察",
-    #             master_label={...}, order=3),
+    #             master_label={...}, order=4),
 )
 
 CLUSTER_IDS: frozenset[str] = frozenset(c.id for c in CLUSTERS)

@@ -1,0 +1,12 @@
+{
+  "note": "Menlo Ventures 企業 LLM 調查：開源模型工作負載占比（%）。半年一更（年中 Update＋年末 State of GenAI），公布後手動補點。",
+  "as_of": "2025-12-09",
+  "series": [
+    {"label": "2024-11", "pct": 19,
+     "src": "menlovc.com《2024 State of GenAI in the Enterprise》2024-11-20, n=600"},
+    {"label": "2025-07", "pct": 13,
+     "src": "menlovc.com《2025 Mid-Year LLM Market Update》2025-07-31, n=150+"},
+    {"label": "2025-12", "pct": 11,
+     "src": "menlovc.com《2025 State of GenAI in the Enterprise》2025-12-09, n=495"}
+  ]
+}
