@@ -353,6 +353,30 @@
         "2026-07-15",
         "green"
       ]
+    ],
+    "menlo_opensource": [
+      [
+        "2026-07-15",
+        "red"
+      ]
+    ],
+    "onprem_ai_orders": [
+      [
+        "2026-07-15",
+        "yellow"
+      ]
+    ],
+    "onprem_basket_ma": [
+      [
+        "2026-07-15",
+        "green"
+      ]
+    ],
+    "onprem_events": [
+      [
+        "2026-07-15",
+        "yellow"
+      ]
     ]
   },
   "master": [
