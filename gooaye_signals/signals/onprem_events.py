@@ -4,9 +4,10 @@
         具名企業背書（LSEG/Nasdaq 等級）、產品里程碑（GA、供應國擴張）、
         反向事件（專案取消、調查數據反向）。
 長相　：表格——每列一事件：日期、陣營、事件內容、方向點（＋綠／−紅／敘事灰）。
-狀態　：近半年（180 天，以檔案 as_of 為準）正負事件淨值：
-        🟢 淨值 ≥ +3＝背書與里程碑加速累積；🟡 -2～+2＝零星混雜（預設）；
-        🔴 淨值 ≤ -3＝反向證據占優。
+狀態　：近半年（180 天，以檔案 as_of 為準）正負事件淨值＋背書門檻：
+        🟢 淨值 ≥ +3「且」窗內至少一筆具名背書（type=endorse）——雲廠自家里程碑
+        （GA、擴國）是供應側，蓋房子不等於有人入住，湊不出綠燈；
+        🟡 -2～+2、或淨值達標但無背書（預設）；🔴 淨值 ≤ -3＝反向證據占優。
 資料　：data/manual/onprem_events.json——使用者口述或查證後新增，逐筆附出處。
 判讀　：名單加速變長且出現「普通產業」名字＝擴散成立；清一色政府金融＝管制行業
         剛需，不是擴散。
@@ -39,10 +40,18 @@ def _compute(inputs: dict) -> SignalResult:
     except ValueError:
         cutoff = ""
 
-    pos = sum(1 for e in events if str(e.get("date", "")) >= cutoff and e.get("dir") == "+")
-    neg = sum(1 for e in events if str(e.get("date", "")) >= cutoff and e.get("dir") == "-")
+    in_win = [e for e in events if str(e.get("date", "")) >= cutoff]
+    pos = sum(1 for e in in_win if e.get("dir") == "+")
+    neg = sum(1 for e in in_win if e.get("dir") == "-")
     net = pos - neg
-    light = "green" if net >= GREEN_NET else "red" if net <= RED_NET else "yellow"
+    # 綠燈的背書門檻：需求側證據（具名客戶）至少一筆——供應側里程碑湊不出綠
+    has_endorse = any(e.get("dir") == "+" and e.get("type") == "endorse" for e in in_win)
+    if net >= GREEN_NET and has_endorse:
+        light = "green"
+    elif net <= RED_NET:
+        light = "red"
+    else:
+        light = "yellow"
 
     rows = [{
         "cells": [str(e.get("date", ""))[2:], str(e.get("camp", "")), str(e.get("what", ""))],
@@ -57,9 +66,10 @@ def _compute(inputs: dict) -> SignalResult:
         extra={
             "columns": ["日期", "陣營", "事件", "向", ""],
             "caption": (f"點＝方向（綠 正向・紅 反向・灰 敘事）・近 {WINDOW_DAYS} 天淨值"
-                        f"（至 {as_of}）給燈・逐筆出處在 data/manual/onprem_events.json"),
+                        f"（至 {as_of}）給燈，綠須含具名背書・逐筆出處在 data/manual/onprem_events.json"),
         },
-        detail={"pos": pos, "neg": neg, "net": net, "as_of": as_of},
+        detail={"pos": pos, "neg": neg, "net": net, "as_of": as_of,
+                "has_endorse": has_endorse},
     )
 
 
@@ -75,14 +85,14 @@ SIGNAL = SignalSpec(
     ),
     compute=_compute,
     interpretations={
-        "green": "背書與里程碑加速累積，名單在變長——留意是否出現非政府金融的普通產業名字（擴散）。",
-        "yellow": "事件零星混雜——站台歸站台，尚未形成趨勢。",
+        "green": "正向事件加速累積且含具名客戶背書——名單在變長，留意是否出現非政府金融的普通產業名字（擴散）。",
+        "yellow": "事件零星混雜、或只有雲廠自家里程碑而無客戶背書——蓋房子不等於有人入住。",
         "red": "反向事件占優（取消、砍單、數據反向），劇本退潮。",
         "gray": "事件簿尚無資料。",
     },
     cadence="manual",
     track="「誰敢把名字借給這個方案」——三大雲盒子的可溯源事件簿：具名企業背書、產品 GA、供應國擴張、反向事件。雲廠自吹不算數，具名站台才算。",
-    shape="名單加速變長、且出現普通產業（零售/製造）名字＝從管制行業剛需擴散到一般企業；半年一兩筆且清一色政府金融＝敘事而已；取消案例變多＝反向。",
+    shape="名單加速變長、且出現普通產業（零售/製造）名字＝從管制行業剛需擴散到一般企業；只有雲廠自家 GA/擴國而無客戶具名＝供應側自嗨，亮不了綠；取消案例變多＝反向。",
     order=12,
     in_master=False,
     unit="",

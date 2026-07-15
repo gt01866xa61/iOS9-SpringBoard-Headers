@@ -79,7 +79,7 @@ def _compute(inputs: dict) -> SignalResult:
         extra={
             "columns": ["公司", "單季AI訂單", "backlog", "動能", "backlog走勢"],
             "caption": (f"卡燈＝HPE 列（企業+主權最純）・動能：較上一已知季 ±{SURGE_PCT:.0f}% 為界"
-                        "・每季財報後手動更新，逐點附出處於 data/manual"),
+                        f"・資料至 {data.get('as_of', '—')}・每季財報後手動更新，逐點附出處於 data/manual"),
         },
         detail={"rule": f"orders QoQ ±{SURGE_PCT}%", "as_of": str(data.get("as_of", ""))},
     )

@@ -195,15 +195,20 @@ def _check_onprem() -> None:
     assert r.value_label.startswith("HPE $1.8B"), r.value_label
     assert oo._compute({}).light == "gray"
 
-    # 事件簿：窗內淨值三態＋窗外事件不計
-    def ev(dirs_in, dirs_out=()):
+    # 事件簿：窗內淨值三態＋背書門檻＋窗外事件不計
+    def ev(dirs_in, types=None, dirs_out=()):
         # 事件擺在 as_of 前 1-3 個月，穩居 180 天窗內
-        events = [{"date": f"2026-0{i+4}-01", "camp": "t", "dir": d, "what": "w", "src": "s"}
-                  for i, d in enumerate(dirs_in)]
-        events += [{"date": "2024-01-01", "camp": "t", "dir": d, "what": "舊", "src": "s"}
+        types = types or ["endorse"] * len(dirs_in)
+        events = [{"date": f"2026-0{i+4}-01", "camp": "t", "dir": d, "type": t,
+                   "what": "w", "src": "s"}
+                  for i, (d, t) in enumerate(zip(dirs_in, types))]
+        events += [{"date": "2024-01-01", "camp": "t", "dir": d, "type": "endorse",
+                    "what": "舊", "src": "s"}
                    for d in dirs_out]
         return {"events": {"as_of": "2026-07-01", "events": events}}
-    assert oe._compute(ev(["+", "+", "+"])).light == "green"           # net +3
+    assert oe._compute(ev(["+", "+", "+"])).light == "green"           # net +3 且含背書
+    # 背書門檻：net +3 但全是供應側（GA/擴國）→ 蓋房子≠有人入住 → 黃
+    assert oe._compute(ev(["+", "+", "+"], ["supply", "supply", "supply"])).light == "yellow"
     assert oe._compute(ev(["+", "+", "-"])).light == "yellow"          # net +1
     assert oe._compute(ev(["-", "-", "-"])).light == "red"             # net -3
     assert oe._compute(ev(["+"], dirs_out=["+", "+", "+"])).light == "yellow"  # 窗外不計

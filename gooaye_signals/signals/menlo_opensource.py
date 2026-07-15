@@ -83,7 +83,7 @@ def _compute(inputs: dict) -> SignalResult:
         extra={
             "columns": ["指標", "最新", "向", "點", "走勢"],
             "caption": (f"調查波次：{labels[0]}→{labels[-1]}・推算額＝占比×總支出"
-                        "（口徑混合，方向級參考）・出處逐點在 data/manual"),
+                        "（口徑混合，方向級參考）・分母列灰點＝僅供脈絡・出處逐點在 data/manual"),
         },
         detail={"pct_chg_pp": round(pct_chg, 1),
                 "implied_series_b": implied, "totals_b": totals},

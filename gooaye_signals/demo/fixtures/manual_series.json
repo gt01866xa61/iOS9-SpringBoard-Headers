@@ -50,35 +50,40 @@
     "camp": "GCP",
     "dir": "+",
     "what": "demo 正向事件A",
-    "src": "demo"
+    "src": "demo",
+    "type": "endorse"
    },
    {
     "date": "2026-05-01",
     "camp": "AWS",
     "dir": "+",
     "what": "demo 正向事件B",
-    "src": "demo"
+    "src": "demo",
+    "type": "supply"
    },
    {
     "date": "2026-04-01",
     "camp": "產業",
     "dir": "-",
     "what": "demo 反向事件C",
-    "src": "demo"
+    "src": "demo",
+    "type": "data"
    },
    {
     "date": "2026-03-01",
     "camp": "MSFT",
     "dir": "0",
     "what": "demo 敘事事件D",
-    "src": "demo"
+    "src": "demo",
+    "type": "narrative"
    },
    {
     "date": "2025-01-01",
     "camp": "AWS",
     "dir": "+",
     "what": "demo 窗外舊事件（不計）",
-    "src": "demo"
+    "src": "demo",
+    "type": "supply"
    }
   ]
  },
