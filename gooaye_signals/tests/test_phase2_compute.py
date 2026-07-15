@@ -209,14 +209,21 @@ def _check_onprem() -> None:
     assert oe._compute(ev(["+"], dirs_out=["+", "+", "+"])).light == "yellow"  # 窗外不計
     assert oe._compute({}).light == "gray"
 
-    # Menlo：回升/持平/續降
-    def mn(vals):
-        return {"menlo": {"series": [{"label": f"p{i}", "pct": v, "src": "t"}
-                                     for i, v in enumerate(vals)]}}
-    assert menlo._compute(mn([13, 11])).light == "red"
-    assert menlo._compute(mn([11, 11.5])).light == "yellow"
-    assert menlo._compute(mn([11, 14])).light == "green"
+    # Menlo 風向×體量：雙變數真值表（分母效應修正——占比降≠萎縮）
+    def mn(pcts, totals=None):
+        totals = totals or [None] * len(pcts)
+        return {"menlo": {"series": [
+            {"label": f"p{i}", "pct": v, "total_b": t, "src": "t"}
+            for i, (v, t) in enumerate(zip(pcts, totals))]}}
+    assert menlo._compute(mn([11, 14])).light == "green"                    # 風向轉開源
+    assert menlo._compute(mn([13, 11], [8.4, 12.5])).light == "yellow"      # 占比降但推算額升（現況）
+    assert menlo._compute(mn([13, 5], [8.4, 9.0])).light == "red"           # 推算額也降＝真萎縮
+    assert menlo._compute(mn([13, 11])).light == "red"                      # 無分母 → 退回風向-only
+    assert menlo._compute(mn([11, 11.5])).light == "yellow"                 # 持平
     assert menlo._compute(mn([11])).light == "gray"
+    r = menlo._compute(mn([13, 11], [8.4, 12.5]))
+    assert r.detail["implied_series_b"] == [1.09, 1.38], r.detail           # 分子算對
+    assert len(r.rows) == 3, "應有 占比/分母/分子 三列"
 
     # 地端籃：與其他籃同構，抽測綠/紅
     up = {"closes": {s: [100.0 + i for i in range(60)] for s in ob.BASKET}}
@@ -247,7 +254,7 @@ def _check_demo_pipeline() -> None:
     assert lights["onprem_basket_ma"] == "green", lights
     assert lights["onprem_ai_orders"] == "yellow", lights
     assert lights["onprem_events"] == "yellow", lights
-    assert lights["menlo_opensource"] == "red", lights
+    assert lights["menlo_opensource"] == "yellow", lights   # 占比降但推算額升＝黃（分母效應修正後）
     assert all(v != "gray" for v in lights.values()), f"demo 有訊號 gray：{lights}"
     print(f"  ✓ demo 全流程離線通過：{lights}")
 

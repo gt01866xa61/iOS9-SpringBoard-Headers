@@ -1,12 +1,15 @@
 {
-  "note": "Menlo Ventures 企業 LLM 調查：開源模型工作負載占比（%）。半年一更（年中 Update＋年末 State of GenAI），公布後手動補點。",
+  "note": "Menlo 企業 LLM 調查：pct＝開源模型占企業工作負載比例(%)；total_b＝同系列報告的企業模型 API 總支出（十億美元，分母）。口徑注意：total 三波分別為 2024末水準／2025上半年支出／2025全年支出，成長方向明確但倍率別細讀；pct 為工作負載占比、total 為支出金額，兩口徑相乘的推算額屬方向級參考。半年一更，公布後手動補點。",
   "as_of": "2025-12-09",
   "series": [
-    {"label": "2024-11", "pct": 19,
-     "src": "menlovc.com《2024 State of GenAI in the Enterprise》2024-11-20, n=600"},
-    {"label": "2025-07", "pct": 13,
-     "src": "menlovc.com《2025 Mid-Year LLM Market Update》2025-07-31, n=150+"},
-    {"label": "2025-12", "pct": 11,
-     "src": "menlovc.com《2025 State of GenAI in the Enterprise》2025-12-09, n=495"}
+    {"label": "2024-11", "pct": 19, "total_b": 3.5,
+     "src": "menlovc.com《2024 State of GenAI in the Enterprise》2024-11-20, n=600",
+     "total_src": "2025 Mid-Year 報告回溯引用：enterprise LLM spend $3.5B in late 2024（globenewswire 2025-07-31）"},
+    {"label": "2025-07", "pct": 13, "total_b": 8.4,
+     "src": "menlovc.com《2025 Mid-Year LLM Market Update》2025-07-31, n=150+",
+     "total_src": "同報告：enterprise LLM spend hit $8.4B in 1H 2025, doubling in 6 months（globenewswire/hpcwire/官方X）"},
+    {"label": "2025-12", "pct": 11, "total_b": 12.5,
+     "src": "menlovc.com《2025 State of GenAI in the Enterprise》2025-12-09, n=495",
+     "total_src": "同報告：foundation model APIs $12.5B in 2025（menlovc.com PDF；globenewswire 2025-12-09）"}
   ]
 }
