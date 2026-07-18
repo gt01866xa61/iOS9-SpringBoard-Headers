@@ -666,9 +666,16 @@ function tripPos(sv, dir, elapsedSec) {
   let frac, atStation = false, secToNext;
   if (inSeg >= runSec) { frac = 1; atStation = true; secToNext = 0; }
   else { frac = inSeg / runSec; secToNext = runSec - inSeg; }
+  // 行進方向向量；停站時指向即將離站的下一段
+  let hx = B.x - A.x, hy = B.y - A.y;
+  if (atStation && i + 1 < segCount) {
+    const C = sv.pts[idxAt(i + 2) % sv.n];
+    hx = C.x - B.x; hy = C.y - B.y;
+  }
   return {
     x: A.x + (B.x - A.x) * frac,
     y: A.y + (B.y - A.y) * frac,
+    hx, hy,
     nextName: sv.st[bIdx][1],
     destName: dir === 0 ? sv.terminalB : sv.terminalA,
     secToNext, atStation
@@ -797,13 +804,22 @@ function draw(tnow) {
     const p = toScreen(tr.pos);
     if (p.x < -20 || p.x > W+20 || p.y < -20 || p.y > H+20) { drawnTrains.push({ ...tr, sx:-999, sy:-999 }); continue; }
     const isSel = selected && selected.type === "train" && selected.sv === tr.sv && selected.dir === tr.dir && selected.dep === tr.dep;
+    // 水滴形導航標記：尖端朝行進方向
+    const r = isSel ? 7.5 : 5.5;
+    const ang = Math.atan2(tr.pos.hy, tr.pos.hx);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(ang);
     ctx.beginPath();
-    ctx.arc(p.x, p.y, isSel ? 8 : 5.5, 0, 7);
+    ctx.moveTo(r * 1.85, 0);
+    ctx.arc(0, 0, r, 0.85, Math.PI * 2 - 0.85);
+    ctx.closePath();
     ctx.fillStyle = tr.sv.line.color;
     ctx.fill();
-    ctx.lineWidth = isSel ? 3 : 2;
+    ctx.lineWidth = isSel ? 2.5 : 1.8;
     ctx.strokeStyle = "#fff";
     ctx.stroke();
+    ctx.restore();
     if (isSel) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, 13, 0, 7);
