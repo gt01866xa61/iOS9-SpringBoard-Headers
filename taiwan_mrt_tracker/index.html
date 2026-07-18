@@ -1,0 +1,994 @@
+<title>台灣捷運動態圖</title>
+<style>
+  :root {
+    --bg: #EFF3F6;
+    --panel: rgba(255, 255, 255, 0.88);
+    --panel-solid: #FFFFFF;
+    --ink: #16222E;
+    --muted: #5F7183;
+    --hairline: rgba(22, 34, 46, 0.12);
+    --accent: #0E9488;
+    --halo: #EFF3F6;
+    --shadow: 0 4px 24px rgba(22, 34, 46, 0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B141F;
+      --panel: rgba(16, 30, 46, 0.86);
+      --panel-solid: #12202F;
+      --ink: #E9F1F8;
+      --muted: #93A6B8;
+      --hairline: rgba(233, 241, 248, 0.12);
+      --accent: #35C3B0;
+      --halo: #0B141F;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EFF3F6;
+    --panel: rgba(255, 255, 255, 0.88);
+    --panel-solid: #FFFFFF;
+    --ink: #16222E;
+    --muted: #5F7183;
+    --hairline: rgba(22, 34, 46, 0.12);
+    --accent: #0E9488;
+    --halo: #EFF3F6;
+    --shadow: 0 4px 24px rgba(22, 34, 46, 0.14);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B141F;
+    --panel: rgba(16, 30, 46, 0.86);
+    --panel-solid: #12202F;
+    --ink: #E9F1F8;
+    --muted: #93A6B8;
+    --hairline: rgba(233, 241, 248, 0.12);
+    --accent: #35C3B0;
+    --halo: #0B141F;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #map {
+    position: absolute;
+    inset: 0;
+    touch-action: none;
+    cursor: grab;
+  }
+  #map.dragging { cursor: grabbing; }
+
+  .topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .topbar .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand {
+    pointer-events: auto;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 8px 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+  .brand h1 {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .brand .live {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .brand .live::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) {
+    .brand .live::before { animation: none; }
+  }
+  .clockbox {
+    pointer-events: auto;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 6px 14px;
+    text-align: right;
+  }
+  .clockbox .time {
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+  }
+  .clockbox .sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .row2 { justify-content: space-between; }
+  .tabs {
+    pointer-events: auto;
+    display: inline-flex;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 3px;
+    gap: 3px;
+  }
+  .tabs button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .tabs button.on {
+    background: var(--accent);
+    color: #fff;
+  }
+  .tabs button:focus-visible, .iconbtn:focus-visible, .chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .statpill {
+    pointer-events: auto;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .statpill b {
+    color: var(--ink);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sidectl {
+    position: absolute;
+    right: 12px;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+  }
+  .iconbtn {
+    appearance: none;
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--hairline);
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+
+  .legend {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    z-index: 10;
+    scrollbar-width: none;
+  }
+  .legend::-webkit-scrollbar { display: none; }
+  .chip {
+    appearance: none;
+    border: 1px solid var(--hairline);
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .chip .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .chip.off { opacity: 0.4; }
+
+  .popup {
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    background: var(--panel-solid);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 12px 44px 12px 14px;
+    z-index: 20;
+    display: none;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .popup.show { display: block; }
+  .popup .linechip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    background: var(--c);
+    border-radius: 6px;
+    padding: 3px 8px;
+    letter-spacing: 0.04em;
+  }
+  .popup h2 { font-size: 17px; font-weight: 800; margin-top: 6px; }
+  .popup .meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.55; }
+  .popup .meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .popup .close {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 17px;
+    cursor: pointer;
+  }
+
+  .modal-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 12, 20, 0.5);
+    z-index: 30;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-scrim.show { display: flex; }
+  .modal {
+    background: var(--panel-solid);
+    border: 1px solid var(--hairline);
+    border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow);
+    padding: 18px 18px calc(20px + env(safe-area-inset-bottom));
+    width: 100%;
+    max-width: 560px;
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+  .modal p, .modal li { font-size: 13.5px; line-height: 1.7; color: var(--muted); }
+  .modal p b { color: var(--ink); }
+  .modal ul { padding-left: 18px; margin: 6px 0 10px; }
+  .modal .okbtn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 11px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .offbanner {
+    position: absolute;
+    top: calc(112px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel-solid);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    z-index: 9;
+    display: none;
+    white-space: nowrap;
+  }
+  .offbanner.show { display: block; }
+</style>
+
+<canvas id="map"></canvas>
+
+<div class="topbar">
+  <div class="row">
+    <div class="brand">
+      <h1>台灣捷運動態圖</h1>
+      <span class="live">LIVE 模擬</span>
+    </div>
+    <div class="clockbox">
+      <div class="time" id="clock">--:--:--</div>
+      <div class="sub" id="clocksub">台北時間</div>
+    </div>
+  </div>
+  <div class="row row2">
+    <div class="tabs" role="tablist">
+      <button id="tab0" class="on" role="tab" aria-selected="true">北北桃</button>
+      <button id="tab1" role="tab" aria-selected="false">高雄</button>
+    </div>
+    <div class="statpill">行駛中 <b id="traincount">0</b> 列</div>
+  </div>
+</div>
+
+<div class="offbanner" id="offbanner">目前非營運時間，首班車約 06:00 發出</div>
+
+<div class="sidectl">
+  <button class="iconbtn" id="zin" aria-label="放大">＋</button>
+  <button class="iconbtn" id="zout" aria-label="縮小">－</button>
+  <button class="iconbtn" id="zfit" aria-label="回到全圖" style="font-size:15px">⌂</button>
+  <button class="iconbtn" id="info" aria-label="說明" style="font-size:15px">ⓘ</button>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="popup" id="popup">
+  <button class="close" id="popclose" aria-label="關閉">✕</button>
+  <span class="linechip" id="popline"></span>
+  <h2 id="poptitle"></h2>
+  <div class="meta" id="popmeta"></div>
+</div>
+
+<div class="modal-scrim" id="scrim">
+  <div class="modal">
+    <h2>關於這張圖</h2>
+    <p><b>這是依官方班距推算的即時模擬</b>，不是車載 GPS 定位——台灣各捷運系統並未公開逐車位置。列車依各線首末班時間、平日尖離峰／假日班距與平均旅行速度，沿真實路線座標推算目前位置，全部以台北時間同步，任何人任何時候打開看到的畫面都一致。</p>
+    <p><b>涵蓋路網（2026-07 營運中路段）</b></p>
+    <ul>
+      <li>台北捷運：文湖、淡水信義（含新北投支線）、松山新店（含小碧潭支線）、中和新蘆（蘆洲／迴龍雙分支）、板南、環狀線</li>
+      <li>桃園機場捷運（台北車站—老街溪，以普通車班距模擬）</li>
+      <li>高雄捷運紅線（小港—岡山）、橘線、環狀輕軌（全環）</li>
+    </ul>
+    <p>點列車可看路線、方向與下一站；點車站可看站名與交會路線。底部色塊可開關各路線。站點座標與班距為 2026 年 7 月整理之近似值；國定假日以週末班距視之。未含淡海輕軌、安坑輕軌與台鐵／高鐵。</p>
+    <button class="okbtn" id="scrimok">開始看車</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ================= 路網資料（2026-07）=================
+   st: [代碼, 站名, 緯度, 經度]
+   hw: fd 首班(分)、ld 末班(分)、pk 平日尖峰班距、op 離峰、lt 深夜(23:00後)、
+       hl 假日、dw 停站秒數、v 平均旅速 km/h                       */
+const NET = [
+ { id:"br", region:0, name:"文湖線", color:"#C48C31", svc:[
+   { name:"動物園—南港展覽館", hw:{fd:360,ld:1440,pk:2.5,op:5,lt:8,hl:4.5,dw:20,v:29}, st:[
+     ["BR01","動物園",24.9983,121.5794],["BR02","木柵",24.9982,121.5731],["BR03","萬芳社區",24.9986,121.5680],
+     ["BR04","萬芳醫院",24.9994,121.5582],["BR05","辛亥",25.0052,121.5570],["BR06","麟光",25.0184,121.5589],
+     ["BR07","六張犁",25.0239,121.5533],["BR08","科技大樓",25.0261,121.5435],["BR09","大安",25.0328,121.5434],
+     ["BR10","忠孝復興",25.0418,121.5440],["BR11","南京復興",25.0521,121.5438],["BR12","中山國中",25.0609,121.5439],
+     ["BR13","松山機場",25.0630,121.5517],["BR14","大直",25.0796,121.5469],["BR15","劍南路",25.0848,121.5555],
+     ["BR16","西湖",25.0821,121.5669],["BR17","港墘",25.0800,121.5750],["BR18","文德",25.0785,121.5849],
+     ["BR19","內湖",25.0837,121.5946],["BR20","大湖公園",25.0837,121.6022],["BR21","葫洲",25.0725,121.6075],
+     ["BR22","東湖",25.0672,121.6115],["BR23","南港軟體園區",25.0599,121.6158],["BR24","南港展覽館",25.0553,121.6174]]}]},
+ { id:"r", region:0, name:"淡水信義線", color:"#E3002C", svc:[
+   { name:"淡水—象山", hw:{fd:360,ld:1440,pk:4,op:7,lt:10,hl:6,dw:25,v:34}, st:[
+     ["R28","淡水",25.1678,121.4455],["R27","紅樹林",25.1541,121.4589],["R26","竹圍",25.1369,121.4596],
+     ["R25","關渡",25.1255,121.4671],["R24","忠義",25.1310,121.4734],["R23","復興崗",25.1374,121.4854],
+     ["R22","北投",25.1319,121.4987],["R21","奇岩",25.1256,121.5011],["R20","唭哩岸",25.1206,121.5061],
+     ["R19","石牌",25.1145,121.5155],["R18","明德",25.1097,121.5186],["R17","芝山",25.1029,121.5225],
+     ["R16","士林",25.0936,121.5262],["R15","劍潭",25.0847,121.5250],["R14","圓山",25.0713,121.5200],
+     ["R13","民權西路",25.0629,121.5194],["R12","雙連",25.0578,121.5206],["R11","中山",25.0527,121.5203],
+     ["R10","台北車站",25.0462,121.5175],["R09","台大醫院",25.0413,121.5162],["R08","中正紀念堂",25.0325,121.5181],
+     ["R07","東門",25.0339,121.5288],["R06","大安森林公園",25.0333,121.5346],["R05","大安",25.0328,121.5434],
+     ["R04","信義安和",25.0330,121.5527],["R03","台北101/世貿",25.0330,121.5633],["R02","象山",25.0330,121.5697]]},
+   { name:"北投—新北投", hw:{fd:365,ld:1440,pk:7,op:9,lt:12,hl:9,dw:25,v:24}, st:[
+     ["R22","北投",25.1319,121.4987],["R22A","新北投",25.1369,121.5025]]}]},
+ { id:"g", region:0, name:"松山新店線", color:"#008659", svc:[
+   { name:"松山—新店", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:6,dw:25,v:32}, st:[
+     ["G19","松山",25.0499,121.5776],["G18","南京三民",25.0516,121.5646],["G17","台北小巨蛋",25.0518,121.5527],
+     ["G16","南京復興",25.0521,121.5438],["G15","松江南京",25.0521,121.5333],["G14","中山",25.0527,121.5203],
+     ["G13","北門",25.0491,121.5107],["G12","西門",25.0421,121.5081],["G11","小南門",25.0355,121.5109],
+     ["G10","中正紀念堂",25.0325,121.5181],["G09","古亭",25.0261,121.5228],["G08","台電大樓",25.0206,121.5283],
+     ["G07","公館",25.0148,121.5344],["G06","萬隆",25.0021,121.5389],["G05","景美",24.9928,121.5410],
+     ["G04","大坪林",24.9829,121.5414],["G03","七張",24.9752,121.5432],["G02","新店區公所",24.9677,121.5412],
+     ["G01","新店",24.9578,121.5386]]},
+   { name:"七張—小碧潭", hw:{fd:365,ld:1435,pk:10,op:12,lt:15,hl:12,dw:25,v:24}, st:[
+     ["G03","七張",24.9752,121.5432],["G03A","小碧潭",24.9718,121.5299]]}]},
+ { id:"o", region:0, name:"中和新蘆線", color:"#F8B61C", svc:[
+   { name:"南勢角—迴龍", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32}, st:[
+     ["O01","南勢角",24.9899,121.5088],["O02","景安",24.9938,121.5045],["O03","永安市場",25.0025,121.5111],
+     ["O04","頂溪",25.0138,121.5155],["O05","古亭",25.0261,121.5228],["O06","東門",25.0339,121.5288],
+     ["O07","忠孝新生",25.0424,121.5327],["O08","松江南京",25.0521,121.5333],["O09","行天宮",25.0598,121.5333],
+     ["O10","中山國小",25.0628,121.5265],["O11","民權西路",25.0629,121.5194],["O12","大橋頭",25.0631,121.5127],
+     ["O13","台北橋",25.0632,121.5005],["O14","菜寮",25.0602,121.4925],["O15","三重",25.0558,121.4847],
+     ["O16","先嗇宮",25.0466,121.4718],["O17","頭前庄",25.0398,121.4600],["O18","新莊",25.0362,121.4525],
+     ["O19","輔大",25.0328,121.4354],["O20","丹鳳",25.0290,121.4222],["O21","迴龍",25.0225,121.4113]]},
+   { name:"南勢角—蘆洲", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32}, st:[
+     ["O01","南勢角",24.9899,121.5088],["O02","景安",24.9938,121.5045],["O03","永安市場",25.0025,121.5111],
+     ["O04","頂溪",25.0138,121.5155],["O05","古亭",25.0261,121.5228],["O06","東門",25.0339,121.5288],
+     ["O07","忠孝新生",25.0424,121.5327],["O08","松江南京",25.0521,121.5333],["O09","行天宮",25.0598,121.5333],
+     ["O10","中山國小",25.0628,121.5265],["O11","民權西路",25.0629,121.5194],["O12","大橋頭",25.0631,121.5127],
+     ["O50","三重國小",25.0705,121.4966],["O51","三和國中",25.0768,121.4869],["O52","徐匯中學",25.0805,121.4785],
+     ["O53","三民高中",25.0857,121.4738],["O54","蘆洲",25.0918,121.4646]]}]},
+ { id:"bl", region:0, name:"板南線", color:"#0070BD", svc:[
+   { name:"頂埔—南港展覽館", hw:{fd:360,ld:1440,pk:3,op:6,lt:10,hl:5,dw:25,v:33}, st:[
+     ["BL01","頂埔",24.9602,121.4201],["BL02","永寧",24.9668,121.4362],["BL03","土城",24.9732,121.4441],
+     ["BL04","海山",24.9855,121.4488],["BL05","亞東醫院",24.9982,121.4525],["BL06","府中",25.0083,121.4592],
+     ["BL07","板橋",25.0139,121.4622],["BL08","新埔",25.0234,121.4685],["BL09","江子翠",25.0300,121.4724],
+     ["BL10","龍山寺",25.0353,121.4999],["BL11","西門",25.0421,121.5081],["BL12","台北車站",25.0462,121.5175],
+     ["BL13","善導寺",25.0446,121.5236],["BL14","忠孝新生",25.0424,121.5327],["BL15","忠孝復興",25.0418,121.5440],
+     ["BL16","忠孝敦化",25.0416,121.5514],["BL17","國父紀念館",25.0413,121.5576],["BL18","市政府",25.0411,121.5652],
+     ["BL19","永春",25.0409,121.5766],["BL20","後山埤",25.0450,121.5827],["BL21","昆陽",25.0505,121.5934],
+     ["BL22","南港",25.0521,121.6067],["BL23","南港展覽館",25.0553,121.6174]]}]},
+ { id:"y", region:0, name:"環狀線", color:"#FEDB00", svc:[
+   { name:"大坪林—新北產業園區", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:7,dw:25,v:30}, st:[
+     ["Y07","大坪林",24.9829,121.5414],["Y08","十四張",24.9769,121.5334],["Y09","秀朗橋",24.9903,121.5250],
+     ["Y10","景平",24.9925,121.5165],["Y11","景安",24.9938,121.5045],["Y12","中和",24.9998,121.4963],
+     ["Y13","橋和",25.0053,121.4907],["Y14","中原",25.0083,121.4844],["Y15","板新",25.0143,121.4720],
+     ["Y16","板橋",25.0139,121.4622],["Y17","新埔民生",25.0261,121.4677],["Y18","頭前庄",25.0398,121.4600],
+     ["Y19","幸福",25.0503,121.4589],["Y20","新北產業園區",25.0616,121.4598]]}]},
+ { id:"a", region:0, name:"機場捷運", color:"#8246AF", svc:[
+   { name:"台北車站—老街溪（普通車）", hw:{fd:360,ld:1410,pk:11,op:15,lt:15,hl:12,dw:25,v:45}, st:[
+     ["A1","台北車站",25.0480,121.5129],["A2","三重",25.0558,121.4847],["A3","新北產業園區",25.0616,121.4598],
+     ["A4","新莊副都心",25.0578,121.4438],["A5","泰山",25.0530,121.4300],["A6","泰山貴和",25.0380,121.4142],
+     ["A7","體育大學",25.0345,121.3744],["A8","長庚醫院",25.0577,121.3660],["A9","林口",25.0684,121.3599],
+     ["A10","山鼻",25.0838,121.3227],["A11","坑口",25.0810,121.2846],["A12","機場第一航廈",25.0797,121.2342],
+     ["A13","機場第二航廈",25.0772,121.2306],["A14a","機場旅館",25.0700,121.2237],["A15","大園",25.0576,121.2013],
+     ["A16","橫山",25.0416,121.1913],["A17","領航",25.0243,121.1856],["A18","高鐵桃園站",25.0130,121.2147],
+     ["A19","桃園體育園區",24.9990,121.2200],["A20","興南",24.9860,121.2225],["A21","環北",24.9659,121.2200],
+     ["A22","老街溪",24.9573,121.2159]]}]},
+ { id:"kr", region:1, name:"高捷紅線", color:"#E4002B", svc:[
+   { name:"小港—岡山", hw:{fd:360,ld:1440,pk:4.5,op:8,lt:10,hl:7,dw:25,v:36}, st:[
+     ["R3","小港",22.5651,120.3538],["R4","高雄國際機場",22.5709,120.3437],["R4A","草衙",22.5766,120.3358],
+     ["R5","前鎮高中",22.5866,120.3242],["R6","凱旋",22.5952,120.3184],["R7","獅甲",22.6033,120.3122],
+     ["R8","三多商圈",22.6136,120.3066],["R9","中央公園",22.6247,120.3021],["R10","美麗島",22.6314,120.3021],
+     ["R11","高雄車站",22.6394,120.3025],["R12","後驛",22.6478,120.3023],["R13","凹子底",22.6570,120.3030],
+     ["R14","巨蛋",22.6666,120.3029],["R15","生態園區",22.6752,120.3027],["R16","左營/高鐵",22.6873,120.3072],
+     ["R17","世運",22.7000,120.2951],["R18","油廠國小",22.7108,120.2896],["R19","楠梓加工區",22.7263,120.2870],
+     ["R20","後勁",22.7326,120.2884],["R21","都會公園",22.7407,120.2897],["R22","青埔",22.7521,120.2900],
+     ["R23","橋頭糖廠",22.7561,120.3057],["R24","橋頭火車站",22.7593,120.3089],["R24A","南岡山",22.7786,120.2947],
+     ["RK1","岡山",22.7966,120.3022]]}]},
+ { id:"ko", region:1, name:"高捷橘線", color:"#F7941D", svc:[
+   { name:"西子灣—大寮", hw:{fd:360,ld:1440,pk:5,op:8,lt:10,hl:8,dw:25,v:33}, st:[
+     ["O1","西子灣",22.6215,120.2814],["O2","鹽埕埔",22.6247,120.2857],["O4","市議會",22.6300,120.2937],
+     ["O5","美麗島",22.6314,120.3021],["O6","信義國小",22.6304,120.3103],["O7","文化中心",22.6295,120.3183],
+     ["O8","五塊厝",22.6287,120.3249],["O9","技擊館",22.6279,120.3330],["O10","衛武營",22.6272,120.3420],
+     ["O11","鳳山西站",22.6266,120.3495],["O12","鳳山",22.6270,120.3585],["O13","大東",22.6255,120.3671],
+     ["O14","鳳山國中",22.6270,120.3744],["OT1","大寮",22.6318,120.3956]]}]},
+ { id:"kc", region:1, name:"環狀輕軌", color:"#6CBE45", svc:[
+   { name:"全環線", loop:true, hw:{fd:390,ld:1320,pk:10,op:12,lt:15,hl:10,dw:20,v:18}, st:[
+     ["C1","籬仔內",22.6062,120.3232],["C2","凱旋瑞田",22.6019,120.3200],["C3","前鎮之星",22.5989,120.3163],
+     ["C4","凱旋中華",22.5966,120.3115],["C5","夢時代",22.5951,120.3065],["C6","經貿園區",22.6010,120.3040],
+     ["C7","軟體園區",22.6053,120.3005],["C8","高雄展覽館",22.6093,120.2996],["C9","旅運中心",22.6120,120.2960],
+     ["C10","光榮碼頭",22.6178,120.2925],["C11","真愛碼頭",22.6203,120.2872],["C12","駁二大義",22.6199,120.2837],
+     ["C13","駁二蓬萊",22.6205,120.2790],["C14","哈瑪星",22.6220,120.2758],["C15","壽山公園",22.6270,120.2760],
+     ["C16","文武聖殿",22.6318,120.2778],["C17","鼓山區公所",22.6367,120.2790],["C18","鼓山",22.6410,120.2803],
+     ["C19","馬卡道",22.6470,120.2828],["C20","台鐵美術館",22.6524,120.2861],["C21A","內惟藝術中心",22.6559,120.2884],
+     ["C21","美術館",22.6592,120.2926],["C22","聯合醫院",22.6631,120.2986],["C23","龍華國小",22.6600,120.3060],
+     ["C24","愛河之心",22.6608,120.3106],["C25","新上國小",22.6588,120.3162],["C26","灣仔內",22.6538,120.3227],
+     ["C27","鼎山街",22.6488,120.3268],["C28","高雄高工",22.6428,120.3290],["C29","樹德家商",22.6362,120.3300],
+     ["C30","科工館",22.6310,120.3300],["C31","聖功醫院",22.6250,120.3300],["C32","凱旋公園",22.6155,120.3282]]}]}
+];
+
+/* ================= 幾何與投影 ================= */
+const KM_LAT = 110.57, KM_LNG = 111.32;
+function project(lat, lng, origin) {
+  return {
+    x: (lng - origin.lng) * KM_LNG * origin.cos,
+    y: -(lat - origin.lat) * KM_LAT
+  };
+}
+function haversineKm(a, b) {
+  const dLat = (b[2] - a[2]) * Math.PI / 180;
+  const dLng = (b[3] - a[3]) * Math.PI / 180;
+  const la1 = a[2] * Math.PI / 180, la2 = b[2] * Math.PI / 180;
+  const h = Math.sin(dLat/2)**2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng/2)**2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+/* ================= 場景預計算 ================= */
+const REGIONS = [
+  { name:"北北桃", origin:null, bounds:null },
+  { name:"高雄",   origin:null, bounds:null }
+];
+const services = [];   // 攤平後的所有營運區間
+const stationIndex = new Map(); // name+region -> {lines:Set, pt, lat, lng, code}
+
+for (const line of NET) {
+  for (const svc of line.svc) {
+    const st = svc.st;
+    const segKm = [];
+    const n = st.length;
+    const segCount = svc.loop ? n : n - 1;
+    for (let i = 0; i < segCount; i++) segKm.push(haversineKm(st[i], st[(i + 1) % n]));
+    const vKmS = svc.hw.v / 3600;
+    const segSec = segKm.map(d => d / vKmS);
+    // 正向時刻剖面：depTime[i] = 自起站發車起，於第 i 站「發車」的秒數
+    function profile(times) {
+      const dep = [0];
+      for (let i = 0; i < times.length; i++) {
+        const stopCount = svc.loop ? n : n - 1;
+        const isLastArrival = !svc.loop && i === times.length - 1;
+        dep.push(dep[i] + times[i] + (isLastArrival ? 0 : svc.hw.dw));
+      }
+      return dep; // 長度 = 段數+1；最後一項＝全程秒數（末站不再停留）
+    }
+    const fwd = profile(segSec);
+    const rev = profile(segSec.slice().reverse());
+    services.push({
+      line, svc, st, segKm, segSec, n,
+      durFwd: fwd[fwd.length - 1], durRev: rev[rev.length - 1],
+      depFwd: fwd, depRev: rev
+    });
+    for (const s of st) {
+      const key = line.region + "|" + s[1];
+      if (!stationIndex.has(key)) stationIndex.set(key, { name:s[1], code:s[0], region:line.region, lat:s[2], lng:s[3], lines:new Set() });
+      stationIndex.get(key).lines.add(line.name);
+    }
+  }
+}
+// 區域原點與邊界
+for (const r of [0,1]) {
+  let mnLa=99, mxLa=-99, mnLo=999, mxLo=-999;
+  for (const s of stationIndex.values()) {
+    if (s.region !== r) continue;
+    mnLa = Math.min(mnLa, s.lat); mxLa = Math.max(mxLa, s.lat);
+    mnLo = Math.min(mnLo, s.lng); mxLo = Math.max(mxLo, s.lng);
+  }
+  const origin = { lat:(mnLa+mxLa)/2, lng:(mnLo+mxLo)/2, cos: Math.cos((mnLa+mxLa)/2*Math.PI/180) };
+  REGIONS[r].origin = origin;
+  const a = project(mnLa, mnLo, origin), b = project(mxLa, mxLo, origin);
+  REGIONS[r].bounds = { x0:Math.min(a.x,b.x), x1:Math.max(a.x,b.x), y0:Math.min(a.y,b.y), y1:Math.max(a.y,b.y) };
+}
+// 站點投影
+for (const s of stationIndex.values()) s.pt = project(s.lat, s.lng, REGIONS[s.region].origin);
+for (const sv of services) {
+  sv.pts = sv.st.map(s => project(s[2], s[3], REGIONS[sv.line.region].origin));
+  sv.terminalA = sv.st[0][1];
+  sv.terminalB = sv.st[sv.n - 1][1];
+}
+
+/* ================= 台北時間與時刻表 ================= */
+function taipeiNow() {
+  const t = Date.now() + 8 * 3600e3;   // 台灣固定 UTC+8、無夏令時間
+  const d = new Date(t);
+  const min = d.getUTCHours() * 60 + d.getUTCMinutes() + d.getUTCSeconds() / 60 + d.getUTCMilliseconds() / 60000;
+  let svcMin = min, dow = d.getUTCDay();
+  if (min < 180) { svcMin += 1440; dow = (dow + 6) % 7; } // 凌晨 3 點前算前一營運日
+  const isHol = (dow === 0 || dow === 6);
+  return { min, svcMin, isHol,
+    hh: d.getUTCHours(), mm: d.getUTCMinutes(), ss: d.getUTCSeconds(),
+    dateStr: (d.getUTCMonth()+1) + "/" + d.getUTCDate(),
+    dowStr: "日一二三四五六"[d.getUTCDay()] };
+}
+function headwayAt(hw, tMin, isHol) {
+  if (tMin >= 1380) return hw.lt;                 // 23:00 後
+  if (isHol) return hw.hl;
+  const h = tMin / 60;
+  if ((h >= 7 && h < 9) || (h >= 17 && h < 19.5)) return hw.pk;
+  return hw.op;
+}
+const schedCache = new Map();
+function departures(sv, isHol) {
+  const key = services.indexOf(sv) + "|" + (isHol ? "H" : "W");
+  if (schedCache.has(key)) return schedCache.get(key);
+  const hw = sv.svc.hw, list = [];
+  let t = hw.fd;
+  while (t <= hw.ld) { list.push(t); t += headwayAt(hw, t, isHol); }
+  schedCache.set(key, list);
+  return list;
+}
+
+/* ================= 列車位置推算 ================= */
+// 回傳 {x,y,segIdx,frac,nextIdx,secToNext,atStation} 或 null
+function tripPos(sv, dir, elapsedSec) {
+  const dep = dir === 0 ? sv.depFwd : sv.depRev;
+  const dur = dir === 0 ? sv.durFwd : sv.durRev;
+  if (elapsedSec < 0 || elapsedSec > dur) return null;
+  const segCount = dep.length - 1;
+  // 找到目前所在段（線性掃描；段數最多 ~35）
+  let i = 0;
+  while (i < segCount - 1 && elapsedSec >= dep[i + 1]) i++;
+  const segStart = dep[i];
+  const segTimes = dir === 0 ? sv.segSec : sv.segSec.slice().reverse();
+  const runSec = segTimes[i];
+  const inSeg = elapsedSec - segStart;
+  const idxAt = k => dir === 0 ? k : (sv.svc.loop ? (sv.n - k) % sv.n : sv.n - 1 - k);
+  const aIdx = idxAt(i) % sv.n, bIdx = idxAt(i + 1) % sv.n;
+  const A = sv.pts[aIdx], B = sv.pts[bIdx];
+  let frac, atStation = false, secToNext;
+  if (inSeg >= runSec) { frac = 1; atStation = true; secToNext = 0; }
+  else { frac = inSeg / runSec; secToNext = runSec - inSeg; }
+  return {
+    x: A.x + (B.x - A.x) * frac,
+    y: A.y + (B.y - A.y) * frac,
+    nextName: sv.st[bIdx][1],
+    destName: dir === 0 ? sv.terminalB : sv.terminalA,
+    secToNext, atStation
+  };
+}
+function activeTrains(region, tnow) {
+  const out = [];
+  for (const sv of services) {
+    if (sv.line.region !== region || !lineVisible.get(sv.line.id)) continue;
+    const deps = departures(sv, tnow.isHol);
+    for (let dir = 0; dir < 2; dir++) {
+      if (sv.svc.loop && dir === 1 && !LOOP_BOTH_DIRS) continue;
+      const dur = (dir === 0 ? sv.durFwd : sv.durRev) / 60;
+      for (const dm of deps) {
+        if (tnow.svcMin < dm) break;
+        if (tnow.svcMin > dm + dur) continue;
+        const pos = tripPos(sv, dir, (tnow.svcMin - dm) * 60);
+        if (pos) out.push({ sv, dir, dep: dm, pos });
+      }
+    }
+  }
+  return out;
+}
+const LOOP_BOTH_DIRS = true;
+
+/* ================= 畫布與視圖 ================= */
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+let region = 0;
+const view = { s: 10, tx: 0, ty: 0 };   // screen = world*s + t
+const lineVisible = new Map(NET.map(l => [l.id, true]));
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+}
+function fitRegion() {
+  const b = REGIONS[region].bounds;
+  const pad = 40;
+  const s = Math.min((W - pad*2) / (b.x1 - b.x0), (H - pad*2 - 140) / (b.y1 - b.y0));
+  view.s = s;
+  view.tx = W/2 - (b.x0 + b.x1)/2 * s;
+  view.ty = (H + 90)/2 - (b.y0 + b.y1)/2 * s;
+}
+function toScreen(p) { return { x: p.x * view.s + view.tx, y: p.y * view.s + view.ty }; }
+
+let themeTokens = {};
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  themeTokens = {
+    bg: cs.getPropertyValue("--bg").trim(),
+    ink: cs.getPropertyValue("--ink").trim(),
+    muted: cs.getPropertyValue("--muted").trim(),
+    halo: cs.getPropertyValue("--halo").trim(),
+    panel: cs.getPropertyValue("--panel-solid").trim()
+  };
+}
+readTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
+
+/* ================= 繪製 ================= */
+let drawnTrains = [];   // 供點擊命中測試
+let selected = null;    // {type:'train', sv, dir, dep} | {type:'station', key}
+
+function draw(tnow) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = themeTokens.bg;
+  ctx.fillRect(0, 0, W, H);
+  const lw = Math.max(2.5, Math.min(6, view.s * 0.28));
+
+  // 路線
+  for (const sv of services) {
+    if (sv.line.region !== region || !lineVisible.get(sv.line.id)) continue;
+    ctx.beginPath();
+    const p0 = toScreen(sv.pts[0]);
+    ctx.moveTo(p0.x, p0.y);
+    for (let i = 1; i < sv.n; i++) { const p = toScreen(sv.pts[i]); ctx.lineTo(p.x, p.y); }
+    if (sv.svc.loop) ctx.closePath();
+    ctx.strokeStyle = sv.line.color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.globalAlpha = 0.92;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // 車站
+  const showAll = view.s > 55, showXfer = view.s > 26;
+  ctx.textBaseline = "middle";
+  for (const st of stationIndex.values()) {
+    if (st.region !== region) continue;
+    let visible = false;
+    for (const ln of NET) if (st.lines.has(ln.name) && lineVisible.get(ln.id)) { visible = true; break; }
+    if (!visible) continue;
+    const p = toScreen(st.pt);
+    if (p.x < -30 || p.x > W+30 || p.y < -30 || p.y > H+30) continue;
+    const isXfer = st.lines.size >= 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isXfer ? 4.5 : 2.8, 0, 7);
+    ctx.fillStyle = isXfer ? themeTokens.panel : themeTokens.bg;
+    ctx.fill();
+    ctx.lineWidth = isXfer ? 2 : 1.4;
+    ctx.strokeStyle = themeTokens.ink;
+    ctx.globalAlpha = isXfer ? 0.9 : 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    const isTerminal = terminalNames.has(st.region + "|" + st.name);
+    if (showAll || (showXfer && (isXfer || isTerminal)) || (!showXfer && isTerminal)) {
+      ctx.font = (isXfer || isTerminal ? "600 " : "400 ") + "11px -apple-system,'PingFang TC','Noto Sans TC',sans-serif";
+      ctx.strokeStyle = themeTokens.halo;
+      ctx.lineWidth = 3;
+      ctx.fillStyle = isXfer || isTerminal ? themeTokens.ink : themeTokens.muted;
+      ctx.strokeText(st.name, p.x + 7, p.y - 7);
+      ctx.fillText(st.name, p.x + 7, p.y - 7);
+    }
+  }
+
+  // 列車
+  drawnTrains = [];
+  const trains = activeTrains(region, tnow);
+  for (const tr of trains) {
+    const p = toScreen(tr.pos);
+    if (p.x < -20 || p.x > W+20 || p.y < -20 || p.y > H+20) { drawnTrains.push({ ...tr, sx:-999, sy:-999 }); continue; }
+    const isSel = selected && selected.type === "train" && selected.sv === tr.sv && selected.dir === tr.dir && selected.dep === tr.dep;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isSel ? 8 : 5.5, 0, 7);
+    ctx.fillStyle = tr.sv.line.color;
+    ctx.fill();
+    ctx.lineWidth = isSel ? 3 : 2;
+    ctx.strokeStyle = "#fff";
+    ctx.stroke();
+    if (isSel) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 13, 0, 7);
+      ctx.strokeStyle = tr.sv.line.color;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    drawnTrains.push({ ...tr, sx: p.x, sy: p.y });
+  }
+  document.getElementById("traincount").textContent = trains.length;
+  document.getElementById("offbanner").classList.toggle("show", trains.length === 0 && (tnow.svcMin < 360 || tnow.svcMin > 1500));
+}
+const terminalNames = new Set();
+for (const sv of services) {
+  terminalNames.add(sv.line.region + "|" + sv.terminalA);
+  terminalNames.add(sv.line.region + "|" + sv.terminalB);
+}
+
+/* ================= 主迴圈 ================= */
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let lastSec = -1;
+function frame() {
+  const tnow = taipeiNow();
+  if (tnow.ss !== lastSec) {
+    lastSec = tnow.ss;
+    document.getElementById("clock").textContent =
+      String(tnow.hh).padStart(2,"0") + ":" + String(tnow.mm).padStart(2,"0") + ":" + String(tnow.ss).padStart(2,"0");
+    document.getElementById("clocksub").textContent =
+      "台北時間 " + tnow.dateStr + "（" + tnow.dowStr + "）" + (tnow.isHol ? "假日班距" : "平日班距");
+  }
+  if (!reduceMotion || tnow.ss !== lastDrawSec) { draw(tnow); lastDrawSec = tnow.ss; }
+  updatePopup(tnow);
+  requestAnimationFrame(frame);
+}
+let lastDrawSec = -1;
+
+/* ================= 互動：縮放拖曳 ================= */
+const pointers = new Map();
+let pinchBase = null;
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY });
+  if (pointers.size === 2) {
+    const [a,b] = [...pointers.values()];
+    pinchBase = { d: Math.hypot(a.x-b.x, a.y-b.y), s: view.s, cx:(a.x+b.x)/2, cy:(a.y+b.y)/2, tx:view.tx, ty:view.ty };
+  }
+  canvas.classList.add("dragging");
+});
+canvas.addEventListener("pointermove", e => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 1) { view.tx += dx; view.ty += dy; }
+  else if (pointers.size === 2 && pinchBase) {
+    const [a,b] = [...pointers.values()];
+    const d = Math.hypot(a.x-b.x, a.y-b.y);
+    const k = Math.max(0.2, Math.min(40, pinchBase.s * d / pinchBase.d)) / pinchBase.s;
+    view.s = pinchBase.s * k;
+    view.tx = pinchBase.cx - (pinchBase.cx - pinchBase.tx) * k + ((a.x+b.x)/2 - pinchBase.cx);
+    view.ty = pinchBase.cy - (pinchBase.cy - pinchBase.ty) * k + ((a.y+b.y)/2 - pinchBase.cy);
+  }
+});
+function endPointer(e) {
+  const p = pointers.get(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchBase = null;
+  if (pointers.size === 0) canvas.classList.remove("dragging");
+  // 視為點擊：位移 < 6px
+  if (p && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 6) handleTap(e.clientX, e.clientY);
+}
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", e => { pointers.delete(e.pointerId); pinchBase = null; });
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  const k = Math.exp(-e.deltaY * 0.0015);
+  const ns = Math.max(2, Math.min(400, view.s * k));
+  const kk = ns / view.s;
+  view.tx = e.clientX - (e.clientX - view.tx) * kk;
+  view.ty = e.clientY - (e.clientY - view.ty) * kk;
+  view.s = ns;
+}, { passive:false });
+function zoomBy(k) {
+  const ns = Math.max(2, Math.min(400, view.s * k));
+  const kk = ns / view.s;
+  view.tx = W/2 - (W/2 - view.tx) * kk;
+  view.ty = H/2 - (H/2 - view.ty) * kk;
+  view.s = ns;
+}
+document.getElementById("zin").onclick = () => zoomBy(1.5);
+document.getElementById("zout").onclick = () => zoomBy(1/1.5);
+document.getElementById("zfit").onclick = fitRegion;
+
+/* ================= 點擊：列車與車站 ================= */
+function handleTap(x, y) {
+  let best = null, bd = 20;
+  for (const tr of drawnTrains) {
+    const d = Math.hypot(tr.sx - x, tr.sy - y);
+    if (d < bd) { bd = d; best = { type:"train", sv:tr.sv, dir:tr.dir, dep:tr.dep }; }
+  }
+  if (!best) {
+    bd = 16;
+    for (const st of stationIndex.values()) {
+      if (st.region !== region) continue;
+      const p = toScreen(st.pt);
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bd) { bd = d; best = { type:"station", key: st.region + "|" + st.name }; }
+    }
+  }
+  selected = best;
+  if (!best) document.getElementById("popup").classList.remove("show");
+}
+function fmtEta(sec) {
+  if (sec < 20) return "即將到站";
+  if (sec < 90) return "約 " + Math.round(sec / 10) * 10 + " 秒";
+  return "約 " + Math.round(sec / 60) + " 分鐘";
+}
+function updatePopup(tnow) {
+  const pop = document.getElementById("popup");
+  if (!selected) return;
+  if (selected.type === "train") {
+    const { sv, dir, dep } = selected;
+    const pos = tripPos(sv, dir, (tnow.svcMin - dep) * 60);
+    if (!pos || tnow.svcMin < dep) { selected = null; pop.classList.remove("show"); return; }
+    const chip = document.getElementById("popline");
+    chip.textContent = sv.line.name;
+    chip.style.setProperty("--c", sv.line.color);
+    chip.style.background = sv.line.color;
+    document.getElementById("poptitle").textContent = "往 " + pos.destName;
+    document.getElementById("popmeta").innerHTML = pos.atStation
+      ? "停靠 <b>" + pos.nextName + "</b> 中"
+      : "下一站 <b>" + pos.nextName + "</b>・" + fmtEta(pos.secToNext) + "<br><span style='opacity:.75'>" + sv.svc.name + "・" + String(Math.floor(dep/60)%24).padStart(2,"0") + ":" + String(Math.floor(dep%60)).padStart(2,"0") + " 發車</span>";
+    pop.classList.add("show");
+  } else {
+    const st = stationIndex.get(selected.key);
+    if (!st) return;
+    const chip = document.getElementById("popline");
+    chip.textContent = st.code;
+    chip.style.background = "var(--muted)";
+    document.getElementById("poptitle").textContent = st.name;
+    document.getElementById("popmeta").textContent = "交會路線：" + [...st.lines].join("・");
+    pop.classList.add("show");
+  }
+}
+document.getElementById("popclose").onclick = () => { selected = null; document.getElementById("popup").classList.remove("show"); };
+
+/* ================= 圖例與分頁 ================= */
+function buildLegend() {
+  const el = document.getElementById("legend");
+  el.innerHTML = "";
+  for (const ln of NET) {
+    if (ln.region !== region) continue;
+    const b = document.createElement("button");
+    b.className = "chip" + (lineVisible.get(ln.id) ? "" : " off");
+    b.style.setProperty("--c", ln.color);
+    b.innerHTML = "<span class='dot'></span>" + ln.name;
+    b.onclick = () => { lineVisible.set(ln.id, !lineVisible.get(ln.id)); b.classList.toggle("off"); };
+    el.appendChild(b);
+  }
+}
+function setRegion(r) {
+  region = r;
+  selected = null;
+  document.getElementById("popup").classList.remove("show");
+  document.getElementById("tab0").classList.toggle("on", r === 0);
+  document.getElementById("tab1").classList.toggle("on", r === 1);
+  document.getElementById("tab0").setAttribute("aria-selected", r === 0);
+  document.getElementById("tab1").setAttribute("aria-selected", r === 1);
+  buildLegend();
+  fitRegion();
+}
+document.getElementById("tab0").onclick = () => setRegion(0);
+document.getElementById("tab1").onclick = () => setRegion(1);
+
+/* ================= 說明視窗 ================= */
+const scrim = document.getElementById("scrim");
+document.getElementById("info").onclick = () => scrim.classList.add("show");
+document.getElementById("scrimok").onclick = () => scrim.classList.remove("show");
+scrim.addEventListener("click", e => { if (e.target === scrim) scrim.classList.remove("show"); });
+
+/* ================= 啟動 ================= */
+window.addEventListener("resize", () => { resize(); fitRegion(); });
+resize();
+setRegion(0);
+requestAnimationFrame(frame);
+</script>
