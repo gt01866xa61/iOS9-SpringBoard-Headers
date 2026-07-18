@@ -1,3 +1,10 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B141F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EFF3F6" media="(prefers-color-scheme: light)">
 <title>台灣捷運動態圖</title>
 <style>
   :root {
@@ -363,6 +370,8 @@
   }
   .offbanner.show { display: block; }
 </style>
+</head>
+<body>
 
 <canvas id="map"></canvas>
 
@@ -407,14 +416,14 @@
 <div class="modal-scrim" id="scrim">
   <div class="modal">
     <h2>關於這張圖</h2>
-    <p><b>這是依官方班距推算的即時模擬</b>，不是車載 GPS 定位——台灣各捷運系統並未公開逐車位置。列車依各線首末班時間、平日尖離峰／假日班距與平均旅行速度，沿真實路線座標推算目前位置，全部以台北時間同步，任何人任何時候打開看到的畫面都一致。</p>
+    <p><b>這是依官方班距推算的即時模擬</b>，不是車載 GPS 定位——台灣各捷運系統並未公開逐車位置。列車依各線首末班時間、平日尖離峰／假日班距與站間實際距離、平均旅速推算目前位置，全部以台北時間同步，任何人任何時候打開看到的畫面都一致。路線圖採「標準路網圖」式的示意排版（45°／90° 折線、等距站點），非地理實際位置。</p>
     <p><b>涵蓋路網（2026-07 營運中路段）</b></p>
     <ul>
       <li>台北捷運：文湖、淡水信義（含新北投支線）、松山新店（含小碧潭支線）、中和新蘆（蘆洲／迴龍雙分支）、板南、環狀線</li>
       <li>桃園機場捷運（台北車站—老街溪，以普通車班距模擬）</li>
       <li>高雄捷運紅線（小港—岡山）、橘線、環狀輕軌（全環）</li>
     </ul>
-    <p>點列車可看路線、方向與下一站；點車站可看站名與交會路線。底部色塊可開關各路線。站點座標與班距為 2026 年 7 月整理之近似值；國定假日以週末班距視之。未含淡海輕軌、安坑輕軌與台鐵／高鐵。</p>
+    <p>點列車可看路線、方向與下一站；點車站可看站名與交會路線。底部色塊可開關各路線。班距為 2026 年 7 月整理之近似值；國定假日以週末班距視之。未含淡海輕軌、安坑輕軌與台鐵／高鐵。</p>
     <button class="okbtn" id="scrimok">開始看車</button>
   </div>
 </div>
@@ -423,128 +432,128 @@
 "use strict";
 
 /* ================= 路網資料（2026-07）=================
-   st: [代碼, 站名, 緯度, 經度]
+   st: [代碼, 站名, 緯度, 經度, 圖上x, 圖上y]
+       緯經度只用來算站間實際距離（行車時間）；畫面位置用圖上座標（路網圖式排版）。
+   vias: {正向段索引: [[x,y],...]} 站與站之間的折點（維持 45°/90° 走線）
    hw: fd 首班(分)、ld 末班(分)、pk 平日尖峰班距、op 離峰、lt 深夜(23:00後)、
        hl 假日、dw 停站秒數、v 平均旅速 km/h                       */
 const NET = [
  { id:"br", region:0, name:"文湖線", color:"#C48C31", svc:[
    { name:"動物園—南港展覽館", hw:{fd:360,ld:1440,pk:2.5,op:5,lt:8,hl:4.5,dw:20,v:29}, st:[
-     ["BR01","動物園",24.9983,121.5794],["BR02","木柵",24.9982,121.5731],["BR03","萬芳社區",24.9986,121.5680],
-     ["BR04","萬芳醫院",24.9994,121.5582],["BR05","辛亥",25.0052,121.5570],["BR06","麟光",25.0184,121.5589],
-     ["BR07","六張犁",25.0239,121.5533],["BR08","科技大樓",25.0261,121.5435],["BR09","大安",25.0328,121.5434],
-     ["BR10","忠孝復興",25.0418,121.5440],["BR11","南京復興",25.0521,121.5438],["BR12","中山國中",25.0609,121.5439],
-     ["BR13","松山機場",25.0630,121.5517],["BR14","大直",25.0796,121.5469],["BR15","劍南路",25.0848,121.5555],
-     ["BR16","西湖",25.0821,121.5669],["BR17","港墘",25.0800,121.5750],["BR18","文德",25.0785,121.5849],
-     ["BR19","內湖",25.0837,121.5946],["BR20","大湖公園",25.0837,121.6022],["BR21","葫洲",25.0725,121.6075],
-     ["BR22","東湖",25.0672,121.6115],["BR23","南港軟體園區",25.0599,121.6158],["BR24","南港展覽館",25.0553,121.6174]]}]},
+     ["BR01","動物園",24.9983,121.5794,19.6,28.5],["BR02","木柵",24.9982,121.5731,18.3,28.5],["BR03","萬芳社區",24.9986,121.5680,17,28.5],
+     ["BR04","萬芳醫院",24.9994,121.5582,16,27.5],["BR05","辛亥",25.0052,121.5570,16,26.2],["BR06","麟光",25.0184,121.5589,16,24.9],
+     ["BR07","六張犁",25.0239,121.5533,15,23.9],["BR08","科技大樓",25.0261,121.5435,14,22.9],["BR09","大安",25.0328,121.5434,14,21.6],
+     ["BR10","忠孝復興",25.0418,121.5440,14,18],["BR11","南京復興",25.0521,121.5438,14,16],["BR12","中山國中",25.0609,121.5439,14,14.6],
+     ["BR13","松山機場",25.0630,121.5517,14,13.3],["BR14","大直",25.0796,121.5469,14.9,12.4],["BR15","劍南路",25.0848,121.5555,15.8,11.5],
+     ["BR16","西湖",25.0821,121.5669,17.1,11.5],["BR17","港墘",25.0800,121.5750,18.4,11.5],["BR18","文德",25.0785,121.5849,19.7,11.5],
+     ["BR19","內湖",25.0837,121.5946,21,11.5],["BR20","大湖公園",25.0837,121.6022,22.3,11.5],["BR21","葫洲",25.0725,121.6075,23.3,12.5],
+     ["BR22","東湖",25.0672,121.6115,24.3,13.5],["BR23","南港軟體園區",25.0599,121.6158,25.3,14.5],["BR24","南港展覽館",25.0553,121.6174,25.3,16.5]]}]},
  { id:"r", region:0, name:"淡水信義線", color:"#E3002C", svc:[
    { name:"淡水—象山", hw:{fd:360,ld:1440,pk:4,op:7,lt:10,hl:6,dw:25,v:34}, st:[
-     ["R28","淡水",25.1678,121.4455],["R27","紅樹林",25.1541,121.4589],["R26","竹圍",25.1369,121.4596],
-     ["R25","關渡",25.1255,121.4671],["R24","忠義",25.1310,121.4734],["R23","復興崗",25.1374,121.4854],
-     ["R22","北投",25.1319,121.4987],["R21","奇岩",25.1256,121.5011],["R20","唭哩岸",25.1206,121.5061],
-     ["R19","石牌",25.1145,121.5155],["R18","明德",25.1097,121.5186],["R17","芝山",25.1029,121.5225],
-     ["R16","士林",25.0936,121.5262],["R15","劍潭",25.0847,121.5250],["R14","圓山",25.0713,121.5200],
-     ["R13","民權西路",25.0629,121.5194],["R12","雙連",25.0578,121.5206],["R11","中山",25.0527,121.5203],
-     ["R10","台北車站",25.0462,121.5175],["R09","台大醫院",25.0413,121.5162],["R08","中正紀念堂",25.0325,121.5181],
-     ["R07","東門",25.0339,121.5288],["R06","大安森林公園",25.0333,121.5346],["R05","大安",25.0328,121.5434],
-     ["R04","信義安和",25.0330,121.5527],["R03","台北101/世貿",25.0330,121.5633],["R02","象山",25.0330,121.5697]]},
+     ["R28","淡水",25.1678,121.4455,10,0],["R27","紅樹林",25.1541,121.4589,10,1],["R26","竹圍",25.1369,121.4596,10,2],
+     ["R25","關渡",25.1255,121.4671,10,3],["R24","忠義",25.1310,121.4734,10,4],["R23","復興崗",25.1374,121.4854,10,5],
+     ["R22","北投",25.1319,121.4987,10,6],["R21","奇岩",25.1256,121.5011,10,7],["R20","唭哩岸",25.1206,121.5061,10,8],
+     ["R19","石牌",25.1145,121.5155,10,9],["R18","明德",25.1097,121.5186,10,10],["R17","芝山",25.1029,121.5225,10,11],
+     ["R16","士林",25.0936,121.5262,10,12],["R15","劍潭",25.0847,121.5250,10,13],["R14","圓山",25.0713,121.5200,10,14],
+     ["R13","民權西路",25.0629,121.5194,10,15],["R12","雙連",25.0578,121.5206,10,16],["R11","中山",25.0527,121.5203,10,17],
+     ["R10","台北車站",25.0462,121.5175,10,18],["R09","台大醫院",25.0413,121.5162,10,19.3],["R08","中正紀念堂",25.0325,121.5181,10,20.6],
+     ["R07","東門",25.0339,121.5288,11,21.6],["R06","大安森林公園",25.0333,121.5346,12.5,21.6],["R05","大安",25.0328,121.5434,14,21.6],
+     ["R04","信義安和",25.0330,121.5527,15.5,21.6],["R03","台北101/世貿",25.0330,121.5633,17,21.6],["R02","象山",25.0330,121.5697,18.5,21.6]]},
    { name:"北投—新北投", hw:{fd:365,ld:1440,pk:7,op:9,lt:12,hl:9,dw:25,v:24}, st:[
-     ["R22","北投",25.1319,121.4987],["R22A","新北投",25.1369,121.5025]]}]},
+     ["R22","北投",25.1319,121.4987,10,6],["R22A","新北投",25.1369,121.5025,11.3,4.7]]}]},
  { id:"g", region:0, name:"松山新店線", color:"#008659", svc:[
-   { name:"松山—新店", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:6,dw:25,v:32}, st:[
-     ["G19","松山",25.0499,121.5776],["G18","南京三民",25.0516,121.5646],["G17","台北小巨蛋",25.0518,121.5527],
-     ["G16","南京復興",25.0521,121.5438],["G15","松江南京",25.0521,121.5333],["G14","中山",25.0527,121.5203],
-     ["G13","北門",25.0491,121.5107],["G12","西門",25.0421,121.5081],["G11","小南門",25.0355,121.5109],
-     ["G10","中正紀念堂",25.0325,121.5181],["G09","古亭",25.0261,121.5228],["G08","台電大樓",25.0206,121.5283],
-     ["G07","公館",25.0148,121.5344],["G06","萬隆",25.0021,121.5389],["G05","景美",24.9928,121.5410],
-     ["G04","大坪林",24.9829,121.5414],["G03","七張",24.9752,121.5432],["G02","新店區公所",24.9677,121.5412],
-     ["G01","新店",24.9578,121.5386]]},
+   { name:"松山—新店", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:6,dw:25,v:32},
+     vias:{4:[[11,16]],5:[[9.6,17]]}, st:[
+     ["G19","松山",25.0499,121.5776,18.2,16],["G18","南京三民",25.0516,121.5646,16.8,16],["G17","台北小巨蛋",25.0518,121.5527,15.4,16],
+     ["G16","南京復興",25.0521,121.5438,14,16],["G15","松江南京",25.0521,121.5333,12.6,16],["G14","中山",25.0527,121.5203,10,17],
+     ["G13","北門",25.0491,121.5107,8.8,17.8],["G12","西門",25.0421,121.5081,8.8,19.2],["G11","小南門",25.0355,121.5109,8.8,20.6],
+     ["G10","中正紀念堂",25.0325,121.5181,10,20.6],["G09","古亭",25.0261,121.5228,10,22.6],["G08","台電大樓",25.0206,121.5283,10,23.9],
+     ["G07","公館",25.0148,121.5344,10,25.2],["G06","萬隆",25.0021,121.5389,10,26.5],["G05","景美",24.9928,121.5410,10,27.8],
+     ["G04","大坪林",24.9829,121.5414,10,29.1],["G03","七張",24.9752,121.5432,10,30.4],["G02","新店區公所",24.9677,121.5412,10,31.7],
+     ["G01","新店",24.9578,121.5386,10,33]]},
    { name:"七張—小碧潭", hw:{fd:365,ld:1435,pk:10,op:12,lt:15,hl:12,dw:25,v:24}, st:[
-     ["G03","七張",24.9752,121.5432],["G03A","小碧潭",24.9718,121.5299]]}]},
+     ["G03","七張",24.9752,121.5432,10,30.4],["G03A","小碧潭",24.9718,121.5299,8.9,31.5]]}]},
  { id:"o", region:0, name:"中和新蘆線", color:"#F8B61C", svc:[
-   { name:"南勢角—迴龍", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32}, st:[
-     ["O01","南勢角",24.9899,121.5088],["O02","景安",24.9938,121.5045],["O03","永安市場",25.0025,121.5111],
-     ["O04","頂溪",25.0138,121.5155],["O05","古亭",25.0261,121.5228],["O06","東門",25.0339,121.5288],
-     ["O07","忠孝新生",25.0424,121.5327],["O08","松江南京",25.0521,121.5333],["O09","行天宮",25.0598,121.5333],
-     ["O10","中山國小",25.0628,121.5265],["O11","民權西路",25.0629,121.5194],["O12","大橋頭",25.0631,121.5127],
-     ["O13","台北橋",25.0632,121.5005],["O14","菜寮",25.0602,121.4925],["O15","三重",25.0558,121.4847],
-     ["O16","先嗇宮",25.0466,121.4718],["O17","頭前庄",25.0398,121.4600],["O18","新莊",25.0362,121.4525],
-     ["O19","輔大",25.0328,121.4354],["O20","丹鳳",25.0290,121.4222],["O21","迴龍",25.0225,121.4113]]},
-   { name:"南勢角—蘆洲", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32}, st:[
-     ["O01","南勢角",24.9899,121.5088],["O02","景安",24.9938,121.5045],["O03","永安市場",25.0025,121.5111],
-     ["O04","頂溪",25.0138,121.5155],["O05","古亭",25.0261,121.5228],["O06","東門",25.0339,121.5288],
-     ["O07","忠孝新生",25.0424,121.5327],["O08","松江南京",25.0521,121.5333],["O09","行天宮",25.0598,121.5333],
-     ["O10","中山國小",25.0628,121.5265],["O11","民權西路",25.0629,121.5194],["O12","大橋頭",25.0631,121.5127],
-     ["O50","三重國小",25.0705,121.4966],["O51","三和國中",25.0768,121.4869],["O52","徐匯中學",25.0805,121.4785],
-     ["O53","三民高中",25.0857,121.4738],["O54","蘆洲",25.0918,121.4646]]}]},
+   { name:"南勢角—迴龍", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32},
+     vias:{5:[[12.6,20]]}, st:[
+     ["O01","南勢角",24.9899,121.5088,6,26.6],["O02","景安",24.9938,121.5045,7,25.6],["O03","永安市場",25.0025,121.5111,8,24.6],
+     ["O04","頂溪",25.0138,121.5155,9,23.6],["O05","古亭",25.0261,121.5228,10,22.6],["O06","東門",25.0339,121.5288,11,21.6],
+     ["O07","忠孝新生",25.0424,121.5327,12.6,18],["O08","松江南京",25.0521,121.5333,12.6,16],["O09","行天宮",25.0598,121.5333,12.6,15],
+     ["O10","中山國小",25.0628,121.5265,11.3,15],["O11","民權西路",25.0629,121.5194,10,15],["O12","大橋頭",25.0631,121.5127,8.7,15],
+     ["O13","台北橋",25.0632,121.5005,7.7,16],["O14","菜寮",25.0602,121.4925,6.7,17],["O15","三重",25.0558,121.4847,5.7,18],
+     ["O16","先嗇宮",25.0466,121.4718,4.7,19],["O17","頭前庄",25.0398,121.4600,3.7,20],["O18","新莊",25.0362,121.4525,2.7,21],
+     ["O19","輔大",25.0328,121.4354,1.4,21],["O20","丹鳳",25.0290,121.4222,0.1,21],["O21","迴龍",25.0225,121.4113,-1.2,21]]},
+   { name:"南勢角—蘆洲", hw:{fd:360,ld:1440,pk:6,op:10,lt:12,hl:10,dw:25,v:32},
+     vias:{5:[[12.6,20]]}, st:[
+     ["O01","南勢角",24.9899,121.5088,6,26.6],["O02","景安",24.9938,121.5045,7,25.6],["O03","永安市場",25.0025,121.5111,8,24.6],
+     ["O04","頂溪",25.0138,121.5155,9,23.6],["O05","古亭",25.0261,121.5228,10,22.6],["O06","東門",25.0339,121.5288,11,21.6],
+     ["O07","忠孝新生",25.0424,121.5327,12.6,18],["O08","松江南京",25.0521,121.5333,12.6,16],["O09","行天宮",25.0598,121.5333,12.6,15],
+     ["O10","中山國小",25.0628,121.5265,11.3,15],["O11","民權西路",25.0629,121.5194,10,15],["O12","大橋頭",25.0631,121.5127,8.7,15],
+     ["O50","三重國小",25.0705,121.4966,7.7,14],["O51","三和國中",25.0768,121.4869,6.7,13],["O52","徐匯中學",25.0805,121.4785,5.7,12],
+     ["O53","三民高中",25.0857,121.4738,4.7,11],["O54","蘆洲",25.0918,121.4646,3.7,10]]}]},
  { id:"bl", region:0, name:"板南線", color:"#0070BD", svc:[
    { name:"頂埔—南港展覽館", hw:{fd:360,ld:1440,pk:3,op:6,lt:10,hl:5,dw:25,v:33}, st:[
-     ["BL01","頂埔",24.9602,121.4201],["BL02","永寧",24.9668,121.4362],["BL03","土城",24.9732,121.4441],
-     ["BL04","海山",24.9855,121.4488],["BL05","亞東醫院",24.9982,121.4525],["BL06","府中",25.0083,121.4592],
-     ["BL07","板橋",25.0139,121.4622],["BL08","新埔",25.0234,121.4685],["BL09","江子翠",25.0300,121.4724],
-     ["BL10","龍山寺",25.0353,121.4999],["BL11","西門",25.0421,121.5081],["BL12","台北車站",25.0462,121.5175],
-     ["BL13","善導寺",25.0446,121.5236],["BL14","忠孝新生",25.0424,121.5327],["BL15","忠孝復興",25.0418,121.5440],
-     ["BL16","忠孝敦化",25.0416,121.5514],["BL17","國父紀念館",25.0413,121.5576],["BL18","市政府",25.0411,121.5652],
-     ["BL19","永春",25.0409,121.5766],["BL20","後山埤",25.0450,121.5827],["BL21","昆陽",25.0505,121.5934],
-     ["BL22","南港",25.0521,121.6067],["BL23","南港展覽館",25.0553,121.6174]]}]},
+     ["BL01","頂埔",24.9602,121.4201,-0.9,28.9],["BL02","永寧",24.9668,121.4362,0.1,27.9],["BL03","土城",24.9732,121.4441,1.1,26.9],
+     ["BL04","海山",24.9855,121.4488,2.1,25.9],["BL05","亞東醫院",24.9982,121.4525,3.1,24.9],["BL06","府中",25.0083,121.4592,4.1,23.9],
+     ["BL07","板橋",25.0139,121.4622,4.1,22.6],["BL08","新埔",25.0234,121.4685,5.2,21.5],["BL09","江子翠",25.0300,121.4724,6.3,20.4],
+     ["BL10","龍山寺",25.0353,121.4999,7.5,19.2],["BL11","西門",25.0421,121.5081,8.8,19.2],["BL12","台北車站",25.0462,121.5175,10,18],
+     ["BL13","善導寺",25.0446,121.5236,11.3,18],["BL14","忠孝新生",25.0424,121.5327,12.6,18],["BL15","忠孝復興",25.0418,121.5440,14,18],
+     ["BL16","忠孝敦化",25.0416,121.5514,15.4,18],["BL17","國父紀念館",25.0413,121.5576,16.8,18],["BL18","市政府",25.0411,121.5652,18.2,18],
+     ["BL19","永春",25.0409,121.5766,19.6,18],["BL20","後山埤",25.0450,121.5827,21,18],["BL21","昆陽",25.0505,121.5934,22.4,18],
+     ["BL22","南港",25.0521,121.6067,23.8,18],["BL23","南港展覽館",25.0553,121.6174,25.3,16.5]]}]},
  { id:"y", region:0, name:"環狀線", color:"#FEDB00", svc:[
-   { name:"大坪林—新北產業園區", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:7,dw:25,v:30}, st:[
-     ["Y07","大坪林",24.9829,121.5414],["Y08","十四張",24.9769,121.5334],["Y09","秀朗橋",24.9903,121.5250],
-     ["Y10","景平",24.9925,121.5165],["Y11","景安",24.9938,121.5045],["Y12","中和",24.9998,121.4963],
-     ["Y13","橋和",25.0053,121.4907],["Y14","中原",25.0083,121.4844],["Y15","板新",25.0143,121.4720],
-     ["Y16","板橋",25.0139,121.4622],["Y17","新埔民生",25.0261,121.4677],["Y18","頭前庄",25.0398,121.4600],
-     ["Y19","幸福",25.0503,121.4589],["Y20","新北產業園區",25.0616,121.4598]]}]},
+   { name:"大坪林—新北產業園區", hw:{fd:360,ld:1440,pk:4.5,op:7,lt:10,hl:7,dw:25,v:30},
+     vias:{10:[[4.1,20.4]]}, st:[
+     ["Y07","大坪林",24.9829,121.5414,10,29.1],["Y08","十四張",24.9769,121.5334,8.8,29.1],["Y09","秀朗橋",24.9903,121.5250,7.8,28.1],
+     ["Y10","景平",24.9925,121.5165,7,27.3],["Y11","景安",24.9938,121.5045,7,25.6],["Y12","中和",24.9998,121.4963,6,25.6],
+     ["Y13","橋和",25.0053,121.4907,5.3,24.9],["Y14","中原",25.0083,121.4844,4.7,24.3],["Y15","板新",25.0143,121.4720,4.1,23.7],
+     ["Y16","板橋",25.0139,121.4622,4.1,22.6],["Y17","新埔民生",25.0261,121.4677,4.1,21.5],["Y18","頭前庄",25.0398,121.4600,3.7,20],
+     ["Y19","幸福",25.0503,121.4589,3.7,18.6],["Y20","新北產業園區",25.0616,121.4598,3.7,17.2]]}]},
  { id:"a", region:0, name:"機場捷運", color:"#8246AF", svc:[
-   { name:"台北車站—老街溪（普通車）", hw:{fd:360,ld:1410,pk:11,op:15,lt:15,hl:12,dw:25,v:45}, st:[
-     ["A1","台北車站",25.0480,121.5129],["A2","三重",25.0558,121.4847],["A3","新北產業園區",25.0616,121.4598],
-     ["A4","新莊副都心",25.0578,121.4438],["A5","泰山",25.0530,121.4300],["A6","泰山貴和",25.0380,121.4142],
-     ["A7","體育大學",25.0345,121.3744],["A8","長庚醫院",25.0577,121.3660],["A9","林口",25.0684,121.3599],
-     ["A10","山鼻",25.0838,121.3227],["A11","坑口",25.0810,121.2846],["A12","機場第一航廈",25.0797,121.2342],
-     ["A13","機場第二航廈",25.0772,121.2306],["A14a","機場旅館",25.0700,121.2237],["A15","大園",25.0576,121.2013],
-     ["A16","橫山",25.0416,121.1913],["A17","領航",25.0243,121.1856],["A18","高鐵桃園站",25.0130,121.2147],
-     ["A19","桃園體育園區",24.9990,121.2200],["A20","興南",24.9860,121.2225],["A21","環北",24.9659,121.2200],
-     ["A22","老街溪",24.9573,121.2159]]}]},
+   { name:"台北車站—老街溪（普通車）", hw:{fd:360,ld:1410,pk:11,op:15,lt:15,hl:12,dw:25,v:45},
+     vias:{1:[[4.5,18]]}, st:[
+     ["A1","台北車站",25.0480,121.5129,10,18],["A2","三重",25.0558,121.4847,5.7,18],["A3","新北產業園區",25.0616,121.4598,3.7,17.2],
+     ["A4","新莊副都心",25.0578,121.4438,2.6,16.1],["A5","泰山",25.0530,121.4300,1.5,15],["A6","泰山貴和",25.0380,121.4142,0.4,13.9],
+     ["A7","體育大學",25.0345,121.3744,-0.9,13.9],["A8","長庚醫院",25.0577,121.3660,-2.2,13.9],["A9","林口",25.0684,121.3599,-3.5,13.9],
+     ["A10","山鼻",25.0838,121.3227,-4.6,12.8],["A11","坑口",25.0810,121.2846,-5.7,11.7],["A12","機場第一航廈",25.0797,121.2342,-6.8,10.6],
+     ["A13","機場第二航廈",25.0772,121.2306,-8.1,10.6],["A14a","機場旅館",25.0700,121.2237,-9.1,11.6],["A15","大園",25.0576,121.2013,-9.1,13],
+     ["A16","橫山",25.0416,121.1913,-9.1,14.4],["A17","領航",25.0243,121.1856,-9.1,15.8],["A18","高鐵桃園站",25.0130,121.2147,-9.1,17.2],
+     ["A19","桃園體育園區",24.9990,121.2200,-9.1,18.6],["A20","興南",24.9860,121.2225,-9.1,20],["A21","環北",24.9659,121.2200,-9.1,21.4],
+     ["A22","老街溪",24.9573,121.2159,-9.1,22.8]]}]},
  { id:"kr", region:1, name:"高捷紅線", color:"#E4002B", svc:[
    { name:"小港—岡山", hw:{fd:360,ld:1440,pk:4.5,op:8,lt:10,hl:7,dw:25,v:36}, st:[
-     ["R3","小港",22.5651,120.3538],["R4","高雄國際機場",22.5709,120.3437],["R4A","草衙",22.5766,120.3358],
-     ["R5","前鎮高中",22.5866,120.3242],["R6","凱旋",22.5952,120.3184],["R7","獅甲",22.6033,120.3122],
-     ["R8","三多商圈",22.6136,120.3066],["R9","中央公園",22.6247,120.3021],["R10","美麗島",22.6314,120.3021],
-     ["R11","高雄車站",22.6394,120.3025],["R12","後驛",22.6478,120.3023],["R13","凹子底",22.6570,120.3030],
-     ["R14","巨蛋",22.6666,120.3029],["R15","生態園區",22.6752,120.3027],["R16","左營/高鐵",22.6873,120.3072],
-     ["R17","世運",22.7000,120.2951],["R18","油廠國小",22.7108,120.2896],["R19","楠梓加工區",22.7263,120.2870],
-     ["R20","後勁",22.7326,120.2884],["R21","都會公園",22.7407,120.2897],["R22","青埔",22.7521,120.2900],
-     ["R23","橋頭糖廠",22.7561,120.3057],["R24","橋頭火車站",22.7593,120.3089],["R24A","南岡山",22.7786,120.2947],
-     ["RK1","岡山",22.7966,120.3022]]}]},
+     ["R3","小港",22.5651,120.3538,6,24],["R4","高雄國際機場",22.5709,120.3437,6,22.8],["R4A","草衙",22.5766,120.3358,6,21.6],
+     ["R5","前鎮高中",22.5866,120.3242,6,20.4],["R6","凱旋",22.5952,120.3184,6,19.2],["R7","獅甲",22.6033,120.3122,6,18],
+     ["R8","三多商圈",22.6136,120.3066,6,16.8],["R9","中央公園",22.6247,120.3021,6,15.6],["R10","美麗島",22.6314,120.3021,6,14.4],
+     ["R11","高雄車站",22.6394,120.3025,6,13.2],["R12","後驛",22.6478,120.3023,6,12],["R13","凹子底",22.6570,120.3030,6,10.8],
+     ["R14","巨蛋",22.6666,120.3029,6,9.6],["R15","生態園區",22.6752,120.3027,6,8.4],["R16","左營/高鐵",22.6873,120.3072,6,7.2],
+     ["R17","世運",22.7000,120.2951,6,6],["R18","油廠國小",22.7108,120.2896,6,4.8],["R19","楠梓加工區",22.7263,120.2870,6,3.6],
+     ["R20","後勁",22.7326,120.2884,6,2.4],["R21","都會公園",22.7407,120.2897,6,1.2],["R22","青埔",22.7521,120.2900,6,0],
+     ["R23","橋頭糖廠",22.7561,120.3057,6,-1.2],["R24","橋頭火車站",22.7593,120.3089,6,-2.4],["R24A","南岡山",22.7786,120.2947,6,-3.6],
+     ["RK1","岡山",22.7966,120.3022,6,-4.8]]}]},
  { id:"ko", region:1, name:"高捷橘線", color:"#F7941D", svc:[
    { name:"西子灣—大寮", hw:{fd:360,ld:1440,pk:5,op:8,lt:10,hl:8,dw:25,v:33}, st:[
-     ["O1","西子灣",22.6215,120.2814],["O2","鹽埕埔",22.6247,120.2857],["O4","市議會",22.6300,120.2937],
-     ["O5","美麗島",22.6314,120.3021],["O6","信義國小",22.6304,120.3103],["O7","文化中心",22.6295,120.3183],
-     ["O8","五塊厝",22.6287,120.3249],["O9","技擊館",22.6279,120.3330],["O10","衛武營",22.6272,120.3420],
-     ["O11","鳳山西站",22.6266,120.3495],["O12","鳳山",22.6270,120.3585],["O13","大東",22.6255,120.3671],
-     ["O14","鳳山國中",22.6270,120.3744],["OT1","大寮",22.6318,120.3956]]}]},
+     ["O1","西子灣",22.6215,120.2814,0.8,14.4],["O2","鹽埕埔",22.6247,120.2857,2.1,14.4],["O4","市議會",22.6300,120.2937,3.4,14.4],
+     ["O5","美麗島",22.6314,120.3021,6,14.4],["O6","信義國小",22.6304,120.3103,7.3,14.4],["O7","文化中心",22.6295,120.3183,8.6,14.4],
+     ["O8","五塊厝",22.6287,120.3249,9.9,14.4],["O9","技擊館",22.6279,120.3330,11.2,14.4],["O10","衛武營",22.6272,120.3420,12.5,14.4],
+     ["O11","鳳山西站",22.6266,120.3495,13.8,14.4],["O12","鳳山",22.6270,120.3585,15.1,14.4],["O13","大東",22.6255,120.3671,16.4,14.4],
+     ["O14","鳳山國中",22.6270,120.3744,17.7,14.4],["OT1","大寮",22.6318,120.3956,19.3,14.4]]}]},
  { id:"kc", region:1, name:"環狀輕軌", color:"#6CBE45", svc:[
    { name:"全環線", loop:true, hw:{fd:390,ld:1320,pk:10,op:12,lt:15,hl:10,dw:20,v:18}, st:[
-     ["C1","籬仔內",22.6062,120.3232],["C2","凱旋瑞田",22.6019,120.3200],["C3","前鎮之星",22.5989,120.3163],
-     ["C4","凱旋中華",22.5966,120.3115],["C5","夢時代",22.5951,120.3065],["C6","經貿園區",22.6010,120.3040],
-     ["C7","軟體園區",22.6053,120.3005],["C8","高雄展覽館",22.6093,120.2996],["C9","旅運中心",22.6120,120.2960],
-     ["C10","光榮碼頭",22.6178,120.2925],["C11","真愛碼頭",22.6203,120.2872],["C12","駁二大義",22.6199,120.2837],
-     ["C13","駁二蓬萊",22.6205,120.2790],["C14","哈瑪星",22.6220,120.2758],["C15","壽山公園",22.6270,120.2760],
-     ["C16","文武聖殿",22.6318,120.2778],["C17","鼓山區公所",22.6367,120.2790],["C18","鼓山",22.6410,120.2803],
-     ["C19","馬卡道",22.6470,120.2828],["C20","台鐵美術館",22.6524,120.2861],["C21A","內惟藝術中心",22.6559,120.2884],
-     ["C21","美術館",22.6592,120.2926],["C22","聯合醫院",22.6631,120.2986],["C23","龍華國小",22.6600,120.3060],
-     ["C24","愛河之心",22.6608,120.3106],["C25","新上國小",22.6588,120.3162],["C26","灣仔內",22.6538,120.3227],
-     ["C27","鼎山街",22.6488,120.3268],["C28","高雄高工",22.6428,120.3290],["C29","樹德家商",22.6362,120.3300],
-     ["C30","科工館",22.6310,120.3300],["C31","聖功醫院",22.6250,120.3300],["C32","凱旋公園",22.6155,120.3282]]}]}
+     ["C1","籬仔內",22.6062,120.3232,10.4,19.8],["C2","凱旋瑞田",22.6019,120.3200,9.2,19.8],["C3","前鎮之星",22.5989,120.3163,8,19.8],
+     ["C4","凱旋中華",22.5966,120.3115,6.8,19.8],["C5","夢時代",22.5951,120.3065,5.6,19.8],["C6","經貿園區",22.6010,120.3040,4.7,18.9],
+     ["C7","軟體園區",22.6053,120.3005,4,18.2],["C8","高雄展覽館",22.6093,120.2996,3.3,17.5],["C9","旅運中心",22.6120,120.2960,2.6,16.8],
+     ["C10","光榮碼頭",22.6178,120.2925,1.9,16.1],["C11","真愛碼頭",22.6203,120.2872,1.6,15.1],["C12","駁二大義",22.6199,120.2837,1.6,13.9],
+     ["C13","駁二蓬萊",22.6205,120.2790,1.6,12.9],["C14","哈瑪星",22.6220,120.2758,1.6,11.9],["C15","壽山公園",22.6270,120.2760,1.6,10.9],
+     ["C16","文武聖殿",22.6318,120.2778,1.6,9.9],["C17","鼓山區公所",22.6367,120.2790,1.6,8.9],["C18","鼓山",22.6410,120.2803,1.6,7.9],
+     ["C19","馬卡道",22.6470,120.2828,1.6,6.4],["C20","台鐵美術館",22.6524,120.2861,2.6,5.4],["C21A","內惟藝術中心",22.6559,120.2884,3.9,5.4],
+     ["C21","美術館",22.6592,120.2926,5.2,5.4],["C22","聯合醫院",22.6631,120.2986,6.5,5.4],["C23","龍華國小",22.6600,120.3060,7.8,5.4],
+     ["C24","愛河之心",22.6608,120.3106,9.1,5.4],["C25","新上國小",22.6588,120.3162,10.4,6.7],["C26","灣仔內",22.6538,120.3227,10.4,8],
+     ["C27","鼎山街",22.6488,120.3268,10.4,9.2],["C28","高雄高工",22.6428,120.3290,10.4,10.4],["C29","樹德家商",22.6362,120.3300,10.4,11.6],
+     ["C30","科工館",22.6310,120.3300,10.4,13.2],["C31","聖功醫院",22.6250,120.3300,10.4,15.6],["C32","凱旋公園",22.6155,120.3282,10.4,17.7]]}]}
 ];
 
-/* ================= 幾何與投影 ================= */
-const KM_LAT = 110.57, KM_LNG = 111.32;
-function project(lat, lng, origin) {
-  return {
-    x: (lng - origin.lng) * KM_LNG * origin.cos,
-    y: -(lat - origin.lat) * KM_LAT
-  };
-}
+/* ================= 幾何 ================= */
 function haversineKm(a, b) {
   const dLat = (b[2] - a[2]) * Math.PI / 180;
   const dLng = (b[3] - a[3]) * Math.PI / 180;
@@ -552,67 +561,77 @@ function haversineKm(a, b) {
   const h = Math.sin(dLat/2)**2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng/2)**2;
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
+function hexLuma(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299*(n>>16 & 255) + 0.587*(n>>8 & 255) + 0.114*(n & 255)) / 255;
+}
 
 /* ================= 場景預計算 ================= */
-const REGIONS = [
-  { name:"北北桃", origin:null, bounds:null },
-  { name:"高雄",   origin:null, bounds:null }
-];
-const services = [];   // 攤平後的所有營運區間
-const stationIndex = new Map(); // name+region -> {lines:Set, pt, lat, lng, code}
+const REGIONS = [ { name:"北北桃", bounds:null }, { name:"高雄", bounds:null } ];
+const services = [];
+const stationIndex = new Map(); // region|站名 -> {name, code, region, pt, lines:Set, lineIds:Set}
 
 for (const line of NET) {
   for (const svc of line.svc) {
     const st = svc.st;
-    const segKm = [];
     const n = st.length;
     const segCount = svc.loop ? n : n - 1;
+    const segKm = [];
     for (let i = 0; i < segCount; i++) segKm.push(haversineKm(st[i], st[(i + 1) % n]));
     const vKmS = svc.hw.v / 3600;
     const segSec = segKm.map(d => d / vKmS);
-    // 正向時刻剖面：depTime[i] = 自起站發車起，於第 i 站「發車」的秒數
     function profile(times) {
       const dep = [0];
       for (let i = 0; i < times.length; i++) {
-        const stopCount = svc.loop ? n : n - 1;
         const isLastArrival = !svc.loop && i === times.length - 1;
         dep.push(dep[i] + times[i] + (isLastArrival ? 0 : svc.hw.dw));
       }
-      return dep; // 長度 = 段數+1；最後一項＝全程秒數（末站不再停留）
+      return dep;
     }
     const fwd = profile(segSec);
-    const rev = profile(segSec.slice().reverse());
+    const segSecRev = segSec.slice().reverse();
+    const rev = profile(segSecRev);
+    const pts = st.map(s => ({ x: s[4], y: s[5] }));
+    // 各正向段的折線（含 via 折點）與長度（圖上單位）
+    const vias = svc.vias || {};
+    const paths = [];
+    for (let i = 0; i < segCount; i++) {
+      const pp = [pts[i]];
+      for (const v of (vias[i] || [])) pp.push({ x: v[0], y: v[1] });
+      pp.push(pts[(i + 1) % n]);
+      const cum = [0];
+      for (let j = 1; j < pp.length; j++) cum.push(cum[j-1] + Math.hypot(pp[j].x - pp[j-1].x, pp[j].y - pp[j-1].y));
+      paths.push({ pts: pp, cum, len: cum[cum.length - 1] });
+    }
     services.push({
-      line, svc, st, segKm, segSec, n,
+      line, svc, st, n, pts, paths, segKm, segSec, segSecRev,
       durFwd: fwd[fwd.length - 1], durRev: rev[rev.length - 1],
-      depFwd: fwd, depRev: rev
+      depFwd: fwd, depRev: rev,
+      terminalA: st[0][1], terminalB: st[n - 1][1]
     });
     for (const s of st) {
       const key = line.region + "|" + s[1];
-      if (!stationIndex.has(key)) stationIndex.set(key, { name:s[1], code:s[0], region:line.region, lat:s[2], lng:s[3], lines:new Set() });
-      stationIndex.get(key).lines.add(line.name);
+      if (!stationIndex.has(key)) stationIndex.set(key, { name:s[1], code:s[0], region:line.region, pt:{x:s[4],y:s[5]}, lines:new Set(), lineIds:new Set() });
+      const node = stationIndex.get(key);
+      node.lines.add(line.name);
+      node.lineIds.add(line.id);
     }
   }
 }
-// 區域原點與邊界
+const lineById = new Map(NET.map(l => [l.id, l]));
 for (const r of [0,1]) {
-  let mnLa=99, mxLa=-99, mnLo=999, mxLo=-999;
+  let x0=1e9, x1=-1e9, y0=1e9, y1=-1e9;
   for (const s of stationIndex.values()) {
     if (s.region !== r) continue;
-    mnLa = Math.min(mnLa, s.lat); mxLa = Math.max(mxLa, s.lat);
-    mnLo = Math.min(mnLo, s.lng); mxLo = Math.max(mxLo, s.lng);
+    x0 = Math.min(x0, s.pt.x); x1 = Math.max(x1, s.pt.x);
+    y0 = Math.min(y0, s.pt.y); y1 = Math.max(y1, s.pt.y);
   }
-  const origin = { lat:(mnLa+mxLa)/2, lng:(mnLo+mxLo)/2, cos: Math.cos((mnLa+mxLa)/2*Math.PI/180) };
-  REGIONS[r].origin = origin;
-  const a = project(mnLa, mnLo, origin), b = project(mxLa, mxLo, origin);
-  REGIONS[r].bounds = { x0:Math.min(a.x,b.x), x1:Math.max(a.x,b.x), y0:Math.min(a.y,b.y), y1:Math.max(a.y,b.y) };
+  REGIONS[r].bounds = { x0, x1, y0, y1 };
 }
-// 站點投影
-for (const s of stationIndex.values()) s.pt = project(s.lat, s.lng, REGIONS[s.region].origin);
+const terminalNames = new Set();
 for (const sv of services) {
-  sv.pts = sv.st.map(s => project(s[2], s[3], REGIONS[sv.line.region].origin));
-  sv.terminalA = sv.st[0][1];
-  sv.terminalB = sv.st[sv.n - 1][1];
+  terminalNames.add(sv.line.region + "|" + sv.terminalA);
+  terminalNames.add(sv.line.region + "|" + sv.terminalB);
 }
 
 /* ================= 台北時間與時刻表 ================= */
@@ -647,35 +666,49 @@ function departures(sv, isHol) {
 }
 
 /* ================= 列車位置推算 ================= */
-// 回傳 {x,y,segIdx,frac,nextIdx,secToNext,atStation} 或 null
+function pointOnPath(path, frac, backward) {
+  let s = frac * path.len;
+  if (backward) s = path.len - s;
+  const pts = path.pts, cum = path.cum;
+  let k = 0;
+  while (k < pts.length - 2 && s > cum[k + 1]) k++;
+  const span = cum[k + 1] - cum[k] || 1e-9;
+  const f = (s - cum[k]) / span;
+  const a = pts[k], b = pts[k + 1];
+  let hx = b.x - a.x, hy = b.y - a.y;
+  if (backward) { hx = -hx; hy = -hy; }
+  return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, hx, hy };
+}
 function tripPos(sv, dir, elapsedSec) {
   const dep = dir === 0 ? sv.depFwd : sv.depRev;
   const dur = dir === 0 ? sv.durFwd : sv.durRev;
   if (elapsedSec < 0 || elapsedSec > dur) return null;
   const segCount = dep.length - 1;
-  // 找到目前所在段（線性掃描；段數最多 ~35）
   let i = 0;
   while (i < segCount - 1 && elapsedSec >= dep[i + 1]) i++;
-  const segStart = dep[i];
-  const segTimes = dir === 0 ? sv.segSec : sv.segSec.slice().reverse();
+  const segTimes = dir === 0 ? sv.segSec : sv.segSecRev;
   const runSec = segTimes[i];
-  const inSeg = elapsedSec - segStart;
-  const idxAt = k => dir === 0 ? k : (sv.svc.loop ? (sv.n - k) % sv.n : sv.n - 1 - k);
-  const aIdx = idxAt(i) % sv.n, bIdx = idxAt(i + 1) % sv.n;
-  const A = sv.pts[aIdx], B = sv.pts[bIdx];
+  const inSeg = elapsedSec - dep[i];
+  const idxAt = k => dir === 0 ? k % sv.n : (sv.svc.loop ? (sv.n - k) % sv.n : sv.n - 1 - k);
+  const aIdx = idxAt(i), bIdx = idxAt(i + 1);
   let frac, atStation = false, secToNext;
   if (inSeg >= runSec) { frac = 1; atStation = true; secToNext = 0; }
   else { frac = inSeg / runSec; secToNext = runSec - inSeg; }
-  // 行進方向向量；停站時指向即將離站的下一段
-  let hx = B.x - A.x, hy = B.y - A.y;
-  if (atStation && i + 1 < segCount) {
-    const C = sv.pts[idxAt(i + 2) % sv.n];
-    hx = C.x - B.x; hy = C.y - B.y;
+  const path = sv.paths[dir === 0 ? aIdx : bIdx];
+  const pos = pointOnPath(path, frac, dir === 1);
+  let hx = pos.hx, hy = pos.hy;
+  if (atStation && i + 1 < segCount) {   // 停站時箭頭預指離站方向
+    if (dir === 0) {
+      const np = sv.paths[bIdx].pts;
+      hx = np[1].x - np[0].x; hy = np[1].y - np[0].y;
+    } else {
+      const gp = sv.paths[(bIdx - 1 + sv.n) % sv.n].pts;
+      const m = gp.length;
+      hx = gp[m-2].x - gp[m-1].x; hy = gp[m-2].y - gp[m-1].y;
+    }
   }
   return {
-    x: A.x + (B.x - A.x) * frac,
-    y: A.y + (B.y - A.y) * frac,
-    hx, hy,
+    x: pos.x, y: pos.y, hx, hy,
     nextName: sv.st[bIdx][1],
     destName: dir === 0 ? sv.terminalB : sv.terminalA,
     secToNext, atStation
@@ -687,7 +720,6 @@ function activeTrains(region, tnow) {
     if (sv.line.region !== region || !lineVisible.get(sv.line.id)) continue;
     const deps = departures(sv, tnow.isHol);
     for (let dir = 0; dir < 2; dir++) {
-      if (sv.svc.loop && dir === 1 && !LOOP_BOTH_DIRS) continue;
       const dur = (dir === 0 ? sv.durFwd : sv.durRev) / 60;
       for (const dm of deps) {
         if (tnow.svcMin < dm) break;
@@ -699,14 +731,13 @@ function activeTrains(region, tnow) {
   }
   return out;
 }
-const LOOP_BOTH_DIRS = true;
 
 /* ================= 畫布與視圖 ================= */
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
 let W = 0, H = 0, DPR = 1;
 let region = 0;
-const view = { s: 10, tx: 0, ty: 0 };   // screen = world*s + t
+const view = { s: 12, tx: 0, ty: 0 };   // screen = map*s + t
 const lineVisible = new Map(NET.map(l => [l.id, true]));
 
 function resize() {
@@ -717,11 +748,11 @@ function resize() {
 }
 function fitRegion() {
   const b = REGIONS[region].bounds;
-  const pad = 40;
-  const s = Math.min((W - pad*2) / (b.x1 - b.x0), (H - pad*2 - 140) / (b.y1 - b.y0));
+  const pad = 34;
+  const s = Math.min((W - pad*2) / (b.x1 - b.x0), (H - pad*2 - 150) / (b.y1 - b.y0));
   view.s = s;
   view.tx = W/2 - (b.x0 + b.x1)/2 * s;
-  view.ty = (H + 90)/2 - (b.y0 + b.y1)/2 * s;
+  view.ty = (H + 100)/2 - (b.y0 + b.y1)/2 * s;
 }
 function toScreen(p) { return { x: p.x * view.s + view.tx, y: p.y * view.s + view.ty }; }
 
@@ -741,90 +772,111 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme)
 new MutationObserver(readTheme).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
 
 /* ================= 繪製 ================= */
-let drawnTrains = [];   // 供點擊命中測試
-let selected = null;    // {type:'train', sv, dir, dep} | {type:'station', key}
+let drawnTrains = [];
+let selected = null;
+
+function capsulePath(c, L, Wd) {
+  const r = Wd / 2, h = L / 2 - r;
+  c.beginPath();
+  c.moveTo(-h, -r);
+  c.lineTo(h, -r);
+  c.arc(h, 0, r, -Math.PI/2, Math.PI/2);
+  c.lineTo(-h, r);
+  c.arc(-h, 0, r, Math.PI/2, Math.PI*1.5);
+  c.closePath();
+}
 
 function draw(tnow) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = themeTokens.bg;
   ctx.fillRect(0, 0, W, H);
-  const lw = Math.max(2.5, Math.min(6, view.s * 0.28));
+  const lw = Math.max(3, Math.min(8, view.s * 0.34));
 
-  // 路線
+  // 路線（含折點）
   for (const sv of services) {
     if (sv.line.region !== region || !lineVisible.get(sv.line.id)) continue;
     ctx.beginPath();
-    const p0 = toScreen(sv.pts[0]);
-    ctx.moveTo(p0.x, p0.y);
-    for (let i = 1; i < sv.n; i++) { const p = toScreen(sv.pts[i]); ctx.lineTo(p.x, p.y); }
+    let first = true;
+    for (let i = 0; i < sv.paths.length; i++) {
+      const pp = sv.paths[i].pts;
+      for (let j = (first ? 0 : 1); j < pp.length; j++) {
+        const p = toScreen(pp[j]);
+        if (first) { ctx.moveTo(p.x, p.y); first = false; }
+        else ctx.lineTo(p.x, p.y);
+      }
+    }
     if (sv.svc.loop) ctx.closePath();
     ctx.strokeStyle = sv.line.color;
     ctx.lineWidth = lw;
     ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.globalAlpha = 0.92;
     ctx.stroke();
-    ctx.globalAlpha = 1;
   }
 
-  // 車站
-  const showAll = view.s > 55, showXfer = view.s > 26;
+  // 車站：單線站＝該線色細環，轉乘站＝較大墨色環
+  const showAll = view.s > 30, showXfer = view.s > 16;
+  const rN = Math.max(2.2, Math.min(3.6, view.s * 0.17));
+  const rX = Math.max(3.4, Math.min(6, view.s * 0.28));
   ctx.textBaseline = "middle";
   for (const st of stationIndex.values()) {
     if (st.region !== region) continue;
     let visible = false;
-    for (const ln of NET) if (st.lines.has(ln.name) && lineVisible.get(ln.id)) { visible = true; break; }
+    for (const id of st.lineIds) if (lineVisible.get(id)) { visible = true; break; }
     if (!visible) continue;
     const p = toScreen(st.pt);
     if (p.x < -30 || p.x > W+30 || p.y < -30 || p.y > H+30) continue;
-    const isXfer = st.lines.size >= 2;
+    const isXfer = st.lineIds.size >= 2;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, isXfer ? 4.5 : 2.8, 0, 7);
-    ctx.fillStyle = isXfer ? themeTokens.panel : themeTokens.bg;
+    ctx.arc(p.x, p.y, isXfer ? rX : rN, 0, 7);
+    ctx.fillStyle = themeTokens.panel;
     ctx.fill();
-    ctx.lineWidth = isXfer ? 2 : 1.4;
-    ctx.strokeStyle = themeTokens.ink;
-    ctx.globalAlpha = isXfer ? 0.9 : 0.55;
+    ctx.lineWidth = isXfer ? 2.4 : 1.8;
+    ctx.strokeStyle = isXfer ? themeTokens.ink : lineById.get([...st.lineIds][0]).color;
     ctx.stroke();
-    ctx.globalAlpha = 1;
     const isTerminal = terminalNames.has(st.region + "|" + st.name);
     if (showAll || (showXfer && (isXfer || isTerminal)) || (!showXfer && isTerminal)) {
       ctx.font = (isXfer || isTerminal ? "600 " : "400 ") + "11px -apple-system,'PingFang TC','Noto Sans TC',sans-serif";
       ctx.strokeStyle = themeTokens.halo;
       ctx.lineWidth = 3;
       ctx.fillStyle = isXfer || isTerminal ? themeTokens.ink : themeTokens.muted;
-      ctx.strokeText(st.name, p.x + 7, p.y - 7);
-      ctx.fillText(st.name, p.x + 7, p.y - 7);
+      ctx.strokeText(st.name, p.x + rX + 3, p.y - rX - 3);
+      ctx.fillText(st.name, p.x + rX + 3, p.y - rX - 3);
     }
   }
 
-  // 列車
+  // 列車：膠囊車廂 + 前進方向箭頭，隨縮放調整大小
   drawnTrains = [];
   const trains = activeTrains(region, tnow);
+  const kBase = Math.max(0.5, Math.min(1.15, view.s / 24));
   for (const tr of trains) {
     const p = toScreen(tr.pos);
-    if (p.x < -20 || p.x > W+20 || p.y < -20 || p.y > H+20) { drawnTrains.push({ ...tr, sx:-999, sy:-999 }); continue; }
+    if (p.x < -24 || p.x > W+24 || p.y < -24 || p.y > H+24) { drawnTrains.push({ ...tr, sx:-999, sy:-999 }); continue; }
     const isSel = selected && selected.type === "train" && selected.sv === tr.sv && selected.dir === tr.dir && selected.dep === tr.dep;
-    // 水滴形導航標記：尖端朝行進方向
-    const r = isSel ? 7.5 : 5.5;
+    const k = isSel ? kBase * 1.3 : kBase;
     const ang = Math.atan2(tr.pos.hy, tr.pos.hx);
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(ang);
-    ctx.beginPath();
-    ctx.moveTo(r * 1.85, 0);
-    ctx.arc(0, 0, r, 0.85, Math.PI * 2 - 0.85);
-    ctx.closePath();
+    ctx.scale(k, k);
+    capsulePath(ctx, 17, 9.5);
     ctx.fillStyle = tr.sv.line.color;
     ctx.fill();
-    ctx.lineWidth = isSel ? 2.5 : 1.8;
-    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.7;
+    ctx.strokeStyle = "rgba(255,255,255,0.95)";
+    ctx.stroke();
+    ctx.beginPath();                       // 車頭箭頭（淺色車身用深色）
+    ctx.moveTo(1.3, -2.6);
+    ctx.lineTo(4.6, 0);
+    ctx.lineTo(1.3, 2.6);
+    ctx.lineWidth = 1.9;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = hexLuma(tr.sv.line.color) > 0.62 ? "rgba(30,30,30,0.65)" : "rgba(255,255,255,0.95)";
     ctx.stroke();
     ctx.restore();
     if (isSel) {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 13, 0, 7);
+      ctx.arc(p.x, p.y, 16 * kBase + 4, 0, 7);
       ctx.strokeStyle = tr.sv.line.color;
-      ctx.globalAlpha = 0.45;
+      ctx.globalAlpha = 0.4;
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.globalAlpha = 1;
@@ -834,15 +886,10 @@ function draw(tnow) {
   document.getElementById("traincount").textContent = trains.length;
   document.getElementById("offbanner").classList.toggle("show", trains.length === 0 && (tnow.svcMin < 360 || tnow.svcMin > 1500));
 }
-const terminalNames = new Set();
-for (const sv of services) {
-  terminalNames.add(sv.line.region + "|" + sv.terminalA);
-  terminalNames.add(sv.line.region + "|" + sv.terminalB);
-}
 
 /* ================= 主迴圈 ================= */
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let lastSec = -1;
+let lastSec = -1, lastDrawSec = -1;
 function frame() {
   const tnow = taipeiNow();
   if (tnow.ss !== lastSec) {
@@ -856,7 +903,6 @@ function frame() {
   updatePopup(tnow);
   requestAnimationFrame(frame);
 }
-let lastDrawSec = -1;
 
 /* ================= 互動：縮放拖曳 ================= */
 const pointers = new Map();
@@ -879,7 +925,7 @@ canvas.addEventListener("pointermove", e => {
   else if (pointers.size === 2 && pinchBase) {
     const [a,b] = [...pointers.values()];
     const d = Math.hypot(a.x-b.x, a.y-b.y);
-    const k = Math.max(0.2, Math.min(40, pinchBase.s * d / pinchBase.d)) / pinchBase.s;
+    const k = Math.max(3, Math.min(120, pinchBase.s * d / pinchBase.d)) / pinchBase.s;
     view.s = pinchBase.s * k;
     view.tx = pinchBase.cx - (pinchBase.cx - pinchBase.tx) * k + ((a.x+b.x)/2 - pinchBase.cx);
     view.ty = pinchBase.cy - (pinchBase.cy - pinchBase.ty) * k + ((a.y+b.y)/2 - pinchBase.cy);
@@ -890,7 +936,6 @@ function endPointer(e) {
   pointers.delete(e.pointerId);
   if (pointers.size < 2) pinchBase = null;
   if (pointers.size === 0) canvas.classList.remove("dragging");
-  // 視為點擊：位移 < 6px
   if (p && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 6) handleTap(e.clientX, e.clientY);
 }
 canvas.addEventListener("pointerup", endPointer);
@@ -898,14 +943,14 @@ canvas.addEventListener("pointercancel", e => { pointers.delete(e.pointerId); pi
 canvas.addEventListener("wheel", e => {
   e.preventDefault();
   const k = Math.exp(-e.deltaY * 0.0015);
-  const ns = Math.max(2, Math.min(400, view.s * k));
+  const ns = Math.max(3, Math.min(120, view.s * k));
   const kk = ns / view.s;
   view.tx = e.clientX - (e.clientX - view.tx) * kk;
   view.ty = e.clientY - (e.clientY - view.ty) * kk;
   view.s = ns;
 }, { passive:false });
 function zoomBy(k) {
-  const ns = Math.max(2, Math.min(400, view.s * k));
+  const ns = Math.max(3, Math.min(120, view.s * k));
   const kk = ns / view.s;
   view.tx = W/2 - (W/2 - view.tx) * kk;
   view.ty = H/2 - (H/2 - view.ty) * kk;
@@ -948,7 +993,6 @@ function updatePopup(tnow) {
     if (!pos || tnow.svcMin < dep) { selected = null; pop.classList.remove("show"); return; }
     const chip = document.getElementById("popline");
     chip.textContent = sv.line.name;
-    chip.style.setProperty("--c", sv.line.color);
     chip.style.background = sv.line.color;
     document.getElementById("poptitle").textContent = "往 " + pos.destName;
     document.getElementById("popmeta").innerHTML = pos.atStation
@@ -1008,3 +1052,5 @@ resize();
 setRegion(0);
 requestAnimationFrame(frame);
 </script>
+</body>
+</html>
