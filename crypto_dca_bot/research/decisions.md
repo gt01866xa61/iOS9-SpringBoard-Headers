@@ -6,6 +6,54 @@
 
 ---
 
+## 2026-06-14 — T1+T2 完成、三策略全 FAIL M2、regime 診斷、路二=B(待拍)、交接 Codex
+
+**完整脈絡見 `handoff_codex_2026-06-14.md`(本日交接文件,數字總表在該檔 §4)。**
+
+### T1 績效指標層 ✅(commit `1b47df5`)
+`v2/analysis/metrics.py`:Sharpe/Sortino/maxDD/CAGR/Calmar/滾動 Sharpe。
+純 stdlib、可釘死;std 用 population(ddof=0,刻意)、年化 365(crypto 24/7)。
+Backtest 加 mark-to-market `equity_curve`(不進 fingerprint)。
+
+### T2 walk-forward ✅(commit `45651be`)— ★ 三策略全 FAIL M2
+低頻 feasibility 修正:三策略 30/3 每窗僅 2~5 筆交易 → per-window WFE = 噪音。
+拍板(使用者):**pooled OOS WFE(主)+ 70/30 single-split(對照),兩法一致
+才信**。真資料結果(19 窗,M2 閘 WFE>50%):
+- S1 Donchian:pooled **20.6%** / split **−37.5%** → FAIL
+- S2 FundingSkew:**39.1%** / **4.2%** → FAIL
+- S3 +MacroOverlay:**28.8%** / **−24.7%** → FAIL
+三者 in-sample Sharpe 0.96~1.56 → OOS 崩(0.04~−0.55),兩法結論一致(可信)。
+**健康訊號非 bug**(risk #4「數字一路縮」);M2 閘做了它該做的事。
+
+### regime 診斷 ✅(commit `1eb8418`,工具固化:`v2.tools.regime_diagnostic`)
+「2024-2026 為什麼垮」答案:**看天吃飯,不是壞掉**。OOS 19 窗按 BTC net ±15%
+分桶:上升趨勢 6 窗三策略全賺(S1 +19.9%/S2 +44.1%/S3 +22.6%,勝率 83-100%)
+= edge 真實;盤整 10 窗全垮(−2~−4%);下跌 3 窗全挨打(S2 −38% 接刀)。
+in-sample 2020-21 = 史詩牛市(ETH +463%/+404%)→ in-sample 好看 = 天時。
+OOS B&H 對照 Sharpe 0.06(策略 −0.55)→ 該段整體難做 + 策略還輸躺平(whipsaw 稅)。
+**→ 三策略全趨勢型、高度相關 = 策略池 DNA 單一(違反「兩兩相關 ≤0.5」設計目標)。
+使用者拍板:每個新策略都要過 regime 診斷這關。**
+
+### 路二(收 funding 風險溢酬)解剖 — 結論 B:結構性關閉(**分析結論,待 Jeff 拍板**)
+軍師端新 frame:路一=自動化 Jeff 已驗證手動策略(稍後);路二=收風險溢酬(本輪驗)。
+解剖 FundingSkew:**現貨持有者收到的 funding = $0**(funding 是永續多空互付),
+它 100% P&L = 價格 beta,funding 只是進出場計時器 → regime 實測趨勢型的根因。
+溢酬本身很肥:BTC 年化 +11.8%/ETH +14.2%,負 funding 只占 15%;純 basis carry
+(現貨多+永續空)逐年**每年皆正**,理想化 Sharpe 10.6/maxDD 1.5%。
+但收它**必須做空永續腿** → long-only spot 邊界下無法對沖 → **不是做法問題(A),
+是結構死路(B)**。**basis trade 悖論**:delta-neutral carry 的風險(maxDD 1.5%)
+遠低於現行方向性賭注(maxDD 50-73%)—「不碰衍生品」的邊界反而擋掉風險最低的
+機會。**決策點(等 Jeff):維持 strict long-only(路二死)vs 放寬允許
+delta-neutral basis trade(路二活)。** 代價:保證金/強平、兩腿成本、對手方
+風險(FTX 殷鑑)、M8 資安擴面;真實淨 carry 估 ~8-12%/年。
+
+### 交接
+本日專案自 Claude Code 遷移至 Codex。交接文件 `handoff_codex_2026-06-14.md`
+(環境/敘事/數字/開放問題/慣例陷阱/caveats 全收錄)。**T3-T9 暫停,停點=
+等 Jeff 拍上層方向(路二邊界 + 策略池 DNA)。** 交接時 255 tests 全綠零 skip。
+
+---
+
 ## 2026-06-13 — V2-T 前置 2 第 1 件:組合視角 sizing(rejections 11206→0)+ P&L 跳動成因
 
 **背景**:前置 2 動工前用真資料重跑(`v2/tools/real_demo.py`)確認 baseline:

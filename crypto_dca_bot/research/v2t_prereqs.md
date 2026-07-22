@@ -13,9 +13,10 @@
 | **前置 2-① delta-aware → 組合視角 sizing** | ✅ **DONE 2026-06-13**(rejections 11206/958/968 → **0**) |
 | **前置 2-② sell-before-buy** | ⏸ **延後 V2-E**(見下;事件驅動單幣 fire 用不到) |
 | **前置 2-③ partial fill** | ⏸ **延後 V2-E**(見下) |
-| T1 績效指標層 | 🔨 **動工中(2026-06-13)** |
-| T2 Walk-forward runner(M2) | ⬜ |
-| T3 M1 真資料壓測 | ⬜ |
+| T1 績效指標層 | ✅ **DONE 2026-06-13**(`v2/analysis/metrics.py`,28 tests) |
+| T2 Walk-forward runner(M2) | ✅ **DONE 2026-06-14**(pooled+split 雙法;**三策略全 FAIL M2**,見 decisions 2026-06-14) |
+| regime 診斷工具(新增關卡) | ✅ **DONE 2026-06-14**(`v2.tools.regime_diagnostic`;每個新策略必過) |
+| T3 M1 真資料壓測 | ⏸ **暫停 — 使用者明令等上層方向拍板**(路二邊界+策略池 DNA,見 handoff §5) |
 | T4 M3 lock(commit-hash)| ⬜ |
 | T5 M6 vol-targeting 真公式 | ⬜ |
 | T6 LiveDriver(輸入側)| ⬜ |

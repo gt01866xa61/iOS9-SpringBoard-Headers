@@ -1,7 +1,10 @@
 # V2 Strategy Research — Claude Context
 
-> **⚠️ 目前進度(2026-06-13):V2-A/B/S 完成。下一步 V2-T,但卡在硬前置 —
-> 開 V2-T 前必讀 `v2t_prereqs.md`(正典真資料接入 + 752 引擎精修)。**
+> **⚠️ 目前進度(2026-06-14):V2-A/B/S 完成;V2-T 前置 1+2 解、T1+T2 完成 —
+> 三策略全 FAIL M2(WFE<50%),regime 診斷證實全趨勢型(策略池 DNA 單一)。
+> 專案暫停等使用者拍上層方向(路二 funding 溢酬=結構性 B + basis trade 悖論、
+> 策略池互補)。T3-T9 未動。本日交接至 Codex — 接手先讀
+> `handoff_codex_2026-06-14.md`,再讀 `v2t_prereqs.md` + `decisions.md`。**
 
 ## What this folder is
 
