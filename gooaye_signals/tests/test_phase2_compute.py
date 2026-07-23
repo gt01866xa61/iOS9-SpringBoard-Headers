@@ -23,6 +23,7 @@ import signals.onprem_events as oe
 import signals.yageo_rev_yoy as yageo
 from fetchers import SOURCE_REGISTRY
 from fetchers.cache import DayCache
+from fetchers.manual_src import validate_manual
 from registry import discover
 
 # --- 測試用序列 ---
@@ -32,7 +33,7 @@ SHORT = [1.0, 2.0, 3.0]                       # 太短 → 略過
 
 
 def _rev(yoys: list[float]) -> dict:
-    return {"rev": [[f"m{i}", v] for i, v in enumerate(yoys)]}
+    return {"rev": [[f"2026-{i+1:02d}", v] for i, v in enumerate(yoys)]}
 
 
 def _check_yageo() -> None:
@@ -43,7 +44,10 @@ def _check_yageo() -> None:
     assert yageo._compute(_rev([-5, -4, -3])).light == "yellow"         # 年減中：降幅收斂≠擴張，水位守門
     r = yageo._compute(_rev([5, 4, 3]))
     assert r.value_label == "YoY +3.0%" and r.extra["highlight_index"] == 2
-    print("  ✓ yageo_rev_yoy 邊界燈號")
+    # 觀測點相鄰不等於月份相鄰：缺 2/4 月時不得誤報「連降 2 月」。
+    sparse = {"rev": [["2026-01", 5], ["2026-03", 4], ["2026-05", 3]]}
+    assert yageo._compute(sparse).light == "green"
+    print("  [OK] yageo_rev_yoy 邊界燈號")
 
 
 def _ai_closes(above_n: int, below_n: int, short_n: int) -> dict:
@@ -64,6 +68,10 @@ def _check_ai() -> None:
     assert ai._compute(_ai_closes(3, 2, 1)).light == "green"    # 60% (>=60)
     assert ai._compute(_ai_closes(5, 1, 0)).light == "green"    # 83%
     assert ai._compute(_ai_closes(0, 0, 6)).light == "gray"     # 全略過
+    insufficient = ai._compute(_ai_closes(3, 0, 3))
+    assert insufficient.light == "gray"                        # 低於 4/6 quorum
+    assert "percent" not in insufficient.extra                  # 未知不可偽裝成有效 0%
+    assert "至少需 4/6" in insufficient.extra["note"]
     r = ai._compute(_ai_closes(3, 2, 1))
     assert r.extra["percent"] == 60.0 and r.value_label == "廣度 60%"
     # 缺料透明化：1 檔太短被略過 → caption 明講、不悄悄改分母
@@ -72,7 +80,7 @@ def _check_ai() -> None:
     # fetcher 新形狀 {"series": ..., "asof": ...} 同樣可算（與舊形狀同結果）
     new_shape = {"closes": {"series": _ai_closes(3, 2, 1)["closes"], "asof": {}}}
     assert ai._compute(new_shape).extra["percent"] == 60.0
-    print("  ✓ ai_breadth 邊界燈號＋缺料揭露＋新舊 fetch 形狀")
+    print("  [OK] ai_breadth 邊界燈號＋缺料揭露＋新舊 fetch 形狀")
 
 
 def _mlcc_closes(kind: str) -> dict:
@@ -90,7 +98,16 @@ def _check_mlcc() -> None:
     assert mlcc._compute(_mlcc_closes("down")).light == "red"
     assert mlcc._compute(_mlcc_closes("flat")).light == "yellow"
     assert mlcc._compute({"closes": {}}).light == "gray"
-    print("  ✓ mlcc_basket_ma 邊界燈號")
+    only_two = {"closes": {s: UP for s in mlcc.BASKET[:2]}}
+    assert mlcc._compute(only_two).light == "gray"
+    assert "至少需 3/4" in mlcc._compute(only_two).extra["caption"]
+    assert "至少需 3/4" in mlcc._compute(only_two).extra["note"]
+    assert mlcc._compute({"closes": {s: UP for s in mlcc.BASKET[:3]}}).light == "green"
+    three_long_one_short = {"closes": {s: UP for s in mlcc.BASKET[:3]}}
+    three_long_one_short["closes"][mlcc.BASKET[3]] = SHORT
+    partial = mlcc._compute(three_long_one_short)
+    assert partial.light == "green" and "1 檔暫缺料" in partial.extra["note"]
+    print("  [OK] mlcc_basket_ma 邊界燈號")
 
 
 def _check_support_panels() -> None:
@@ -121,7 +138,7 @@ def _check_support_panels() -> None:
     # 名稱後掛上抓價代號（可溯源）：「美光 (MU)」「南亞科 (2408.TW)」；空格＝手機斷行點
     assert by_first[f'{mem.NAMES["MU"]} (MU)']["asof"] == "2026-07-03"
     assert by_first[f'{mem.NAMES["2408.TW"]} (2408.TW)']["asof"] == "2026-07-06"
-    print("  ✓ 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期＋名稱掛代號")
+    print("  [OK] 支援面板（memory_rs / raw_materials / watchlist）＋每列資料至日期＋名稱掛代號")
 
 
 def _lf_rev_inputs(yoys_by_sid: dict) -> dict:
@@ -165,6 +182,11 @@ def _check_leadframe() -> None:
     assert lf_basket._compute(up).light == "green"
     assert lf_basket._compute(down).light == "red"
     assert lf_basket._compute(flat).light == "yellow"
+    assert lf_basket._compute({"closes": {s: UP for s in lf_basket.BASKET[:2]}}).light == "gray"
+    assert lf_basket._compute({"closes": {s: UP for s in lf_basket.BASKET[:3]}}).light == "green"
+    lf_partial = {"closes": {s: UP for s in lf_basket.BASKET[:3]}}
+    lf_partial["closes"][lf_basket.BASKET[3]] = SHORT
+    assert lf_basket._compute(lf_partial).light == "green"
 
     # 體檢表：銅列只顯示、不投票——四雄全站上 + 銅跌破 → 仍是綠、分母只算 4
     closes = {s: UP for s in lf_watch.STOCKS}
@@ -172,20 +194,20 @@ def _check_leadframe() -> None:
     r = lf_watch._compute({"closes": closes})
     assert r.light == "green" and r.value_label == "4/4 站上50MA", (r.light, r.value_label)
     assert len(r.rows) == 5, "銅列要顯示在表格裡"
-    print("  ✓ 導線架三訊號（順德YoY / 四雄籃 / 體檢表銅不投票）")
+    print("  [OK] 導線架三訊號（順德YoY / 四雄籃 / 體檢表銅不投票）")
 
 
 def _check_onprem() -> None:
     """地端/混合雲 cluster 四訊號：核心燈色邊界。"""
-    # 訂單動能：HPE QoQ ±20% 三態；缺季跳過以已知相鄰比較；Dell 不影響卡燈
+    # 訂單動能：較上一已知披露期 ±20% 三態；缺季不稱 QoQ；Dell 不影響卡燈
     def orders(hpe_pair, dell_last="green隨便"):
         return {"orders": {
             "as_of": "2026-06-01",
-            "hpe": [{"q": "Q1", "orders_b": hpe_pair[0], "backlog_b": 3.0, "src": "t"},
-                    {"q": "Qx", "orders_b": None, "backlog_b": 4.0, "src": "t"},
-                    {"q": "Q2", "orders_b": hpe_pair[1], "backlog_b": 5.0, "src": "t"}],
-            "dell": [{"q": "Q1", "orders_b": 10.0, "backlog_b": 20.0, "src": "t"},
-                     {"q": "Q2", "orders_b": 5.0, "backlog_b": 25.0, "src": "t"}],
+            "hpe": [{"q": "FY25Q4", "orders_b": hpe_pair[0], "backlog_b": 3.0, "src": "t"},
+                    {"q": "FY26Q1", "orders_b": None, "backlog_b": 4.0, "src": "t"},
+                    {"q": "FY26Q2", "orders_b": hpe_pair[1], "backlog_b": 5.0, "src": "t"}],
+            "dell": [{"q": "FY26Q1", "orders_b": 10.0, "backlog_b": 20.0, "src": "t"},
+                     {"q": "FY26Q2", "orders_b": 5.0, "backlog_b": 25.0, "src": "t"}],
         }}
     assert oo._compute(orders((1.0, 1.3))).light == "green"    # +30% 放量
     assert oo._compute(orders((1.9, 1.8))).light == "yellow"   # -5% 平
@@ -193,6 +215,16 @@ def _check_onprem() -> None:
     r = oo._compute(orders((1.9, 1.8)))
     assert r.rows[1]["dot"] == "red", r.rows[1]                # Dell -50% 紅點但不計卡燈
     assert r.value_label.startswith("HPE $1.8B"), r.value_label
+    assert "QoQ" not in r.detail["rule"] and "上一已知披露期" in r.detail["rule"]
+    assert r.data_as_of == "2026-06-01" and r.rows[0]["source"] == "t"
+    continuous_shrink = {"orders": {
+        "as_of": "2026-06-01",
+        "hpe": [{"q": "FY25Q4", "orders_b": 2.0, "backlog_b": 3.0, "src": "t"},
+                {"q": "FY26Q1", "orders_b": 1.9, "backlog_b": 4.0, "src": "t"},
+                {"q": "FY26Q2", "orders_b": 1.8, "backlog_b": 5.0, "src": "t"}],
+        "dell": [],
+    }}
+    assert oo._compute(continuous_shrink).light == "red"  # 連續財季連縮兩季
     assert oo._compute({}).light == "gray"
 
     # 事件簿：窗內淨值三態＋背書門檻＋窗外事件不計
@@ -212,6 +244,14 @@ def _check_onprem() -> None:
     assert oe._compute(ev(["+", "+", "-"])).light == "yellow"          # net +1
     assert oe._compute(ev(["-", "-", "-"])).light == "red"             # net -3
     assert oe._compute(ev(["+"], dirs_out=["+", "+", "+"])).light == "yellow"  # 窗外不計
+    future = ev([])
+    future["events"]["as_of"] = "2026-01-01"
+    future["events"]["events"] = [
+        {"date": f"2026-0{i}-01", "camp": "t", "dir": "+", "type": "endorse",
+         "what": "future", "src": "s"} for i in (2, 3, 4)
+    ]
+    assert oe._compute(future).light == "yellow"  # 未來事件不計，net=0
+    assert oe._compute({"events": {"as_of": "bad", "events": future["events"]["events"]}}).light == "gray"
     assert oe._compute({}).light == "gray"
 
     # Menlo 風向×體量：雙變數真值表（分母效應修正——占比降≠萎縮）
@@ -225,6 +265,8 @@ def _check_onprem() -> None:
     assert menlo._compute(mn([13, 5], [8.4, 9.0])).light == "red"           # 推算額也降＝真萎縮
     assert menlo._compute(mn([13, 11])).light == "red"                      # 無分母 → 退回風向-only
     assert menlo._compute(mn([11, 11.5])).light == "yellow"                 # 持平
+    assert menlo._compute(mn([10, 11])).light == "yellow"                  # +1pp 邊界仍持平
+    assert menlo._compute(mn([11, 10])).light == "yellow"                  # -1pp 邊界仍持平
     assert menlo._compute(mn([11])).light == "gray"
     r = menlo._compute(mn([13, 11], [8.4, 12.5]))
     assert r.detail["implied_series_b"] == [1.09, 1.38], r.detail           # 分子算對
@@ -235,7 +277,43 @@ def _check_onprem() -> None:
     down = {"closes": {s: [200.0 - i for i in range(60)] for s in ob.BASKET}}
     assert ob._compute(up).light == "green"
     assert ob._compute(down).light == "red"
-    print("  ✓ 地端/混合雲四訊號（訂單±20%三態 / 事件簿窗與淨值 / Menlo方向 / 籃）")
+    assert ob._compute({"closes": {ob.BASKET[0]: UP}}).light == "gray"
+    short_peer = {"closes": {ob.BASKET[0]: UP, ob.BASKET[1]: SHORT}}
+    short_result = ob._compute(short_peer)
+    assert short_result.light == "gray" and "需 2/2" in short_result.extra["note"]
+    print("  [OK] 地端/混合雲四訊號（訂單±20%三態 / 事件簿窗與淨值 / Menlo方向 / 籃）")
+
+
+def _check_manual_contract() -> None:
+    """manual_series 必須在進 compute 前拒絕缺出處與錯型別。"""
+    good = {"as_of": "2026-01-01", "events": [
+        {"date": "2026-01-01", "camp": "t", "dir": "0", "type": "narrative",
+         "what": "w", "src": "source"}
+    ]}
+    assert validate_manual("onprem_events", good) is good
+    bad_src = {"as_of": "2026-01-01", "events": [dict(good["events"][0], src="")]}
+    try:
+        validate_manual("onprem_events", bad_src)
+        raise AssertionError("缺 src 不得通過")
+    except ValueError:
+        pass
+    bad_type = {"as_of": "2026-01-01", "series": [
+        {"label": "2026-01", "pct": "11", "total_b": 1.0, "src": "source"}
+    ]}
+    try:
+        validate_manual("menlo_opensource", bad_type)
+        raise AssertionError("pct 錯型別不得通過")
+    except ValueError:
+        pass
+    missing_total_src = {"as_of": "2026-01-01", "series": [
+        {"label": "2026-01", "pct": 11.0, "total_b": 1.0, "src": "share source"}
+    ]}
+    try:
+        validate_manual("menlo_opensource", missing_total_src)
+        raise AssertionError("有分母時缺 total_src 不得通過")
+    except ValueError:
+        pass
+    print("  [OK] manual_series schema：必填 src／日期／型別")
 
 
 def _check_demo_pipeline() -> None:
@@ -261,7 +339,7 @@ def _check_demo_pipeline() -> None:
     assert lights["onprem_events"] == "yellow", lights
     assert lights["menlo_opensource"] == "yellow", lights   # 占比降但推算額升＝黃（分母效應修正後）
     assert all(v != "gray" for v in lights.values()), f"demo 有訊號 gray：{lights}"
-    print(f"  ✓ demo 全流程離線通過：{lights}")
+    print(f"  [OK] demo 全流程離線通過：{lights}")
 
 
 def main() -> int:
@@ -272,6 +350,7 @@ def main() -> int:
     _check_support_panels()
     _check_leadframe()
     _check_onprem()
+    _check_manual_contract()
     _check_demo_pipeline()
     print("Phase 2 驗證通過")
     return 0

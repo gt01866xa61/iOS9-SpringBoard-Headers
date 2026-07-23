@@ -64,11 +64,13 @@ def _check_full_build() -> None:
     assert cl["master"]["light"] == "yellow", cl["master"]  # 國巨紅 + MLCC黃 + AI綠 → 黃
     assert data["master_light"] == "yellow", data["master_light"]
     # 每張卡都帶前端必需欄位（含三個必答問題：track / shape / interpretations 全燈對照）
-    for c in cl["signals"] + cl["supporting"]:
-        for k in ("widget", "light", "interpretation", "widget_data", "ok", "stale",
-                  "track", "shape", "order", "interpretations"):
-            assert k in c, f"{c['id']} 缺 {k}"
-        assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
+    for cluster in data["clusters"]:
+        for c in cluster["signals"] + cluster["supporting"]:
+            for k in ("widget", "light", "interpretation", "widget_data", "ok", "usable",
+                      "stale", "degraded", "binding_errors", "data_as_of", "sources",
+                      "track", "shape", "order", "interpretations"):
+                assert k in c, f"{c['id']} 缺 {k}"
+            assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
     # 排序 = 擴充順序（order 欄位），不是檔名字母序
     assert [c["id"] for c in cl["signals"]] == ["yageo_rev_yoy", "mlcc_basket_ma", "ai_breadth"]
     assert [c["id"] for c in cl["supporting"]] == ["memory_rs", "raw_materials", "watchlist"]
@@ -90,7 +92,10 @@ def _check_full_build() -> None:
     assert [c["id"] for c in cl3["signals"]] == ["onprem_basket_ma", "onprem_ai_orders"]
     assert [c["id"] for c in cl3["supporting"]] == ["onprem_events", "menlo_opensource"]
     assert cl3["master"]["light"] == "yellow", cl3["master"]
-    print("  ✓ 全流程 demo build → schema-valid、三 cluster、主燈黃、原子寫")
+    orders = _find_card(data, "onprem_ai_orders")
+    assert orders["data_as_of"] == "2026-06-01" and orders["sources"], orders
+    assert orders["widget_data"]["rows"][0]["source"], orders["widget_data"]["rows"][0]
+    print("  [OK] 全流程 demo build → schema-valid、三 cluster、主燈黃、原子寫")
 
 
 def _check_last_good_stale() -> None:
@@ -98,6 +103,12 @@ def _check_last_good_stale() -> None:
     _clean()
     assert build.main() == 0                     # 第一輪成功，存 last-good
     good_light = _find_card(_load(), "ai_breadth")["light"]
+
+    # 把 ai 歷史改成只有昨天；本輪 stale 不得補今天一格。
+    hist = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
+    hist["signals"]["ai_breadth"] = [["2000-01-01", good_light]]
+    master_before = list(hist["master"])
+    config.HISTORY_JSON.write_text(json.dumps(hist), encoding="utf-8")
 
     orig = _real_discover()
 
@@ -111,39 +122,71 @@ def _check_last_good_stale() -> None:
         data = _load()
         ai = _find_card(data, "ai_breadth")
         assert ai["stale"] is True and ai["ok"] is False, ai
+        assert ai["usable"] is False
         assert ai["light"] == good_light, (ai["light"], good_light)   # 沿用上一版燈
         assert ai["error"], "應記錄 error"
         assert any(e["signal_id"] == "ai_breadth" for e in data["errors"]), data["errors"]
         # 其他卡仍正常
         assert _find_card(data, "yageo_rev_yoy")["ok"] is True
+        hist_after = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
+        assert hist_after["signals"]["ai_breadth"] == [["2000-01-01", good_light]]
+        assert hist_after["master"] == master_before, "含 stale 主燈時不得新增總燈歷史"
     finally:
         build.discover = _real_discover
-    print("  ✓ 單一 signal 爆炸 → last-good + stale + errors[]，其餘完好、exit 0")
+    print("  [OK] 單一 signal 爆炸 → last-good + stale + errors[]，其餘完好、exit 0")
 
 
 def _check_whole_run_backstop() -> None:
-    """全部 signal 都 gray（無 last-good）且已有舊檔 → 保留舊檔、不覆蓋、exit 0。"""
+    """全部 signal 無錯但 gray：usable=False，signals/history 都完全不變。"""
     _clean()
     assert build.main() == 0
     before = config.SIGNALS_JSON.read_text(encoding="utf-8")
-    # 清掉 last-good，讓失敗只能是 gray（無 fallback）
-    if config.CACHE_DIR.exists():
-        shutil.rmtree(config.CACHE_DIR)
+    history_before = config.HISTORY_JSON.read_text(encoding="utf-8")
+    # 只清 last-good，保留同目錄的 test_history 供「完全不變」斷言。
+    last_good = config.CACHE_DIR / "last_good.json"
+    if last_good.exists():
+        last_good.unlink()
 
     orig = _real_discover()
 
-    def _boom(_inputs):
-        raise RuntimeError("all down")
+    def _gray(_inputs):
+        return SignalResult(light="gray")
 
-    patched = [replace(s, compute=_boom) for s in orig]
+    patched = [replace(s, compute=_gray) for s in orig]
     build.discover = lambda: patched
     try:
         assert build.main() == 0
         after = config.SIGNALS_JSON.read_text(encoding="utf-8")
         assert after == before, "整輪失敗時不該覆蓋舊 signals.json"
+        assert config.HISTORY_JSON.read_text(encoding="utf-8") == history_before
     finally:
         build.discover = _real_discover
-    print("  ✓ 整輪無可用資料 → 保留上一版 signals.json（保底）")
+    print("  [OK] 整輪無可用資料 → 保留上一版 signals.json（保底）")
+
+
+def _check_partial_binding_failure() -> None:
+    """一個 binding 失敗仍以其餘 inputs compute，並明示 degraded/binding_errors。"""
+    spec = next(s for s in _real_discover() if s.id == "leadframe_rev_yoy")
+    failed_sid = str(spec.bindings[-1].params["stock_id"])
+
+    class PartialCache:
+        def get_or_fetch(self, _source, params, _fetch):
+            sid = str(params["stock_id"])
+            if sid == failed_sid:
+                raise RuntimeError("one company down")
+            return [[f"2026-{i:02d}", float(i)] for i in range(1, 5)]
+
+        def last_good(self, _signal_id):
+            return None
+
+        def save_last_good(self, _signal_id, _card):
+            pass
+
+    card = build._run_one(spec, PartialCache())
+    assert card["light"] == "green" and card["usable"] is True, card
+    assert card["ok"] is False and card["degraded"] is True, card
+    assert len(card["binding_errors"]) == 1 and card["binding_errors"][0]["key"] == f"r{failed_sid}"
+    print("  [OK] binding 個別失敗 → 可用 inputs 續算 + degraded/binding_errors")
 
 
 def _check_history_and_changes() -> None:
@@ -174,13 +217,14 @@ def _check_history_and_changes() -> None:
     hist2 = json.loads(config.HISTORY_JSON.read_text(encoding="utf-8"))
     assert len(hist2["signals"]["yageo_rev_yoy"]) <= config.HISTORY_KEEP_DAYS
     assert len(ai["history"]) <= config.HISTORY_SHOW_DAYS
-    print("  ✓ 燈號歷史：首輪建檔、變燈偵測(紅→綠)、保留天數裁剪")
+    print("  [OK] 燈號歷史：首輪建檔、變燈偵測(紅→綠)、保留天數裁剪")
 
 
 def main() -> int:
     print("Phase 3 驗證中…")
     _check_full_build()
     _check_last_good_stale()
+    _check_partial_binding_failure()
     _check_whole_run_backstop()
     _check_history_and_changes()
     _clean()

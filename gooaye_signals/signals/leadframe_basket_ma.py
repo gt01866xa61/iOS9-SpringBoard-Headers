@@ -23,11 +23,25 @@ SLOPE_LOOKBACK = 5        # 50MA 斜率取近幾日
 NEAR_MA_PCT = 1.5         # 距 50MA 在 ±此% 內視為「貼近」（黃燈分歧）
 OVERHEAT_PCT = 25.0       # 乖離超過此% 加註過熱提醒（燈仍照規則判，僅提示）
 SHOWN_BARS = 60           # sparkline 顯示根數（同時畫籃子與 50MA 虛線）
+MIN_COMPONENTS = 3        # 四檔固定籃至少三檔才可判燈
+REQUIRED_BARS = MA_WINDOW + SLOPE_LOOKBACK  # 距離與斜率都能計算才算有效成分
 
 
 def _compute(inputs: dict) -> SignalResult:
     closes, _ = unpack_closes(inputs.get("closes"))
-    idx = basket_index([closes.get(s) or [] for s in BASKET])
+    valid = {s: closes.get(s) or [] for s in BASKET
+             if len(closes.get(s) or []) >= REQUIRED_BARS}
+    used = len(valid)
+    if used < MIN_COMPONENTS:
+        missing = len(BASKET) - used
+        note = f"{missing} 檔暫缺料・至少需 {MIN_COMPONENTS}/{len(BASKET)} 檔才判燈"
+        return SignalResult(
+            light="gray", value_label="有效成分不足",
+            extra={"caption": note, "note": note},
+            detail={"used": used, "quorum": MIN_COMPONENTS,
+                    "required_bars": REQUIRED_BARS},
+        )
+    idx = basket_index([valid[s] for s in BASKET if s in valid])
     if len(idx) < MA_WINDOW:
         return SignalResult(light="gray")
 
@@ -51,7 +65,6 @@ def _compute(inputs: dict) -> SignalResult:
 
     overheat = "・乖離偏大，留意均值回歸回檔" if dist_pct > OVERHEAT_PCT else ""
     # 缺料透明化：籃子少檔要明講，等權指數的組成不能悄悄改變
-    used = sum(1 for s in BASKET if closes.get(s))
     lack = f"・{len(BASKET) - used} 檔暫缺料，籃子以 {used} 檔計" if used < len(BASKET) else ""
     return SignalResult(
         light=light,
@@ -88,7 +101,7 @@ SIGNAL = SignalSpec(
         "green": "四雄籃站穩 50MA 且向上，資金面開始買單上游缺貨題材。",
         "yellow": "籃子貼著均線橫盤——缺貨歸缺貨、股價休息，基本面與資金面分歧。",
         "red": "籃子跌破 50MA 且均線下彎，資金退潮，缺貨題材對股價失效。",
-        "gray": "導線架股價資料抓取失敗。",
+        "gray": "導線架股價資料抓取失敗或有效成分不足，暫不判燈。",
     },
     cadence="trading_day",
     track="導線架四雄（順德(2351)、長科(6548)、界霖(5285)、一詮(2486)）等權股價籃對 50 日均線的位置與斜率——「最缺不一定最漲」，缺貨是基本面，這條線看資金面到底買不買單。",

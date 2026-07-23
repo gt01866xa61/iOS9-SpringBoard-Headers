@@ -48,6 +48,8 @@ class SignalResult:
     rows: Sequence[dict] = ()                  # table widget 的列
     extra: Mapping[str, object] = field(default_factory=dict)   # widget 專屬（highlight_index、bands…）
     detail: Mapping[str, object] = field(default_factory=dict)  # debug／佐證數字
+    data_as_of: str = ""                       # 底層資料日期；與本輪 updated_at 分開
+    sources: Sequence[dict] = ()                # 出處；有可信完整 URL 才含 source_url
 
 
 @dataclass(frozen=True)

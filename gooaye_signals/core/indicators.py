@@ -77,6 +77,39 @@ def consec_declines(seq: Sequence[float], eps: float = 0.0) -> int:
     return n
 
 
+def consec_monthly_declines(points: Sequence[Sequence[object]], eps: float = 0.0) -> int:
+    """尾端連續月份的連降期數；月份有缺口就停止，不把相鄰觀測誤叫相鄰月份。
+
+    points 形狀為 [("YYYY-MM", value), ...]，舊到新。月份格式或數值非法直接拋出，
+    交由 signal/build 的既有隔離轉成 gray/last-good，避免用壞資料硬算燈。
+    """
+    parsed: list[tuple[int, float]] = []
+    for point in points:
+        if len(point) < 2:
+            raise ValueError("月資料點必須包含月份與數值")
+        label = str(point[0])
+        try:
+            year_s, month_s = label.split("-")
+            year, month = int(year_s), int(month_s)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"非法月份格式：{label}") from exc
+        if len(year_s) != 4 or len(month_s) != 2 or not 1 <= month <= 12:
+            raise ValueError(f"非法月份格式：{label}")
+        parsed.append((year * 12 + month - 1, float(point[1])))
+
+    n = 0
+    for i in range(len(parsed) - 1, 0, -1):
+        prev_month, prev_value = parsed[i - 1]
+        month, value = parsed[i]
+        if month - prev_month != 1:
+            break
+        if value - prev_value < eps:
+            n += 1
+        else:
+            break
+    return n
+
+
 def unpack_closes(data: object) -> tuple[dict, dict]:
     """把 yf_close 的回傳拆成 (series, asof)，新舊兩種形狀都吃。
 

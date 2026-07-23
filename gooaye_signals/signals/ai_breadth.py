@@ -18,6 +18,7 @@ from core.spec import DataBinding, SignalResult, SignalSpec
 # === 門檻常數 ===
 BASKET = ("NVDA", "AVGO", "TSM", "2330.TW", "6669.TW", "2327.TW")
 MA_WINDOW = 50
+MIN_COUNTED = 4           # 6 檔固定籃至少要有 4 檔，否則不讓變動分母投主燈
 RED_BELOW = 40.0          # 站上 50MA 比例 < 此% → RED
 YELLOW_BELOW = 60.0       # < 此% → YELLOW，否則 GREEN
 
@@ -35,16 +36,22 @@ def _compute(inputs: dict) -> SignalResult:
         above += int(amv)
         rows.append({"symbol": sym, "above": bool(amv)})
 
-    if counted == 0:
-        return SignalResult(light="gray")
-
-    pct = round(100.0 * above / counted, 1)
-    light = "red" if pct < RED_BELOW else "yellow" if pct < YELLOW_BELOW else "green"
     # 缺料透明化：分母少於籃子全數時明講，廣度 % 的基底不能悄悄改變
     missing = len(BASKET) - counted
     caption = f"{above}/{counted} 檔站上 {MA_WINDOW}MA"
     if missing:
         caption += f"（{missing} 檔暫缺料）"
+    if counted < MIN_COUNTED:
+        caption += f"・至少需 {MIN_COUNTED}/{len(BASKET)} 檔才判燈"
+        return SignalResult(
+            light="gray", value_label="有效成分不足", rows=rows,
+            # 沒達 quorum 時不要塞 percent=0；0% 是有效紅燈數值，不是「未知」。
+            extra={"caption": caption, "note": caption},
+            detail={"above": above, "counted": counted, "quorum": MIN_COUNTED},
+        )
+
+    pct = round(100.0 * above / counted, 1)
+    light = "red" if pct < RED_BELOW else "yellow" if pct < YELLOW_BELOW else "green"
     return SignalResult(
         light=light,
         value_label=f"廣度 {pct:.0f}%",
@@ -80,7 +87,7 @@ SIGNAL = SignalSpec(
         "green": "多數 AI 權值仍站上 50MA，主升段結構完整。",
         "yellow": "AI 籃廣度轉中性，領軍股撐盤、跟風股走弱，動能鈍化。",
         "red": "過半 AI 股跌破 50MA，廣度惡化，主升段動能流失。",
-        "gray": "股價資料抓取失敗。",
+        "gray": "股價資料抓取失敗或有效成分不足，暫不判燈。",
     },
     cadence="trading_day",
     track="AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",

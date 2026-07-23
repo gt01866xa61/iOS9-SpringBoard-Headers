@@ -14,7 +14,7 @@
 """
 from __future__ import annotations
 
-from core.indicators import consec_declines
+from core.indicators import consec_monthly_declines
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數（single source of truth）===
@@ -43,7 +43,7 @@ def _compute(inputs: dict) -> SignalResult:
             rows.append({"cells": [f"{name} ({sid})", "—", "—"], "dot": "gray", "spark": []})
             continue
         yoy = [float(v) for _, v in rev]
-        consec = consec_declines(yoy)
+        consec = consec_monthly_declines(rev)
         # 綠＝動能與水位都要：未連降「且」YoY 為正——年減中就算降幅收斂也只給黃，
         # 否則會出現「營收年減、卡片卻說擴張」的自相矛盾
         if consec >= RED_CONSEC:

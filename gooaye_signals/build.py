@@ -50,44 +50,62 @@ def _run_one(spec: SignalSpec, cache: DayCache) -> dict:
     }
 
     inputs: dict = {}
-    err: str | None = None
-    source_failed = False
+    binding_errors: list[dict] = []
+    compute_error: str | None = None
     for b in spec.bindings:
         try:
             inputs[b.key] = cache.get_or_fetch(b.source, b.params, SOURCE_REGISTRY[b.source])
         except Exception as exc:  # noqa: BLE001 — per-source 隔離
-            source_failed = True
-            err = str(exc)
+            binding_errors.append({"key": b.key, "source": b.source, "message": str(exc)})
             log.warning("source %s 失敗（%s）：%s", b.source, spec.id, exc)
 
     try:
-        res = spec.compute(inputs) if not source_failed else SignalResult(light="gray")
+        # 個別 binding 掛掉仍把可用 inputs 交給 compute；是否達最低資料門檻由各 signal 決定。
+        res = spec.compute(inputs)
     except Exception as exc:  # noqa: BLE001 — per-signal 隔離
         res = SignalResult(light="gray")
-        err = str(exc)
+        compute_error = str(exc)
         log.exception("signal %s compute 失敗", spec.id)
+
+    errors = [f"{e['source']}:{e['key']}：{e['message']}" for e in binding_errors]
+    if compute_error:
+        errors.append(f"compute：{compute_error}")
+    err = "；".join(errors) or None
 
     prev = cache.last_good(spec.id)
     if res.light == "gray" and prev is not None:
         # 來源/運算掛掉但有上一版成功結果 → 沿用舊圖 + stale，而非空灰卡
         card = dict(base)
         card["updated_at"] = prev.get("updated_at", now)  # 顯示資料其實有多舊
+        widget_data = dict(prev.get("widget_data", {}))
+        # quorum 不足等「本輪可說明的 gray」保留原因，同時沿用上一版圖表。
+        current_wd = _widget_data(res)
+        for key in ("caption", "note"):
+            if current_wd.get(key):
+                widget_data[key] = current_wd[key]
         card.update({
-            "ok": False, "stale": True, "error": err,
+            "ok": False, "usable": False, "stale": True, "degraded": True,
+            "error": err, "error_at": now if err else "", "binding_errors": binding_errors,
             "light": prev["light"], "value_label": prev.get("value_label", ""),
             "interpretation": prev.get("interpretation", ""),
-            "widget_data": prev.get("widget_data", {}), "detail": prev.get("detail", {}),
+            "widget_data": widget_data, "detail": prev.get("detail", {}),
+            "data_as_of": prev.get("data_as_of", ""), "sources": prev.get("sources", []),
         })
         return card
 
+    usable = res.light != "gray"
     card = dict(base)
     card.update({
-        "ok": err is None, "stale": False, "error": err,
+        # ok＝本輪完整無錯；usable＝結果足以發布/寫歷史。兩者不可混用。
+        "ok": err is None, "usable": usable, "stale": False,
+        "degraded": bool(binding_errors), "error": err,
+        "error_at": now if err else "", "binding_errors": binding_errors,
         "light": res.light, "value_label": res.value_label,
         "interpretation": spec.interpretations.get(res.light, ""),
         "widget_data": _widget_data(res), "detail": dict(res.detail),
+        "data_as_of": res.data_as_of, "sources": list(res.sources),
     })
-    if res.light != "gray":
+    if usable:
         cache.save_last_good(spec.id, card)  # 存這輪成功結果供未來 fallback
     return card
 
@@ -137,38 +155,45 @@ def _prev_light(entries: list, today: str) -> str | None:
     return None
 
 
-def _apply_history(cards: list[dict], top: str, now) -> tuple[list[dict], str | None]:
-    """把燈史掛到每張卡（history/prev_light/changed），回傳 (changes, master_prev)。"""
+def _apply_history(cards: list[dict], top: str, now) -> tuple[list[dict], str | None, dict, bool]:
+    """在記憶體套用 fresh/usable 燈史；由 main 通過整輪保底後才真正寫檔。"""
     hist = _load_history()
     today = now.strftime("%Y-%m-%d")
     changes: list[dict] = []
+    dirty = False
 
     for card in cards:
         entries = hist["signals"].setdefault(card["id"], [])
         prev = _prev_light(entries, today)
         card["prev_light"] = prev
-        card["changed"] = bool(prev and prev != card["light"]
+        fresh = bool(card.get("usable") and not card.get("stale"))
+        card["changed"] = bool(fresh and prev and prev != card["light"]
                                and prev in _COLORED and card["light"] in _COLORED)
         if card["changed"]:
             changes.append({"id": card["id"], "name": card["name"],
                             "from": prev, "to": card["light"]})
-        _upsert(entries, today, card["light"])
+        if fresh:
+            _upsert(entries, today, card["light"])
+            dirty = True
         card["history"] = entries[-config.HISTORY_SHOW_DAYS:]
 
     master_prev = _prev_light(hist["master"], today)
-    if (master_prev and master_prev != top
+    master_cards = [c for c in cards if c.get("in_master")]
+    master_usable = bool(master_cards) and all(
+        c.get("usable") and not c.get("stale") for c in master_cards
+    )
+    if (master_usable and master_prev and master_prev != top
             and master_prev in _COLORED and top in _COLORED):
         changes.insert(0, {"id": "_master", "name": "總燈號",
                            "from": master_prev, "to": top})
-    _upsert(hist["master"], today, top)
+    if master_usable:
+        _upsert(hist["master"], today, top)
+        dirty = True
+    return changes, master_prev, hist, dirty
 
-    if _history_write_enabled():
-        _atomic_write(config.HISTORY_JSON, hist)
-    return changes, master_prev
 
-
-def build_payload() -> tuple[dict, list[dict]]:
-    """跑完整條 pipeline，回傳 (payload, cards)。"""
+def build_payload() -> tuple[dict, list[dict], dict, bool]:
+    """跑完整條 pipeline，回傳 payload/cards 與尚未持久化的 history。"""
     now = datetime.now(config.TAIPEI_TZ)
     specs = discover()
     cache = DayCache(config.CACHE_DIR, demo=config.DEMO_MODE,
@@ -211,11 +236,12 @@ def build_payload() -> tuple[dict, list[dict]]:
     # 總燈 reason 點名是哪個主題在響——多 cluster 後「部分轉弱」不指名會看不懂
     top_reason = next((f"「{c['name']}」{c['master']['label']}。" for c in clusters_out
                        if c["master"]["light"] == top), "")
-    errors = [{"signal_id": c["id"], "message": c["error"], "at": c["updated_at"]}
+    errors = [{"signal_id": c["id"], "message": c["error"],
+               "at": c.get("error_at") or c["updated_at"]}
               for c in cards if c.get("error")]
 
     # 燈號歷史 + 變化偵測（cards 與 clusters_out 共用同一批 dict，掛上去前端就看得到）
-    changes, master_prev = _apply_history(cards, top, now)
+    changes, master_prev, history, history_dirty = _apply_history(cards, top, now)
 
     payload = {
         "schema_version": config.SCHEMA_VERSION,
@@ -230,20 +256,22 @@ def build_payload() -> tuple[dict, list[dict]]:
         "clusters": clusters_out,
         "errors": errors,
     }
-    return payload, cards
+    return payload, cards, history, history_dirty
 
 
 def main() -> int:
-    payload, cards = build_payload()
+    payload, cards, history, history_dirty = build_payload()
 
-    # 整輪保底：完全沒有任何 ok 卡且已有舊檔 → 不覆蓋，保留上一版
-    if not any(c["ok"] for c in cards) and config.SIGNALS_JSON.exists():
+    # 整輪保底看 usable，不把「無例外但 gray」誤當成功；history 此時也完全不寫。
+    if not any(c["usable"] for c in cards) and config.SIGNALS_JSON.exists():
         log.error("本輪無任何可用資料，保留上一版 signals.json")
         return 0
 
     _atomic_write(config.SIGNALS_JSON, payload)
     if config.WEB_DIR.exists():
         _atomic_write(config.WEB_DATA_JSON, payload)  # 給前端 same-origin 讀
+    if history_dirty and _history_write_enabled():
+        _atomic_write(config.HISTORY_JSON, history)
 
     log.info("signals.json 已寫出：%d clusters, %d errors, master=%s",
              len(payload["clusters"]), len(payload["errors"]), payload["master_light"])

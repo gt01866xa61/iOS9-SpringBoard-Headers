@@ -7,10 +7,10 @@
         占比下降的同時絕對額一路成長——「開源在萎縮」與「風向轉開源」都不對，
         真實狀態是「開源在長，但新增的錢壓倒性流向閉源」。
 長相　：表格三列——占比、總支出（分母）、推算開源額（分子），各附迷你走勢。
-狀態　：雙變數真值表：🟢 占比回升＝風向真的轉向開源；
+狀態　：雙變數真值表：🟢 占比回升超過 1pp＝風向真的轉向開源；
         🟡 占比降/平但推算額仍升＝開源跑輸大盤但體量仍在長（現況）；
         🔴 推算額也轉降＝開源真的在萎縮；⚪ 資料不足。
-        無總量資料的波次退回風向-only 判定（回升綠／持平黃／續降紅）。
+        無總量資料的波次退回風向-only 判定（>+1pp 綠／±1pp 黃／<-1pp 紅）。
 資料　：data/manual/menlo_opensource.json——逐點附報告名、樣本數與總量出處。
 但書　：pct 是工作負載占比、total 是支出金額，兩口徑相乘屬方向級推算非精確值；
         三波 total 口徑略異（年末水準/半年/全年）；發布者為 AI 創投（利害關係人）
@@ -41,11 +41,11 @@ def _compute(inputs: dict) -> SignalResult:
                if implied[-1] is not None and implied[-2] is not None else None)
 
     # 雙變數真值表：風向（占比）優先，體量（推算額）決定黃或紅
-    if pct_chg >= FLAT_PP:
+    if pct_chg > FLAT_PP:
         light = "green"
     elif imp_chg is None:
         # 無總量資料 → 退回風向-only
-        light = "yellow" if pct_chg > -FLAT_PP else "red"
+        light = "yellow" if pct_chg >= -FLAT_PP else "red"
     elif imp_chg >= 0:
         light = "yellow"
     else:
@@ -62,17 +62,26 @@ def _compute(inputs: dict) -> SignalResult:
 
     tot_chg = (totals[-1] - totals[-2]
                if totals[-1] is not None and totals[-2] is not None else None)
+    latest = series[-1]
+    pct_source = str(latest.get("src") or "")
+    total_source = str(latest.get("total_src") or pct_source)
+    pct_url = str(latest.get("src_url") or "")
+    total_url = str(latest.get("total_src_url") or "")
+
     rows = [
         {"cells": ["開源占比（風向）", f"{pcts[-1]:.0f}%", _dir(pct_chg)],
          "dot": "green" if pct_chg > 0 else "red" if pct_chg < 0 else "yellow",
-         "spark": pcts},
+         "spark": pcts, "source": pct_source,
+         **({"source_url": pct_url} if pct_url.startswith(("https://", "http://")) else {})},
         {"cells": ["模型API總支出（分母）",
-                   f"${totals[-1]:.1f}B" if totals[-1] is not None else "—", _dir(tot_chg)],
-         "dot": "gray", "spark": _spk(totals)},
+                    f"${totals[-1]:.1f}B" if totals[-1] is not None else "—", _dir(tot_chg)],
+         "dot": "gray", "spark": _spk(totals), "source": total_source,
+         **({"source_url": total_url} if total_url.startswith(("https://", "http://")) else {})},
         {"cells": ["推算開源額（分子）",
-                   f"${implied[-1]:.2f}B" if implied[-1] is not None else "—", _dir(imp_chg)],
+                    f"${implied[-1]:.2f}B" if implied[-1] is not None else "—", _dir(imp_chg)],
          "dot": "green" if (imp_chg or 0) > 0 else "red" if (imp_chg or 0) < 0 else "gray",
-         "spark": _spk(implied)},
+         "spark": _spk(implied), "source": "；".join(dict.fromkeys([pct_source, total_source])),
+         **({"source_url": pct_url} if pct_url.startswith(("https://", "http://")) else {})},
     ]
 
     return SignalResult(
@@ -87,6 +96,16 @@ def _compute(inputs: dict) -> SignalResult:
         },
         detail={"pct_chg_pp": round(pct_chg, 1),
                 "implied_series_b": implied, "totals_b": totals},
+        data_as_of=str(data.get("as_of", "")),
+        sources=tuple(
+            {"source": str(source),
+             **({"source_url": str(url)}
+                if str(url or "").startswith(("https://", "http://")) else {})}
+            for p in series
+            for source, url in ((p.get("src"), p.get("src_url")),
+                                (p.get("total_src"), p.get("total_src_url")))
+            if source
+        ),
     )
 
 
@@ -102,14 +121,14 @@ SIGNAL = SignalSpec(
     ),
     compute=_compute,
     interpretations={
-        "green": "開源占比回升——「風向轉開源」的敘事第一次被數據支持（新增預算開始流向開源）。",
+        "green": "開源占比回升超過 1pp——「風向轉開源」的敘事第一次被數據支持。",
         "yellow": "開源絕對額仍在成長、但占比續降——開源在長，只是每塊新增的錢壓倒性流向閉源；風向未轉、體量未衰。",
         "red": "連推算絕對額都轉降——開源在企業端真的在萎縮。",
         "gray": "調查資料不足（半年一更）。",
     },
     cadence="manual",
     track="Menlo 半年更調查的兩條線：開源占比（風向）＋「占比×模型API總支出」的推算開源額（體量）——分開看才不會把「占比降」誤讀成「開源萎縮」：總量暴增期，占比腰斬的同時絕對額可能照樣成長。",
-    shape="看兩列的方向組合：占比↑＝風向轉開源（綠）；占比↓但推算額↑＝開源跑輸大盤但仍在長（黃，現況）；推算額↓＝真萎縮（紅）。推算額為方向級參考（占比與支出口徑不同）。",
+    shape="看兩列的方向組合：占比回升超過 1pp＝風向轉開源（綠）；±1pp 視為持平；占比↓但推算額↑＝開源跑輸大盤但仍在長（黃）；推算額↓＝真萎縮（紅）。",
     order=13,
     in_master=False,
     unit="",

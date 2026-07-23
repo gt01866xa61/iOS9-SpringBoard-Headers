@@ -94,19 +94,22 @@
     "label": "2024-11",
     "pct": 19,
     "total_b": 3.5,
-    "src": "demo"
+    "src": "demo",
+    "total_src": "demo"
    },
    {
     "label": "2025-07",
     "pct": 13,
     "total_b": 8.4,
-    "src": "demo"
+    "src": "demo",
+    "total_src": "demo"
    },
    {
     "label": "2025-12",
     "pct": 11,
     "total_b": 12.5,
-    "src": "demo"
+    "src": "demo",
+    "total_src": "demo"
    }
   ]
  }

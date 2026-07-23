@@ -29,18 +29,23 @@ _DOT = {"+": "green", "-": "red", "0": "gray"}
 
 def _compute(inputs: dict) -> SignalResult:
     data = inputs.get("events") or {}
-    events = sorted(list(data.get("events") or []), key=lambda e: str(e.get("date", "")), reverse=True)
+    events = list(data.get("events") or [])
     if not events:
         return SignalResult(light="gray")
 
-    as_of = str(data.get("as_of") or events[0]["date"])
+    as_of = str(data.get("as_of") or "")
     try:
-        y, m, d = (int(x) for x in as_of.split("-"))
-        cutoff = (date(y, m, d) - timedelta(days=WINDOW_DAYS)).isoformat()
-    except ValueError:
-        cutoff = ""
+        anchor = date.fromisoformat(as_of)
+        dated = [(date.fromisoformat(str(e.get("date") or "")), e) for e in events]
+    except (TypeError, ValueError):
+        return SignalResult(light="gray", value_label="事件日期格式錯誤",
+                            detail={"as_of": as_of, "invalid_dates": True}, data_as_of=as_of)
+    dated.sort(key=lambda pair: pair[0], reverse=True)
+    events = [e for _, e in dated]
+    cutoff = anchor - timedelta(days=WINDOW_DAYS)
 
-    in_win = [e for e in events if str(e.get("date", "")) >= cutoff]
+    # 同時設上下界：人工誤植的未來事件不得提前污染目前燈號。
+    in_win = [e for event_date, e in dated if cutoff <= event_date <= anchor]
     pos = sum(1 for e in in_win if e.get("dir") == "+")
     neg = sum(1 for e in in_win if e.get("dir") == "-")
     net = pos - neg
@@ -53,11 +58,18 @@ def _compute(inputs: dict) -> SignalResult:
     else:
         light = "yellow"
 
-    rows = [{
-        "cells": [str(e.get("date", ""))[2:], str(e.get("camp", "")), str(e.get("what", ""))],
-        "dot": _DOT.get(str(e.get("dir")), "gray"),
-        "spark": [],
-    } for e in events[:SHOWN]]
+    rows = []
+    for e in events[:SHOWN]:
+        row = {
+            "cells": [str(e.get("date", ""))[2:], str(e.get("camp", "")), str(e.get("what", ""))],
+            "dot": _DOT.get(str(e.get("dir")), "gray"),
+            "spark": [],
+            "source": str(e.get("src") or ""),
+        }
+        src_url = str(e.get("src_url") or "")
+        if src_url.startswith(("https://", "http://")):
+            row["source_url"] = src_url
+        rows.append(row)
 
     return SignalResult(
         light=light,
@@ -70,6 +82,11 @@ def _compute(inputs: dict) -> SignalResult:
         },
         detail={"pos": pos, "neg": neg, "net": net, "as_of": as_of,
                 "has_endorse": has_endorse},
+        data_as_of=as_of,
+        sources=tuple({"source": str(e["src"]),
+                       **({"source_url": str(e["src_url"])}
+                          if str(e.get("src_url") or "").startswith(("https://", "http://")) else {})}
+                      for e in events if e.get("src")),
     )
 
 

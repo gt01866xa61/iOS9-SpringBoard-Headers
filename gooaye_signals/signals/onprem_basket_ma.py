@@ -21,11 +21,25 @@ SLOPE_LOOKBACK = 5        # 50MA 斜率取近幾日
 NEAR_MA_PCT = 1.5         # 距 50MA 在 ±此% 內視為「貼近」
 OVERHEAT_PCT = 25.0       # 乖離超過此% 加註過熱提醒
 SHOWN_BARS = 60
+MIN_COMPONENTS = 2        # DELL＋HPE 兩檔缺一就不再是等權籃
+REQUIRED_BARS = MA_WINDOW + SLOPE_LOOKBACK  # 距離與斜率都能計算才算有效成分
 
 
 def _compute(inputs: dict) -> SignalResult:
     closes, _ = unpack_closes(inputs.get("closes"))
-    idx = basket_index([closes.get(s) or [] for s in BASKET])
+    valid = {s: closes.get(s) or [] for s in BASKET
+             if len(closes.get(s) or []) >= REQUIRED_BARS}
+    used = len(valid)
+    if used < MIN_COMPONENTS:
+        missing = len(BASKET) - used
+        note = f"{missing} 檔暫缺料・需 {MIN_COMPONENTS}/{len(BASKET)} 檔齊全才判燈"
+        return SignalResult(
+            light="gray", value_label="有效成分不足",
+            extra={"caption": note, "note": note},
+            detail={"used": used, "quorum": MIN_COMPONENTS,
+                    "required_bars": REQUIRED_BARS},
+        )
+    idx = basket_index([valid[s] for s in BASKET if s in valid])
     if len(idx) < MA_WINDOW:
         return SignalResult(light="gray")
 
@@ -47,7 +61,6 @@ def _compute(inputs: dict) -> SignalResult:
                  for i in range(len(idx) - shown, len(idx))]
 
     overheat = "・乖離偏大，留意均值回歸回檔" if dist_pct > OVERHEAT_PCT else ""
-    used = sum(1 for s in BASKET if closes.get(s))
     lack = f"・{len(BASKET) - used} 檔暫缺料，籃子以 {used} 檔計" if used < len(BASKET) else ""
     return SignalResult(
         light=light,
@@ -80,7 +93,7 @@ SIGNAL = SignalSpec(
         "green": "籃子站穩 50MA 且向上，資金正在押「企業地端 AI」的故事。",
         "yellow": "籃子貼著均線橫盤，市場觀望——等訂單數字說話。",
         "red": "籃子跌破 50MA 且均線下彎，資金否決這個劇本。",
-        "gray": "股價資料抓取失敗。",
+        "gray": "股價資料抓取失敗或 DELL／HPE 未齊，暫不判燈。",
     },
     cadence="trading_day",
     track="DELL＋HPE 等權股價籃對 50 日均線——賣地端 AI 伺服器的兩家指標商（Dell 股價混 PC 與 neocloud 生意、HPE 較純，溫度計有稀釋）。股價天天跳、常比季報早反映；這是「提前聞味道」的溫度計，單獨有雜訊，要跟訂單卡互相印證。",

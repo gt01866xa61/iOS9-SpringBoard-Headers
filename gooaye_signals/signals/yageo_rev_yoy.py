@@ -12,7 +12,7 @@ TODO(Phase 2)：實作 _compute。Phase 1 先回 gray（stub）。
 """
 from __future__ import annotations
 
-from core.indicators import consec_declines
+from core.indicators import consec_monthly_declines
 from core.spec import DataBinding, SignalResult, SignalSpec
 
 # === 門檻常數（single source of truth）===
@@ -29,7 +29,7 @@ def _compute(inputs: dict) -> SignalResult:
     labels = [str(m) for m, _ in rev]
     yoy = [float(v) for _, v in rev]
 
-    consec = consec_declines(yoy)
+    consec = consec_monthly_declines(rev)
     # 綠＝動能與水位都要：未連降「且」YoY 為正——年減中就算降幅收斂也只給黃
     if consec >= RED_CONSEC:
         light = "red"

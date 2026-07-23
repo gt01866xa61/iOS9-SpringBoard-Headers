@@ -56,7 +56,7 @@ def _check_specs() -> None:
         assert s.shape, f"{s.id} 缺 shape（怎麼看）"
         assert isinstance(s.order, int), f"{s.id} order 需為 int"
 
-    print(f"  ✓ registry 探索 {len(specs)} 個訊號，契約全數通過")
+    print(f"  [OK] registry 探索 {len(specs)} 個訊號，契約全數通過")
 
 
 def _check_master_light() -> None:
@@ -85,13 +85,13 @@ def _check_master_light() -> None:
     lt, _, _ = master_light([card("red", in_master=False), card("green")])
     assert lt == "green", lt
 
-    print("  ✓ master_light 真值表通過")
+    print("  [OK] master_light 真值表通過")
 
 
 def _check_timezone() -> None:
     stamp = datetime.now(config.TAIPEI_TZ).isoformat(timespec="seconds")
     assert stamp.endswith("+08:00"), f"時間戳非台北時區：{stamp}"
-    print(f"  ✓ 時間戳為台北時區：{stamp}")
+    print(f"  [OK] 時間戳為台北時區：{stamp}")
 
 
 def main() -> int:
