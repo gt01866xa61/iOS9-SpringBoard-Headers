@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -20,20 +21,27 @@ _PATTERN = re.compile(
 )
 
 
+def _escape_json_for_html(payload: str) -> str:
+    """保留 JSON 語意，但不讓資料中的 HTML 標記關閉 script raw-text 區塊。"""
+    return payload.replace("<", "\\u003c")
+
+
 def main() -> int:
     src = config.WEB_DATA_JSON if config.WEB_DATA_JSON.exists() else config.SIGNALS_JSON
     if not src.exists():
         print(f"找不到 {src}，請先跑 build.py", file=sys.stderr)
         return 1
 
-    payload = src.read_text(encoding="utf-8").strip()
+    payload = _escape_json_for_html(src.read_text(encoding="utf-8").strip())
     html = INDEX.read_text(encoding="utf-8")
     if not _PATTERN.search(html):
         print("index.html 找不到 embedded <script> 區塊", file=sys.stderr)
         return 1
 
     new_html = _PATTERN.sub(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html)
-    INDEX.write_text(new_html, encoding="utf-8")
+    tmp = INDEX.with_suffix(INDEX.suffix + ".tmp")
+    tmp.write_text(new_html, encoding="utf-8")
+    os.replace(tmp, INDEX)
     print(f"已把 {src.name} 內嵌進 {INDEX.name}")
     return 0
 
