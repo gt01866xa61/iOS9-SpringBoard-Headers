@@ -44,6 +44,7 @@ concurrency:
 jobs:
   relay:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     steps:
       - name: 睡到下一班發車時間，補發 signals build
         env:
@@ -73,6 +74,8 @@ jobs:
             echo "醒來已在窗外，鏈結束"; exit 0
           fi
 
+          relay_failed=0
+
           # cron 若自己發車了就不重複（queued 或 in_progress 皆算）；
           # 查詢偶發失敗不視為有班（|| echo 0）——寧可多發一班靠 concurrency 收斂，
           # 也不讓一次 API 抖動殺死整條鏈
@@ -88,7 +91,10 @@ jobs:
               fi
               sleep 5
             done
-            [ "$sent" = "1" ] || echo "::warning::build 補發失敗"
+            if [ "$sent" != "1" ]; then
+              echo "::warning::build 補發失敗"
+              relay_failed=1
+            fi
           fi
 
           # 自派下一棒 pacer——鏈的存活不能依賴「build 有跑起來」：2026-07-09 實測
@@ -103,4 +109,8 @@ jobs:
             fi
             sleep 5
           done
-          [ "$ok" = "1" ] || echo "::warning::自派失敗——若 build 也沒跑起來，鏈將暫停待 cron/push 重啟"
+          if [ "$ok" != "1" ]; then
+            echo "::warning::自派失敗——若 build 也沒跑起來，鏈將暫停待 cron/push 重啟"
+            relay_failed=1
+          fi
+          [ "$relay_failed" = "0" ] || exit 1

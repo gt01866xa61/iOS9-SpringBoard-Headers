@@ -32,8 +32,8 @@
 1. `cp signals/_template.py signals/<你的id>.py`（或複製最接近的既有訊號檔）。
 2. 編輯那一個檔：`id`(=檔名)、門檻常數、`bindings`(資料源)、純函式 `_compute`、
    四個 `interpretations`、`track`/`shape`/`order`/`cluster`/`widget`/`tags`/`in_master`。
-3. `GOOAYE_DEMO=1 python build.py` → 開 `web/index.html` 確認卡片出現 → 加一條
-   `tests/test_phase2_compute.py` 斷言 → commit + push。cron 下輪自動接手。
+3. `GOOAYE_DEMO=1 python -X utf8 build.py` → 開 `web/index.html` 確認卡片出現 → 加一條
+   `tests/test_phase2_compute.py` 斷言 → 跑完整 gate → commit + push master。CI 通過後上線。
 
 - 新主題（cluster）：另在 `core/clusters.py` 的 `CLUSTERS` append 一行 `ClusterSpec`。
 - 全新視覺化（罕見）：在 `web/index.html` 的 `WIDGETS` 表加一個 render 函式，並在
@@ -57,7 +57,7 @@
 | 2 | 運算引擎 + demo 模式（`fetchers/cache.py`、`demo/fixtures/`、六訊號真 `_compute`） | ✅ Done |
 | 3 | 實接資料源 + 全流程（`finmind.py`、`yfinance_src.py`、`build.py` 端到端 + 失敗隔離） | ✅ Done |
 | 4 | 前端（`web/index.html` 泛型渲染 + 5 widget + 內嵌 fallback + 自動刷新） | ✅ Done |
-| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ 已上線；**每30分自動更新需合併 master**（cron 只在預設分支生效），開發分支目前為 push 即部署 |
+| 5 | 部署（`.github/workflows/signals.yml` + GitHub Pages） | ✅ 已上線；master push 先跑完整 CI gate，平日窗口由約 22 分鐘接力環更新，cron 作重啟備援 |
 | 6+ | 擴充驗證（口述新訊號逐一加，如 `rates_macro` cluster） | ⬜ 持續 |
 
 ## 訊號清單
@@ -93,7 +93,8 @@
 計入主燈：
 - `onprem_basket_ma`（sparkline）DELL＋HPE 等權籃 vs 50MA——資金面即時溫度計。
 - `onprem_ai_orders`（table，手動季更）HPE 單季 AI 訂單為主軸（官方：backlog 主要
-  企業+主權）、Dell 對照；±20% QoQ 三態，預設黃＝「未驗證，維持吃力不討好假設」。
+  企業+主權）、Dell 對照；較上一已知披露期 ±20% 三態，只有連續財季才判「連兩季縮」，
+  預設黃＝「未驗證，維持吃力不討好假設」。
 
 佐證面板：`onprem_events` 事件簿（近 180 天正負淨值給燈，逐筆附出處）、
 `menlo_opensource` 開源風向×體量（半年更；占比 19→13→11 配同報告總支出
@@ -109,13 +110,21 @@
 ```bash
 cd gooaye_signals
 
-# Phase 1：契約 + registry 完整性
-python tests/test_phase1_specs.py       # 印「Phase 1 驗證通過」
+# push 前完整 gate（Phase 1–4）
+python -X utf8 tests/test_phase1_specs.py
+python -X utf8 tests/test_phase2_compute.py
+python -X utf8 tests/test_phase3_build.py
+python -X utf8 tests/test_phase4_frontend.py
 
-# 之後（Phase 2+）：離線 demo 跑整條 pipeline，不需任何金鑰
-GOOAYE_DEMO=1 python build.py
+# 離線 demo 跑整條 pipeline，不需任何金鑰
+GOOAYE_DEMO=1 python -X utf8 build.py
+GOOAYE_DEMO=1 python -X utf8 web/build_embed.py
 python -m http.server                    # 開 http://localhost:8000/web/ 看儀表板
 ```
+
+PowerShell 請先執行 `$env:GOOAYE_DEMO='1'`，再分別執行兩條 `python -X utf8 ...`；
+完成後可用 `Remove-Item Env:GOOAYE_DEMO` 還原。`-X utf8` 可避免 Windows CP950 終端
+因繁中測試輸出而中斷。
 
 慣例沿用 `crypto_dca_bot/`：`from __future__ import annotations` + type hints、設定常數
 集中檔頭、繁中註解、每 phase 一個驗證測試、時區鎖 Asia/Taipei (fixed UTC+8)。
@@ -133,17 +142,18 @@ python -m http.server                    # 開 http://localhost:8000/web/ 看儀
 3. **開 Pages（來源選 Actions）**：repo → Settings → Pages → Build and deployment →
    Source 選 **GitHub Actions**（不是 Deploy from a branch）。
 4. **先手動跑一次測試**：repo → Actions → 左邊選 `build-and-deploy-signals` → 右邊
-   **Run workflow**（可先選 `claude/korea-semiconductor-investment-nb8cgk` 這個分支測）→
-   等綠勾。完成後點出現的 `page_url`，或直接開上面的網址。
-5. **讓它自動定時更新**：把這個分支合併到 `master`（開 PR → 核准合併）。**排程 (cron) 只在
-   master 生效**，合併後才會平日每 30 分、每日再補跑一次自動更新。
+   **Run workflow**，ref 選 `master` → 等綠勾。完成後點出現的 `page_url`，或直接開上面的網址。
+   workflow 內的正式部署 job 會拒絕任何非 master ref；另建議在 repo → Settings →
+   Environments → `github-pages` 將 deployment branch policy 限為 `master`，形成平台側第二道閘。
+5. **讓它自動定時更新**：直接在 `master` 開發，本機完整 gate 通過後 commit + push；push
+   會在 CI 再跑一次完整 gate，通過才部署。排程只在預設分支 `master` 生效。
    觸發是「接力環」：build 最後一步發車 `pacer.yml`，pacer 交易時段內睡 22 分鐘再發車
    build，兩條邊都走明確 workflow_dispatch（GITHUB_TOKEN 補發的班次跑完不會觸發
    workflow_run——實測三次鏈全斷在這，所以不能靠級聯）。此外每棒 pacer 睡醒後
    一律自派下一棒——build 可能在佇列階段就被平台取消（2026-07-09 實測 runner 供應
    異常，排 15 分鐘被砍、零 step 執行），鏈的存活不能依賴 build 有跑起來。cron
-   （17/47 離峰分鐘）與 push 是環的重啟入口；GitHub cron 實測大量丟班（2026-07-06
-   上午 14 班只發 1 班），環是主保證、cron 是冗餘。
+   在平日 UTC 01–13 時每 10 分鐘發重啟票，另有每日 22:47Z 保底；push 也是重啟入口。
+   GitHub cron 實測大量丟班（2026-07-06 上午 14 班只發 1 班），環是主保證、cron 是冗餘。
 6. **加到手機主畫面**：iPhone Safari → 分享 → 加入主畫面；Android Chrome → ⋮ → 加到主畫面。
    之後點圖示打開就是雲端最後一次跑出來的最新燈號，不用開電腦。
 

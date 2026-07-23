@@ -2,7 +2,7 @@ name: build-and-deploy-signals
 
 # 排程算訊號 + 部署網頁到 GitHub Pages。
 # 只上傳 gooaye_signals/web/（含當輪產生的 data/signals.json），System/、usr/ 的 iOS dump 不會被發佈。
-# 注意：schedule 只在預設分支(master)生效；合併到 master 後才會自動定時跑。
+# 注意：schedule 只在預設分支(master)生效；正式 build-deploy 也只接受 master ref。
 #       上線前想先測，可到 Actions 分頁對這個 workflow 按 "Run workflow" 手動觸發。
 
 on:
@@ -16,13 +16,14 @@ on:
     - cron: "47 22 * * *"                      # UTC 22:47 = 台北 06:47 每日保底（美股收盤後、隔日開鏈錨點）
   workflow_dispatch: {}
   push:
-    # master 為唯一部署源：cron 排程只在 master 生效，push 也只認 master，避免與開發分支互相覆蓋。
-    # 開發流程：dev 分支開發 → 本機驗證 → 合併 master → 上線（合併即觸發部署）。
+    # master 為唯一部署源：cron 排程只在 master 生效，push 也只認 master，避免其他 ref 互相覆蓋。
+    # 開發流程：直接在 master 開發 → 本機驗證 → push → CI gate 通過後上線。
     branches: [master]
     paths:
       - "gooaye_signals/**"
       - "!gooaye_signals/data/history.json"   # 燈史由 bot commit，不再觸發（防循環）
       - ".github/workflows/signals.yml"
+      - ".github/workflows/pacer.yml"          # 修改接力器後也要立刻重啟鏈
 
 permissions:
   contents: write   # 需要把 data/history.json（燈號歷史）commit 回 repo
@@ -37,7 +38,10 @@ concurrency:
 
 jobs:
   build-deploy:
+    # workflow_dispatch 可在 UI 選 ref；正式 Pages 與燈史只允許 master。
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -52,6 +56,31 @@ jobs:
 
       - name: Install deps
         run: pip install -r gooaye_signals/requirements.txt
+
+      # push master 才驗完整 gate；schedule 與 pacer 每 22 分鐘補發的 workflow_dispatch
+      # 都跑同一個已驗證 commit，不重複消耗 runner。
+      - name: Verify Phase 1-4 + demo build gate
+        if: github.event_name == 'push'
+        working-directory: gooaye_signals
+        env:
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: utf-8
+          GOOAYE_DEMO: "1"
+        run: |
+          python tests/test_phase1_specs.py
+          python tests/test_phase2_compute.py
+          python tests/test_phase3_build.py
+          python tests/test_phase4_frontend.py
+          python build.py
+          python web/build_embed.py
+
+      # demo build 會寫 last_good；正式抓取前清掉，避免來源失敗時把示範值當上一筆真值。
+      - name: Remove demo artifacts before live build
+        if: github.event_name == 'push'
+        working-directory: gooaye_signals
+        run: |
+          rm -rf data/cache
+          rm -f data/signals.json web/data/signals.json
 
       # 還原上輪抓取快取（last-good）：來源短暫故障時卡片顯示舊圖+「資料較舊」而非灰燈
       - name: Restore fetch cache (last-good)
@@ -81,14 +110,26 @@ jobs:
           git add gooaye_signals/data/history.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(signals): update light history [skip ci]"
-            git stash push -- gooaye_signals/web/index.html || true
+            stashed=0
+            if ! git diff --quiet -- gooaye_signals/web/index.html; then
+              git stash push -- gooaye_signals/web/index.html
+              stashed=1
+            fi
             ok=0
             for i in 1 2 3; do
-              if git push origin HEAD:${{ github.ref_name }}; then ok=1; break; fi
-              git pull --rebase origin ${{ github.ref_name }} || true
+              if git push origin HEAD:master; then ok=1; break; fi
+              if ! git pull --rebase origin master; then
+                git rebase --abort || true
+                echo "::warning::history rebase failed; aborted cleanly, stop retrying"
+                break
+              fi
             done
             if [ "$ok" != "1" ]; then echo "::warning::history push failed (non-fatal)"; fi
-            git stash pop || true
+            if [ "$stashed" = "1" ]; then
+              # 不 pop 舊版產生檔：rebase 可能帶進新版 index.html，直接在最新 HEAD 重做內嵌最安全。
+              git stash drop
+              python gooaye_signals/web/build_embed.py
+            fi
           fi
 
       - uses: actions/configure-pages@v5
@@ -146,3 +187,4 @@ jobs:
             sleep 5
           done
           echo "::warning::pacer 接棒失敗——接力暫停，待下一班 cron/push 重啟"
+          exit 1

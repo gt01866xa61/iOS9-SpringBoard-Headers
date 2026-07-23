@@ -61,8 +61,10 @@
 - **前端**：單檔 `web/index.html`，5 種 widget 泛型分派（light_card/bar_chart/gauge/
   sparkline/table），零函式庫零 CDN。新增用既有 widget 的訊號**不用碰前端**。
   內嵌 fallback 由 `web/build_embed.py` 重新產生。
-- **韌性**：per-source/per-signal 隔離、last-good+stale、原子寫、整輪保底；
+- **韌性**：per-binding/per-signal 隔離、部分資料可降級續算、last-good+stale、原子寫、整輪保底；
   時區鎖死 fixed UTC+8（禁 IANA/ZoneInfo）。
+- **資料狀態**：卡片分開標示 `ok`（本輪完整無錯）、`usable`（仍可判讀）、`degraded`
+  （部分來源失敗）與 `data_as_of`／`sources`；灰燈或 stale 不寫入新燈史。
 - **燈史**：`data/manual` 旁的 `data/history.json` 由 CI bot 每輪 commit 回 repo
   （`[skip ci]`），測試絕不可動它（phase3 已導向暫存檔）。
 
@@ -99,9 +101,11 @@ supply，蓋房子≠有人入住）；Menlo 卡是「風向×體量」雙變數
 - 每完成一個邏輯單元立刻 commit；每次 commit 後在 `PROGRESS.md` 表頂加一行
   `YYYY-MM-DD HH:MM (Asia/Taipei) | hash前7碼 | 一句話`。
 - **push 前 gate（不可跳過）**：`cd gooaye_signals` 跑
-  `python tests/test_phase1_specs.py` ～ `test_phase4_frontend.py` 四個全過
-  ＋ `GOOAYE_DEMO=1 python build.py` ＋ `GOOAYE_DEMO=1 python web/build_embed.py`
+  `python -X utf8 tests/test_phase1_specs.py` ～ `test_phase4_frontend.py` 四個全過
+  ＋ `GOOAYE_DEMO=1 python -X utf8 build.py`
+  ＋ `GOOAYE_DEMO=1 python -X utf8 web/build_embed.py`
   ＋（改到版面時）目視檢查。
+  PowerShell 先設 `$env:GOOAYE_DEMO='1'`；`-X utf8` 防 Windows CP950 終端輸出失敗。
 - 遇到 API 錯誤/異常立刻停手回報，不硬 retry。
 - 新增台股代號**必先查證上市/上櫃**（.TW vs .TWO）——威剛 3260.TWO、長科 6548.TWO、
   界霖 5285.TW 都是踩過或差點踩的坑，勿憑直覺。
