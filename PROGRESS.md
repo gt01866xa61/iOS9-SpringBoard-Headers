@@ -5,6 +5,7 @@ Commit 歷史。**新的放最上面（倒序）**，每次 commit 後在表頭�
 
 | 時間 (Asia/Taipei) | Hash | 描述 |
 | --- | --- | --- |
+| 2026-08-02 19:22 | a2bda81 | feat(signals)：新增毛利率、CSP CapEx、現貨／合約價差、CXMT 四條早期預警；全為佐證不計主燈，補可追溯來源列與資料契約 |
 | 2026-07-23 21:18 | c336574 | ci：master push 強制完整 gate，隔離 demo last-good、限制部署 ref、加固 history rebase／embed 與接力失敗可觀測性，文件同步 |
 | 2026-07-23 21:18 | 9bbe57d | feat(web)：首幀即顯示 fallback、請求逾時／去重與閱讀狀態保留，補資料日期／逐列來源、無障礙語意及安全原子 embed |
 | 2026-07-23 21:17 | bbd1477 | fix(signals)：強化 manual schema、資料日期／來源、籃子 quorum、缺月與缺季語意、per-binding 降級續算及燈史保底 |
