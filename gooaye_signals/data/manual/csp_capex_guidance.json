@@ -1,0 +1,24 @@
+{
+  "note": "只記錄 CSP 在正式法說／IR 文件中明確給出的 CapEx 方向。每次 Alphabet、Microsoft、Meta 財報後以最新一筆取代判讀；未查證的公司保留待補，不用媒體推測補值。",
+  "as_of": "2026-08-02",
+  "reports": [
+    {
+      "company": "microsoft",
+      "date": "2026-07-29",
+      "period": "FY26Q4 / FY27 outlook",
+      "direction": "raise",
+      "guidance": "FY27 CapEx 將年增；曆年 2026 調整後預期約 $175B（租賃分類調整後，基礎投資預期未變）",
+      "src": "Microsoft FY26Q4 earnings call transcript",
+      "src_url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q4"
+    },
+    {
+      "company": "meta",
+      "date": "2026-07-29",
+      "period": "Q2 2026 / FY2026 outlook",
+      "direction": "raise",
+      "guidance": "2026 CapEx 指引 $130–145B；較前次 $125–145B 上調下限",
+      "src": "Meta Q2 2026 正式財報新聞稿",
+      "src_url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q2/Meta-06-30-2026-Exhibit-99-1-FINAL.pdf"
+    }
+  ]
+}

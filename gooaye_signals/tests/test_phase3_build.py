@@ -73,8 +73,15 @@ def _check_full_build() -> None:
             assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
     # 排序 = 擴充順序（order 欄位），不是檔名字母序
     assert [c["id"] for c in cl["signals"]] == ["yageo_rev_yoy", "mlcc_basket_ma", "ai_breadth"]
-    assert [c["id"] for c in cl["supporting"]] == ["memory_rs", "raw_materials", "watchlist"]
+    assert [c["id"] for c in cl["supporting"]] == [
+        "memory_rs", "raw_materials", "watchlist", "memory_gross_margin",
+        "csp_capex_guidance", "memory_spot_contract_gap", "cxmt_ramp",
+    ]
     assert _find_card(data, "yageo_rev_yoy")["light"] == "red"
+    assert _find_card(data, "memory_gross_margin")["light"] == "green"
+    assert _find_card(data, "csp_capex_guidance")["light"] == "green"
+    assert _find_card(data, "memory_spot_contract_gap")["light"] == "red"
+    assert _find_card(data, "cxmt_ramp")["light"] == "yellow"
     assert not config.SIGNALS_JSON.with_suffix(".json.tmp").exists(), "殘留 .tmp（原子寫失敗）"
 
     # 第二 cluster（導線架/封測）：order=2 排第二、demo 全綠；總燈仍取較嚴重的黃且點名主題

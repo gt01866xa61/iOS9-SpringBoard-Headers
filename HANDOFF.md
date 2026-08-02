@@ -1,6 +1,6 @@
 # HANDOFF.md — 股癌訊號燈 多 agent 交接文件
 
-最後更新：2026-07-18（Claude Code session 交接前全面翻新）。
+最後更新：2026-08-02（新增記憶體循環四條早期預警與維護契約）。
 任何 agent（Codex、Claude、其他）接手前先讀完本檔。本檔是活文件——交接資訊變動時直接改這份。
 
 ---
@@ -30,11 +30,11 @@
 ## 2. 目前進度（2026-07-18）
 
 **平台**：Phase 1–5 全部完成上線，現在處於 Phase 6+（使用者口述新訊號→逐一擴充）。
-**13 個訊號、3 個 cluster**：
+**17 個訊號、3 個 cluster**：
 
 | cluster | 主題 | 計主燈 | 佐證 |
 |---|---|---|---|
-| `semi_memory_top`（order 1）| 半導體/記憶體循環見頂 | 國巨月營收YoY、被動元件籃vs50MA、AI廣度 | 記憶體強弱表、鈀/銀、觀測名單 |
+| `semi_memory_top`（order 1）| 半導體/記憶體循環見頂 | 國巨月營收YoY、被動元件籃vs50MA、AI廣度 | 記憶體強弱表、鈀/銀、觀測名單、毛利率／CSP CapEx／現貨合約價差／CXMT量產 |
 | `leadframe_osat`（order 2）| 導線架/封測供應鏈（EP678）| 四雄營收動能表、四雄籃vs50MA | 四雄+銅體檢表 |
 | `onprem_hybrid`（order 3）| 地端/混合雲 AI（Satya 反向資訊悖論討論串）| DELL+HPE籃、HPE訂單動能（手動季更）| 事件簿、Menlo開源風向×體量 |
 
@@ -82,17 +82,27 @@ GitHub 免費基建三種故障都實測踩過：cron 大量丟包（尖峰 12 �
 - **GITHUB_TOKEN 補發的 run 跑完不會觸發 workflow_run**（防遞迴的隱藏規則，
   三次斷鏈的根因）——所以兩條邊都是明確 dispatch，別「優化」回級聯。
 
-## 5. 手動數據維護行事曆（cluster 3 專用）
+## 5. 手動數據維護行事曆
 
 | 檔案 | 更新時機 | 內容 |
 |---|---|---|
 | `data/manual/hpe_dell_ai_orders.json` | HPE 財報約 3/6/9/12 月；Dell 約 2/5/8/11 月 | 單季 AI 訂單、backlog（十億美元），附 SEC 8-K/新聞稿出處 |
 | `data/manual/onprem_events.json` | 使用者口述或查證後隨時 | 事件必帶 date/camp/dir(+/-/0)/**type**(endorse/supply/data/narrative)/src；記得同步 as_of |
 | `data/manual/menlo_opensource.json` | 年中約 7 月底、年末約 12 月 | pct（開源占比）＋ total_b（模型API總支出，分母）；缺分母會自動退回風向-only |
+| `data/manual/memory_gross_margin.json` | 美光財報約 3/6/9/12 月 | 同一 **GAAP 合併**口徑的季毛利率；只是可連續代理，不能寫成產業平均 |
+| `data/manual/csp_capex_guidance.json` | Alphabet／Microsoft／Meta 每次財報後 | 只收正式 IR／法說明說的 `raise/maintain/slow/cut`；缺公司留灰列，不能用媒體推測補 |
+| `data/manual/memory_spot_contract_gap.json` | TrendForce/DRAMeXchange 每月更新後 | 只收同品項、同幣別快照；現貨與合約更新日都要原樣紀錄，至少兩筆才判趨勢 |
+| `data/manual/cxmt_ramp.json` | 查證到實際里程碑時 | `stage` 必須是 plan/construction/volume/delay/restriction；**公告擴產不等於量產，小量量產也不等於大型供給已到** |
 
 規則備忘：事件簿綠燈需「淨值≥+3 **且**窗內至少一筆 endorse」（雲廠自家 GA/擴國是
 supply，蓋房子≠有人入住）；Menlo 卡是「風向×體量」雙變數（占比降但推算額升＝黃，
 防分母效應誤讀——使用者親自抓過這個 bug，別改回單占比判燈）。
+
+記憶體四張早期預警（`memory_gross_margin`、`csp_capex_guidance`、
+`memory_spot_contract_gap`、`cxmt_ramp`）目前全是 **佐證面板**（`in_master=False`）：
+先忠實呈現各自的燈與來源，不能因為單一公司代理、公司名單缺項、首筆價差快照或長週期
+施工新聞，就私自改變原本三支主燈的 cluster 主燈。未來要納入主燈，先取得使用者明確決定
+與足夠連續、多來源資料。
 
 ## 6. 工作流程鐵律
 

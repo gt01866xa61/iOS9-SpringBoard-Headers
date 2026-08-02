@@ -69,7 +69,22 @@
 - `mlcc_basket_ma`（sparkline）被動四雄籃 vs 50MA。
 - `ai_breadth`（gauge）AI 類股廣度（站上 50MA 比例）。
 
-佐證面板（`in_master=False`）：記憶體相對強度、原物料(鈀/銀)、觀測名單。
+佐證面板（`in_master=False`）：記憶體相對強度、原物料(鈀/銀)、觀測名單，以及下列
+「供需失衡早期預警」。這四張都先不計主燈：毛利率目前是單一公司同口徑代理、CSP 尚有
+公司待補、現貨／合約價差仍在建立同品項月度基準、CXMT 只能把計畫與量產分開追；未達
+多來源、連續資料的門檻前，不用它們悄悄改變既有主燈。
+
+#### 供需失衡早期預警（使用者提供影片的四條新增訊號）
+
+- `memory_gross_margin`（sparkline，手動季更）記憶體毛利率變化——先用美光 GAAP
+  合併毛利率作可連續追蹤的代理，**不是產業平均**；QoQ 降至少 1pp 為鬆動，單季降至少
+  5pp 或連兩季鬆動為紅。
+- `csp_capex_guidance`（table，手動季更）CSP 巨頭資本支出指引——只採 Alphabet、
+  Microsoft、Meta 的正式 IR／法說文字；任一家明確放緩或削減即紅，缺一家不猜、維持黃。
+- `memory_spot_contract_gap`（table，手動月更）記憶體現貨／合約價差——只比較同一
+  品項、同幣別的月度快照；首筆先建基準，現貨月跌至少 3% 且合約未跌超過 1% 才紅。
+- `cxmt_ramp`（table，事件更）CXMT 一般 DRAM 量產進度——嚴分「計畫／施工／小量驗證／
+  大型量產」；前 3 者仍黃，可信來源確認大型量產落地才紅，避免把 announced capacity 當供給已到。
 
 ### cluster 2：導線架 / 封測供應鏈觀察（EP678，Phase 6 首個擴充）
 
@@ -102,6 +117,12 @@
 
 新資料源 `manual_series`：讀 repo 內 `data/manual/<key>.json`——給「無公開 API 但有
 公開出處」的季度/事件型數據用，每點必附 src，財報後手動補一筆。
+
+新增早期預警的維護節奏：美光財報（約 3/6/9/12 月）補毛利率；Alphabet、Microsoft、
+Meta 各季法說補 CapEx 指引；TrendForce/DRAMeXchange 每月補同品項現貨／合約快照；
+CXMT 只在查證到計畫、施工、量產、延後或設備限制的事件時補一筆。手動檔案分別為
+`memory_gross_margin.json`、`csp_capex_guidance.json`、`memory_spot_contract_gap.json`、
+`cxmt_ramp.json`；每點都必附 `src`，有完整網址再附 `src_url`。
 
 主燈真值表（各 cluster 共用）：🔴 ≥2 紅｜🟡 任一紅/黃｜🟢 全綠；總燈取各 cluster 最高嚴重度。
 

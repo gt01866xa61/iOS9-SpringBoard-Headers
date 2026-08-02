@@ -67,11 +67,12 @@ def _check_index() -> None:
     # 3c. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
     assert "maxAsof" in html and "資料至" in html, "缺表格列資料至（asof）標示"
 
-    # 3d. row 來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
+    # 3d. row／卡片來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
     assert all(token in html for token in (
         "function safeHTTPURL", 'url.protocol==="http:"', 'url.protocol==="https:"',
         'lower.startsWith("http://")', 'lower.startsWith("https://")',
         "row.source||", "row.source_url||", "const plain=source||rawURL",
+        "function sourcesHTML", "sig.sources", "seen.has(key)",
         "sig.data_as_of", "!sig.data_as_of&&sig.updated_at",
     )), "缺安全來源顯示或 data_as_of 優先顯示"
 

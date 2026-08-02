@@ -112,5 +112,95 @@
     "total_src": "demo"
    }
   ]
+ },
+ "memory_gross_margin": {
+  "as_of": "2026-06-24",
+  "series": [
+   {
+    "label": "FY25Q4",
+    "date": "2025-08-28",
+    "gross_margin_pct": 44.7,
+    "src": "demo"
+   },
+   {
+    "label": "FY26Q1",
+    "date": "2025-11-27",
+    "gross_margin_pct": 56.0,
+    "src": "demo"
+   },
+   {
+    "label": "FY26Q2",
+    "date": "2026-02-26",
+    "gross_margin_pct": 74.4,
+    "src": "demo"
+   }
+  ]
+ },
+ "csp_capex_guidance": {
+  "as_of": "2026-08-02",
+  "reports": [
+   {
+    "company": "alphabet",
+    "date": "2026-07-30",
+    "period": "Q2",
+    "direction": "raise",
+    "guidance": "demo 加碼",
+    "src": "demo"
+   },
+   {
+    "company": "microsoft",
+    "date": "2026-07-29",
+    "period": "Q4",
+    "direction": "raise",
+    "guidance": "demo 加碼",
+    "src": "demo"
+   },
+   {
+    "company": "meta",
+    "date": "2026-07-29",
+    "period": "Q2",
+    "direction": "raise",
+    "guidance": "demo 加碼",
+    "src": "demo"
+   }
+  ]
+ },
+ "memory_spot_contract_gap": {
+  "as_of": "2026-08-02",
+  "series": [
+   {
+    "date": "2026-06-30",
+    "item": "DDR4 8Gb (1Gx8)",
+    "currency": "USD",
+    "spot": 40.0,
+    "contract": 20.0,
+    "spot_as_of": "2026-06-30",
+    "contract_as_of": "2026-06-30",
+    "src": "demo"
+   },
+   {
+    "date": "2026-07-31",
+    "item": "DDR4 8Gb (1Gx8)",
+    "currency": "USD",
+    "spot": 38.0,
+    "contract": 20.5,
+    "spot_as_of": "2026-07-31",
+    "contract_as_of": "2026-07-31",
+    "src": "demo"
+   }
+  ]
+ },
+ "cxmt_ramp": {
+  "as_of": "2026-08-02",
+  "milestones": [
+   {
+    "date": "2026-07-24",
+    "stage": "construction",
+    "what": "demo 新廠施工",
+    "target_year": 2027,
+    "target_wspm_min": 600000,
+    "src": "demo"
+   }
+  ]
  }
 }

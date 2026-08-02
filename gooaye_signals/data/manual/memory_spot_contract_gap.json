@@ -1,0 +1,17 @@
+{
+  "note": "只收可在同一來源頁面找到的同品項、同幣別 DRAM spot/contract 快照。現貨與合約更新日不同時如實揭露；至少兩筆相同品項月度快照才判燈。",
+  "as_of": "2026-08-02",
+  "series": [
+    {
+      "date": "2026-07-31",
+      "item": "DDR4 8Gb (1Gx8)",
+      "currency": "USD",
+      "spot": 42.112,
+      "contract": 21.0,
+      "spot_as_of": "2026-07-31",
+      "contract_as_of": "2026-06-30",
+      "src": "TrendForce/DRAMeXchange DRAM Price Trends（spot 7/31；contract 2H Jun）",
+      "src_url": "https://www.trendforce.com/price/dram/dram_spot"
+    }
+  ]
+}

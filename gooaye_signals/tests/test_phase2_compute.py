@@ -12,10 +12,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import config
 import signals.ai_breadth as ai
+import signals.csp_capex_guidance as csp
+import signals.cxmt_ramp as cxmt
 import signals.leadframe_basket_ma as lf_basket
 import signals.leadframe_rev_yoy as lf_rev
 import signals.leadframe_watch as lf_watch
 import signals.menlo_opensource as menlo
+import signals.memory_gross_margin as margin
+import signals.memory_spot_contract_gap as price_gap
 import signals.mlcc_basket_ma as mlcc
 import signals.onprem_ai_orders as oo
 import signals.onprem_basket_ma as ob
@@ -284,6 +288,62 @@ def _check_onprem() -> None:
     print("  [OK] 地端/混合雲四訊號（訂單±20%三態 / 事件簿窗與淨值 / Menlo方向 / 籃）")
 
 
+def _check_memory_early_warnings() -> None:
+    """半導體/記憶體新四卡：代理口徑、缺資料、早期警訊門檻。"""
+    def gm(values: list[float]) -> dict:
+        return {"margin": {"as_of": "2026-06-24", "series": [
+            {"label": f"q{i}", "date": f"2026-0{i + 1}-01", "gross_margin_pct": value,
+             "src": "t"}
+            for i, value in enumerate(values)
+        ]}}
+
+    assert margin._compute(gm([50, 54])).light == "green"
+    assert margin._compute(gm([60, 58.5])).light == "yellow"       # 首度鬆動 ≥1pp
+    assert margin._compute(gm([60, 54])).light == "red"            # 單季大跌 ≥5pp
+    assert margin._compute(gm([60, 58, 56])).light == "red"        # 連兩季鬆動
+    assert margin._compute(gm([60])).light == "gray"
+    r = margin._compute(gm([50, 54]))
+    assert r.data_as_of == "2026-02-01" and r.sources[0]["source"] == "t"
+
+    def capex(rows: list[tuple[str, str]]) -> dict:
+        return {"capex": {"as_of": "2026-08-02", "reports": [
+            {"company": company, "date": "2026-07-29", "period": "q", "direction": direction,
+             "guidance": "g", "src": "t"}
+            for company, direction in rows
+        ]}}
+
+    assert csp._compute(capex([("alphabet", "raise"), ("microsoft", "raise"), ("meta", "raise")])).light == "green"
+    assert csp._compute(capex([("microsoft", "raise"), ("meta", "raise")])).light == "yellow"  # Alphabet 不猜
+    assert csp._compute(capex([("alphabet", "raise"), ("microsoft", "slow")])).light == "red"
+    assert csp._compute({}).light == "gray"
+
+    def prices(rows: list[tuple[float, float]]) -> dict:
+        return {"prices": {"as_of": "2026-08-02", "series": [
+            {"date": f"2026-0{i + 6}-28", "item": "DDR4 8Gb", "currency": "USD",
+             "spot": spot, "contract": contract, "spot_as_of": f"2026-0{i + 6}-28",
+             "contract_as_of": f"2026-0{i + 6}-28", "src": "t"}
+            for i, (spot, contract) in enumerate(rows)
+        ]}}
+
+    assert price_gap._compute(prices([(100, 100)])).light == "gray"  # 基準不足不偷判
+    assert price_gap._compute(prices([(100, 100), (96, 101)])).light == "red"
+    assert price_gap._compute(prices([(100, 100), (103, 102)])).light == "green"
+    assert price_gap._compute(prices([(100, 100), (98, 95)])).light == "yellow"
+
+    def ramp(stage: str, wspm: int = 600000) -> dict:
+        return {"ramp": {"as_of": "2026-08-02", "milestones": [
+            {"date": "2026-07-24", "stage": stage, "what": "w", "target_year": 2027,
+             "target_wspm_min": wspm, "src": "t"}
+        ]}}
+
+    assert cxmt._compute(ramp("construction")).light == "yellow"  # 計畫/施工不是量產
+    assert cxmt._compute(ramp("volume", 100000)).light == "red"
+    assert cxmt._compute(ramp("volume", 99999)).light == "yellow"  # 小量量產不誤判為大型供給
+    assert cxmt._compute(ramp("delay")).light == "green"
+    assert cxmt._compute({}).light == "gray"
+    print("  [OK] 記憶體早期預警四訊號（毛利率 / CSP / 現貨合約 / CXMT）")
+
+
 def _check_manual_contract() -> None:
     """manual_series 必須在進 compute 前拒絕缺出處與錯型別。"""
     good = {"as_of": "2026-01-01", "events": [
@@ -313,6 +373,36 @@ def _check_manual_contract() -> None:
         raise AssertionError("有分母時缺 total_src 不得通過")
     except ValueError:
         pass
+    good_margin = {"as_of": "2026-01-01", "series": [
+        {"label": "q", "date": "2025-12-31", "gross_margin_pct": 50.0, "src": "source"}
+    ]}
+    assert validate_manual("memory_gross_margin", good_margin) is good_margin
+    bad_price = {"as_of": "2026-01-01", "series": [
+        {"date": "2025-12-31", "item": "x", "currency": "USD", "spot": 1.0, "contract": 0,
+         "spot_as_of": "2025-12-31", "contract_as_of": "2025-12-31", "src": "source"}
+    ]}
+    try:
+        validate_manual("memory_spot_contract_gap", bad_price)
+        raise AssertionError("合約價 0 不得通過")
+    except ValueError:
+        pass
+    bad_csp = {"as_of": "2026-01-01", "reports": [
+        {"company": "typo", "date": "2025-12-31", "period": "q", "direction": "raise",
+         "guidance": "g", "src": "source"}
+    ]}
+    try:
+        validate_manual("csp_capex_guidance", bad_csp)
+        raise AssertionError("CSP 公司拼字錯誤不得通過")
+    except ValueError:
+        pass
+    bad_cxmt = {"as_of": "2026-01-01", "milestones": [
+        {"date": "2025-12-31", "stage": "announced", "what": "w", "src": "source"}
+    ]}
+    try:
+        validate_manual("cxmt_ramp", bad_cxmt)
+        raise AssertionError("CXMT 非法階段不得通過")
+    except ValueError:
+        pass
     print("  [OK] manual_series schema：必填 src／日期／型別")
 
 
@@ -329,6 +419,10 @@ def _check_demo_pipeline() -> None:
     assert lights["mlcc_basket_ma"] == "yellow", lights
     assert lights["ai_breadth"] == "green", lights
     assert lights["memory_rs"] in {"red", "yellow", "green"}, lights
+    assert lights["memory_gross_margin"] == "green", lights
+    assert lights["csp_capex_guidance"] == "green", lights
+    assert lights["memory_spot_contract_gap"] == "red", lights
+    assert lights["cxmt_ramp"] == "yellow", lights
     # 導線架 cluster demo：fixtures 設計成全綠（cluster2 綠 → 總燈仍由 cluster1 的黃決定）
     assert lights["leadframe_rev_yoy"] == "green", lights
     assert lights["leadframe_basket_ma"] == "green", lights
@@ -350,6 +444,7 @@ def main() -> int:
     _check_support_panels()
     _check_leadframe()
     _check_onprem()
+    _check_memory_early_warnings()
     _check_manual_contract()
     _check_demo_pipeline()
     print("Phase 2 驗證通過")

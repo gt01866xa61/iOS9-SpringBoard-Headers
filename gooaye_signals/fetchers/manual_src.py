@@ -19,6 +19,9 @@ import config
 
 _EVENT_TYPES = {"endorse", "supply", "data", "narrative"}
 _EVENT_DIRS = {"+", "-", "0"}
+_CAPEX_DIRECTIONS = {"raise", "maintain", "slow", "cut"}
+_CSP_COMPANIES = {"alphabet", "microsoft", "meta"}
+_CXMT_STAGES = {"plan", "construction", "volume", "delay", "restriction"}
 
 
 def _mapping(value: object, where: str) -> dict:
@@ -122,10 +125,95 @@ def _validate_menlo(data: dict) -> None:
             _text(point, "total_src", where)
 
 
+def _validate_memory_margin(data: dict) -> None:
+    """記憶體毛利率：單一公司、同一 GAAP 口徑的季序列。"""
+    anchor = date.fromisoformat(_iso_date(data.get("as_of"), "memory_gross_margin.as_of"))
+    for index, raw in enumerate(_list(data.get("series"), "memory_gross_margin.series")):
+        where = f"memory_gross_margin.series[{index}]"
+        point = _mapping(raw, where)
+        point_date = date.fromisoformat(_iso_date(point.get("date"), f"{where}.date"))
+        if point_date > anchor:
+            raise ValueError(f"{where}.date 不得晚於 as_of")
+        for field in ("label", "src"):
+            _text(point, field, where)
+        _optional_url(point, "src_url", where)
+        margin = _number_or_none(point.get("gross_margin_pct"), f"{where}.gross_margin_pct")
+        if margin is None or not 0 <= margin <= 100:
+            raise ValueError(f"{where}.gross_margin_pct 必須在 0..100")
+
+
+def _validate_csp_capex(data: dict) -> None:
+    """CSP 財報指引：每筆是公司於一場法說的明確 CapEx 方向。"""
+    anchor = date.fromisoformat(_iso_date(data.get("as_of"), "csp_capex_guidance.as_of"))
+    for index, raw in enumerate(_list(data.get("reports"), "csp_capex_guidance.reports")):
+        where = f"csp_capex_guidance.reports[{index}]"
+        point = _mapping(raw, where)
+        report_date = date.fromisoformat(_iso_date(point.get("date"), f"{where}.date"))
+        if report_date > anchor:
+            raise ValueError(f"{where}.date 不得晚於 as_of")
+        for field in ("company", "period", "guidance", "src"):
+            _text(point, field, where)
+        _optional_url(point, "src_url", where)
+        if point.get("company") not in _CSP_COMPANIES:
+            raise ValueError(f"{where}.company 必須是 alphabet / microsoft / meta")
+        if point.get("direction") not in _CAPEX_DIRECTIONS:
+            raise ValueError(f"{where}.direction 必須是 raise / maintain / slow / cut")
+
+
+def _validate_price_gap(data: dict) -> None:
+    """現貨/合約價：只收同一品項的可直接比價快照。"""
+    anchor = date.fromisoformat(_iso_date(data.get("as_of"), "memory_spot_contract_gap.as_of"))
+    for index, raw in enumerate(_list(data.get("series"), "memory_spot_contract_gap.series")):
+        where = f"memory_spot_contract_gap.series[{index}]"
+        point = _mapping(raw, where)
+        point_date = date.fromisoformat(_iso_date(point.get("date"), f"{where}.date"))
+        if point_date > anchor:
+            raise ValueError(f"{where}.date 不得晚於 as_of")
+        for field in ("item", "currency", "src"):
+            _text(point, field, where)
+        _optional_url(point, "src_url", where)
+        for field in ("spot", "contract"):
+            value = _number_or_none(point.get(field), f"{where}.{field}")
+            if value is None or value <= 0:
+                raise ValueError(f"{where}.{field} 必須是正數")
+        for field in ("spot_as_of", "contract_as_of"):
+            quoted_on = date.fromisoformat(_iso_date(point.get(field), f"{where}.{field}"))
+            if quoted_on > anchor:
+                raise ValueError(f"{where}.{field} 不得晚於 as_of")
+
+
+def _validate_cxmt_ramp(data: dict) -> None:
+    """CXMT 擴產：計畫、施工與量產事件要分開，不能把計畫當成量產。"""
+    anchor = date.fromisoformat(_iso_date(data.get("as_of"), "cxmt_ramp.as_of"))
+    for index, raw in enumerate(_list(data.get("milestones"), "cxmt_ramp.milestones")):
+        where = f"cxmt_ramp.milestones[{index}]"
+        point = _mapping(raw, where)
+        event_date = date.fromisoformat(_iso_date(point.get("date"), f"{where}.date"))
+        if event_date > anchor:
+            raise ValueError(f"{where}.date 不得晚於 as_of")
+        for field in ("what", "src"):
+            _text(point, field, where)
+        _optional_url(point, "src_url", where)
+        if point.get("stage") not in _CXMT_STAGES:
+            raise ValueError(f"{where}.stage 非法")
+        target_year = point.get("target_year")
+        if target_year is not None and (isinstance(target_year, bool)
+                                        or not isinstance(target_year, int)
+                                        or not 2000 <= target_year <= 2100):
+            raise ValueError(f"{where}.target_year 必須是 2000..2100 的整數或 null")
+        target_wspm = _number_or_none(point.get("target_wspm_min"), f"{where}.target_wspm_min")
+        if target_wspm is not None and target_wspm < 0:
+            raise ValueError(f"{where}.target_wspm_min 不可為負數")
+
+
 _VALIDATORS = {
     "hpe_dell_ai_orders": _validate_orders,
     "onprem_events": _validate_events,
     "menlo_opensource": _validate_menlo,
+    "memory_gross_margin": _validate_memory_margin,
+    "csp_capex_guidance": _validate_csp_capex,
+    "memory_spot_contract_gap": _validate_price_gap,
+    "cxmt_ramp": _validate_cxmt_ramp,
 }
 
 
