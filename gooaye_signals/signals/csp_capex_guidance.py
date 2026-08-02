@@ -111,5 +111,6 @@ SIGNAL = SignalSpec(
     shape="每家公司只看最新一筆正式指引：三家皆加碼＝綠；有維持或缺資料＝黃；任一家明說放緩或削減＝紅。這張表不把推測、媒體轉述或缺資料當成公司指引。",
     order=8,
     in_master=False,
+    featured=True,
     unit="",
 )

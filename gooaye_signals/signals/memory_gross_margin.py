@@ -90,5 +90,6 @@ SIGNAL = SignalSpec(
     shape="看最新一季比上一季的 pp 變化：續升＝綠；下降至少 1pp＝黃；單季降至少 5pp、或連兩季各降至少 1pp＝紅。重點是「開始鬆動」，不是毛利率絕對值高不高。",
     order=7,
     in_master=False,
+    featured=True,
     unit="%",
 )

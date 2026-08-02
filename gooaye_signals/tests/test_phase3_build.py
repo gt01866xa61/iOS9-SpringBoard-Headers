@@ -68,7 +68,7 @@ def _check_full_build() -> None:
         for c in cluster["signals"] + cluster["supporting"]:
             for k in ("widget", "light", "interpretation", "widget_data", "ok", "usable",
                       "stale", "degraded", "binding_errors", "data_as_of", "sources",
-                      "track", "shape", "order", "interpretations"):
+                      "track", "shape", "order", "featured", "interpretations"):
                 assert k in c, f"{c['id']} 缺 {k}"
             assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
     # 排序 = 擴充順序（order 欄位），不是檔名字母序
@@ -77,6 +77,10 @@ def _check_full_build() -> None:
         "memory_rs", "raw_materials", "watchlist", "memory_gross_margin",
         "csp_capex_guidance", "memory_spot_contract_gap", "cxmt_ramp",
     ]
+    assert [c["id"] for c in cl["supporting"] if c["featured"]] == [
+        "memory_gross_margin", "csp_capex_guidance", "memory_spot_contract_gap", "cxmt_ramp",
+    ]
+    assert not any(c["in_master"] for c in cl["supporting"] if c["featured"])
     assert _find_card(data, "yageo_rev_yoy")["light"] == "red"
     assert _find_card(data, "memory_gross_margin")["light"] == "green"
     assert _find_card(data, "csp_capex_guidance")["light"] == "green"

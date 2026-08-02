@@ -3,12 +3,19 @@
   "as_of": "2026-08-02",
   "milestones": [
     {
+      "date": "2026-07-22",
+      "stage": "plan",
+      "what": "上海證券交易所公布長鑫科技科創板招股說明書；本卡以此一手文件交叉核對產能建設計畫，但不把募資／建設計畫當成量產。",
+      "src": "上海證券交易所：長鑫科技科創板招股說明書（官方一手文件）",
+      "src_url": "https://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-07-22/688825_20260722_Q1T7.pdf"
+    },
+    {
       "date": "2026-07-24",
       "stage": "construction",
       "what": "Reuters 報導 CXMT 正在上海、合肥建兩座新廠，若全部按計畫推進，總產能將超過 600k wafers/月；新廠最快 2027 上線。",
       "target_year": 2027,
       "target_wspm_min": 600000,
-      "src": "Reuters 2026-07-24（CXMT 新廠與產能計畫）",
+      "src": "Reuters 2026-07-24（經 Investing.com 轉載；與上交所招股書交叉核對）",
       "src_url": "https://www.investing.com/news/stock-market-news/chinas-memory-chip-makers-ride-ai-boom-to-new-power--and-us-scrutiny-4810472"
     }
   ]

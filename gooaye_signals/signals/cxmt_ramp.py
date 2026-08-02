@@ -121,5 +121,6 @@ SIGNAL = SignalSpec(
     shape="事件表由計畫/施工/小量驗證（黃）走到可溯源的大型量產（紅）；若近期只有延後或設備限制（綠），表示本卡尚未看到供給加速落地。",
     order=10,
     in_master=False,
+    featured=True,
     unit="",
 )

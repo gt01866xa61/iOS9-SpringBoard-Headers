@@ -51,5 +51,6 @@ SIGNAL = SignalSpec(
     shape="（白話：動起來長什麼樣、往哪個方向變化算轉弱——會顯示在圖表下方）",
     order=99,                            # 同 cluster 內顯示順序 = 擴充順序（接在現有最大值後）
     in_master=True,                      # False = 只當佐證面板，不計入主燈
+    featured=False,                      # True = 首屏獨立顯示；不等於計入主燈
     unit="",
 )

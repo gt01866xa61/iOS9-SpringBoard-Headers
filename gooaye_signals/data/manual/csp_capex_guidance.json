@@ -3,6 +3,15 @@
   "as_of": "2026-08-02",
   "reports": [
     {
+      "company": "alphabet",
+      "date": "2026-07-22",
+      "period": "Q2 2026 / FY2026 outlook",
+      "direction": "raise",
+      "guidance": "2026 CapEx 指引由 $180–190B 上調至 $195–205B，主因是加速交付產能以滿足需求",
+      "src": "Alphabet Q2 2026 官方法說逐字稿",
+      "src_url": "https://abc.xyz/investor/events/event-details/2026/2026-Q2-Earnings-Call-2026-GgTAq7Is0z/default.aspx"
+    },
+    {
       "company": "microsoft",
       "date": "2026-07-29",
       "period": "FY26Q4 / FY27 outlook",

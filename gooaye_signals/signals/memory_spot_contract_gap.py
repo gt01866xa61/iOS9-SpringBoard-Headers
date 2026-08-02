@@ -101,5 +101,6 @@ SIGNAL = SignalSpec(
     shape="每月補一筆相同品項與幣別的快照。首筆灰＝建立基準；兩者都不跌＝綠；走勢混合＝黃；現貨月跌至少 3%、合約跌幅不超過 1%＝紅。",
     order=9,
     in_master=False,
+    featured=True,
     unit="",
 )

@@ -63,6 +63,10 @@ def _check_index() -> None:
         "lastRenderedJSON", "dataChanged", "activeId", "summary.focus({preventScroll:true})",
     )), "缺資料未變不重畫／重畫後焦點還原"
     assert "miniFor" in html, "缺掃視層縮圖"
+    assert all(token in html for token in (
+        "featured-signals", "供需失衡早期預警", "const featured=supporting.filter",
+        "const rest=supporting.filter", "缺正式資料不硬判",
+    )), "首屏早期預警仍被補充面板摺疊"
 
     # 3c. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
     assert "maxAsof" in html and "資料至" in html, "缺表格列資料至（asof）標示"

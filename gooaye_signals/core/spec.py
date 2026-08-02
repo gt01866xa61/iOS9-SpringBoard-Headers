@@ -69,4 +69,5 @@ class SignalSpec:
     shape: str                                 # 回答②：白話「動起來長什麼樣」（卡片圖表下方顯示）
     order: int                                 # 同 cluster 內顯示順序 = 擴充順序（先加的在前）
     in_master: bool = True                     # 是否計入所屬 cluster 的主燈投票
+    featured: bool = False                     # 首屏獨立顯示；可與 in_master=False 並存
     unit: str = ""                             # 主數字單位

@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 
@@ -406,6 +407,31 @@ def _check_manual_contract() -> None:
     print("  [OK] manual_series schema：必填 src／日期／型別")
 
 
+def _check_memory_source_authority() -> None:
+    """四張首屏預警必保有一手/專業來源；媒體只能作 CXMT 交叉核對。"""
+    def load(key: str) -> dict:
+        path = config.DATA_DIR / "manual" / f"{key}.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    margins = load("memory_gross_margin")["series"]
+    assert all("investors.micron.com" in p.get("src_url", "") for p in margins)
+
+    capex = load("csp_capex_guidance")["reports"]
+    assert {p["company"] for p in capex}.issubset({"alphabet", "microsoft", "meta"})
+    assert all(p.get("src_url", "").startswith("https://") for p in capex)
+    assert any("abc.xyz" in p["src_url"] for p in capex)
+    assert any("microsoft.com" in p["src_url"] for p in capex)
+    assert any("Meta" in p["src"] for p in capex)
+
+    prices = load("memory_spot_contract_gap")["series"]
+    assert all("trendforce.com" in p.get("src_url", "") for p in prices)
+
+    milestones = load("cxmt_ramp")["milestones"]
+    assert any("static.sse.com.cn" in p.get("src_url", "") for p in milestones)
+    assert any("Reuters" in p.get("src", "") for p in milestones)
+    print("  [OK] 記憶體早期預警來源：官方 IR／交易所＋TrendForce，媒體僅交叉核對")
+
+
 def _check_demo_pipeline() -> None:
     """用 demo fixtures 跑一遍所有 signal 的 fetch→compute，驗證離線全流程 + 預期燈號。"""
     cache = DayCache(config.CACHE_DIR, demo=True, fixtures_dir=config.DEMO_FIXTURES_DIR)
@@ -446,6 +472,7 @@ def main() -> int:
     _check_onprem()
     _check_memory_early_warnings()
     _check_manual_contract()
+    _check_memory_source_authority()
     _check_demo_pipeline()
     print("Phase 2 驗證通過")
     return 0

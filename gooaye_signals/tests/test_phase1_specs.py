@@ -28,6 +28,9 @@ from fetchers import SOURCE_REGISTRY
 from registry import discover
 
 EXPECTED_IDS = {"yageo_rev_yoy", "mlcc_basket_ma", "ai_breadth"}
+EXPECTED_FEATURED = {
+    "memory_gross_margin", "csp_capex_guidance", "memory_spot_contract_gap", "cxmt_ramp",
+}
 
 
 def _check_specs() -> None:
@@ -55,8 +58,12 @@ def _check_specs() -> None:
         assert s.track, f"{s.id} 缺 track（追什麼）"
         assert s.shape, f"{s.id} 缺 shape（怎麼看）"
         assert isinstance(s.order, int), f"{s.id} order 需為 int"
+        assert isinstance(s.featured, bool), f"{s.id} featured 需為 bool"
 
-    print(f"  [OK] registry 探索 {len(specs)} 個訊號，契約全數通過")
+    featured = {s.id for s in specs if s.featured}
+    assert EXPECTED_FEATURED.issubset(featured), f"缺首屏早期預警：{featured}"
+
+    print(f"  [OK] registry 探索 {len(specs)} 個訊號，契約與首屏早期預警全數通過")
 
 
 def _check_master_light() -> None:
