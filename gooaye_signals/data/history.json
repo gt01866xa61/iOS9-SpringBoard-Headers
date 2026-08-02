@@ -485,7 +485,7 @@
       ],
       [
         "2026-08-02",
-        "red"
+        "yellow"
       ]
     ],
     "watchlist": [
@@ -1313,7 +1313,26 @@
         "2026-08-02",
         "yellow"
       ]
-    ]
+    ],
+    "csp_capex_guidance": [
+      [
+        "2026-08-02",
+        "yellow"
+      ]
+    ],
+    "cxmt_ramp": [
+      [
+        "2026-08-02",
+        "yellow"
+      ]
+    ],
+    "memory_gross_margin": [
+      [
+        "2026-08-02",
+        "green"
+      ]
+    ],
+    "memory_spot_contract_gap": []
   },
   "master": [
     [
