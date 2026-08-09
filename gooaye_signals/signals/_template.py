@@ -47,7 +47,8 @@ SIGNAL = SignalSpec(
         "gray": "（資料缺漏時顯示什麼）",
     },
     cadence="trading_day",               # daily / trading_day / monthly / manual
-    track="（白話：在盯什麼、為什麼重要——會顯示在卡片名稱下方）",
+    purpose="（一句話：這張卡想驗證什麼——收合時固定顯示在名稱下方）",
+    track="（白話：實際盯什麼、為什麼重要——展開卡片後顯示）",
     shape="（白話：動起來長什麼樣、往哪個方向變化算轉弱——會顯示在圖表下方）",
     order=99,                            # 同 cluster 內顯示順序 = 擴充順序（接在現有最大值後）
     in_master=True,                      # False = 只當佐證面板，不計入主燈

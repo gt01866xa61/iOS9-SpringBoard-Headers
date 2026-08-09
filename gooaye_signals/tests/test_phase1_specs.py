@@ -17,7 +17,7 @@ from datetime import datetime
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import config
-from core.clusters import CLUSTER_IDS, master_light
+from core.clusters import CLUSTER_GROUPS, CLUSTERS, CLUSTER_IDS, master_light
 from core.spec import (
     CADENCE_NAMES,
     REQUIRED_LIGHTS,
@@ -54,7 +54,8 @@ def _check_specs() -> None:
         for lt in REQUIRED_LIGHTS:
             assert lt in s.interpretations, f"{s.id} interpretations 缺 '{lt}'"
             assert s.interpretations[lt], f"{s.id} interpretations['{lt}'] 為空"
-        # 三個必答問題：①追什麼 ②怎麼看，＋擴充順序
+        # 固定副標的驗證目的＋三個必答問題，並保留擴充順序
+        assert s.purpose, f"{s.id} 缺 purpose（驗證什麼）"
         assert s.track, f"{s.id} 缺 track（追什麼）"
         assert s.shape, f"{s.id} 缺 shape（怎麼看）"
         assert isinstance(s.order, int), f"{s.id} order 需為 int"
@@ -62,6 +63,11 @@ def _check_specs() -> None:
 
     featured = {s.id for s in specs if s.featured}
     assert EXPECTED_FEATURED.issubset(featured), f"缺首屏早期預警：{featured}"
+
+    assert all(c.purpose for c in CLUSTERS), "cluster 缺整體驗證目的"
+    spillover = next(group for group in CLUSTER_GROUPS if group.id == "ai_spillover")
+    assert spillover.cluster_ids == ("leadframe_osat", "onprem_hybrid")
+    assert spillover.purpose and set(spillover.cluster_ids).issubset(CLUSTER_IDS)
 
     print(f"  [OK] registry 探索 {len(specs)} 個訊號，契約與首屏早期預警全數通過")
 

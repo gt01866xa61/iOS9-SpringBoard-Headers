@@ -26,7 +26,10 @@ from registry import discover as _real_discover  # noqa: E402
 # 燈史導向 gitignore 的 cache/ 暫存檔——測試絕不可刪改 bot 維護的真實 data/history.json
 config.HISTORY_JSON = config.CACHE_DIR / "test_history.json"
 
-REQUIRED_TOP = {"schema_version", "generated_at", "master_light", "clusters", "errors", "changes"}
+REQUIRED_TOP = {
+    "schema_version", "generated_at", "master_light", "cluster_groups",
+    "clusters", "errors", "changes",
+}
 
 
 def _clean() -> None:
@@ -68,9 +71,11 @@ def _check_full_build() -> None:
         for c in cluster["signals"] + cluster["supporting"]:
             for k in ("widget", "light", "interpretation", "widget_data", "ok", "usable",
                       "stale", "degraded", "binding_errors", "data_as_of", "sources",
-                      "track", "shape", "order", "featured", "interpretations"):
+                      "purpose", "track", "shape", "order", "featured", "interpretations"):
                 assert k in c, f"{c['id']} 缺 {k}"
+            assert c["purpose"], f"{c['id']} 驗證目的不可為空"
             assert set(c["interpretations"]) >= {"green", "yellow", "red", "gray"}, c["id"]
+        assert cluster["purpose"], f"{cluster['id']} 主題目的不可為空"
     # 排序 = 擴充順序（order 欄位），不是檔名字母序
     assert [c["id"] for c in cl["signals"]] == ["yageo_rev_yoy", "mlcc_basket_ma", "ai_breadth"]
     assert [c["id"] for c in cl["supporting"]] == [
@@ -90,6 +95,12 @@ def _check_full_build() -> None:
 
     # 第二 cluster（導線架/封測）：order=2 排第二、demo 全綠；總燈仍取較嚴重的黃且點名主題
     assert len(data["clusters"]) == 3, [c["id"] for c in data["clusters"]]
+    assert data["cluster_groups"] == [{
+        "id": "ai_spillover",
+        "name": "AI 榮景外溢驗證",
+        "purpose": "AI 榮景有沒有從輝達、台積電、三大雲等少數巨頭，真正向外擴散。",
+        "cluster_ids": ["leadframe_osat", "onprem_hybrid"],
+    }]
     cl2 = data["clusters"][1]
     assert cl2["id"] == "leadframe_osat"
     assert [c["id"] for c in cl2["signals"]] == ["leadframe_rev_yoy", "leadframe_basket_ma"]

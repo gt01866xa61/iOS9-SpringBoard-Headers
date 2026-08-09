@@ -12,14 +12,26 @@ from dataclasses import dataclass
 class ClusterSpec:
     id: str
     name: str                      # "半導體 / 記憶體循環見頂觀察"
+    purpose: str                   # 本主題整體想驗證的問題
     master_label: dict[str, str]   # 每個燈號的主燈標語
     order: int                     # 顯示順序（小的在前）
+
+
+@dataclass(frozen=True)
+class ClusterGroupSpec:
+    """只改 UI 層級，不合併成員 cluster 的主燈投票。"""
+
+    id: str
+    name: str
+    purpose: str
+    cluster_ids: tuple[str, ...]
 
 
 CLUSTERS: tuple[ClusterSpec, ...] = (
     ClusterSpec(
         id="semi_memory_top",
         name="半導體 / 記憶體循環見頂觀察",
+        purpose="驗證半導體／記憶體榮景是否正從供不應求走向需求降溫或供給過剩。",
         master_label={
             "red": "主升段尾聲警示",
             "yellow": "留意轉弱",
@@ -31,6 +43,7 @@ CLUSTERS: tuple[ClusterSpec, ...] = (
     ClusterSpec(
         id="leadframe_osat",
         name="導線架 / 封測供應鏈觀察",
+        purpose="供應鏈外溢：AI／半導體需求有沒有真的傳到傳統封裝上游。",
         master_label={
             "red": "上游動能反轉警示",
             # 黃可能是「分歧」（一綠一黃）也可能是「同步鈍化」（兩黃），措辭要涵蓋兩者
@@ -43,6 +56,7 @@ CLUSTERS: tuple[ClusterSpec, ...] = (
     ClusterSpec(
         id="onprem_hybrid",
         name="地端 / 混合雲 AI 觀察",
+        purpose="客戶層外溢：AI 需求有沒有從三大雲下沉到企業自建／混合雲。",
         master_label={
             "red": "劇本反向",
             "yellow": "未驗證，維持假設",   # 預設狀態：沒看到大量拉貨前，先假設吃力不討好
@@ -54,6 +68,15 @@ CLUSTERS: tuple[ClusterSpec, ...] = (
     # 未來 cluster 直接在這裡 append 一列，例如：
     # ClusterSpec(id="rates_macro", name="利率 / 總經觀察",
     #             master_label={...}, order=4),
+)
+
+CLUSTER_GROUPS: tuple[ClusterGroupSpec, ...] = (
+    ClusterGroupSpec(
+        id="ai_spillover",
+        name="AI 榮景外溢驗證",
+        purpose="AI 榮景有沒有從輝達、台積電、三大雲等少數巨頭，真正向外擴散。",
+        cluster_ids=("leadframe_osat", "onprem_hybrid"),
+    ),
 )
 
 CLUSTER_IDS: frozenset[str] = frozenset(c.id for c in CLUSTERS)

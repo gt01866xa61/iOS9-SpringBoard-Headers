@@ -64,14 +64,20 @@ def _check_index() -> None:
     )), "缺資料未變不重畫／重畫後焦點還原"
     assert "miniFor" in html, "缺掃視層縮圖"
     assert all(token in html for token in (
-        "featured-signals", "供需失衡早期預警", "const featured=supporting.filter",
-        "const rest=supporting.filter", "缺正式資料不硬判",
+        "featured-signals", "記憶體供需反轉早期預警", "這四張共同驗證",
+        "const featured=supporting.filter", "const rest=supporting.filter", "缺正式資料不硬判",
     )), "首屏早期預警仍被補充面板摺疊"
 
-    # 3c. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
+    # 3c. 每卡固定可見驗證目的；兩個外溢 cluster 只在 UI 成組，仍保留各自主燈。
+    assert all(token in html for token in (
+        "spurpose", "sig.purpose", "cluster-pack", "AI 榮景外溢驗證",
+        "renderClusterGroup", "renderClusterLayout", "d.cluster_groups||[]",
+    )), "缺每卡驗證目的或 AI 外溢共同區塊"
+
+    # 3d. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
     assert "maxAsof" in html and "資料至" in html, "缺表格列資料至（asof）標示"
 
-    # 3d. row／卡片來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
+    # 3e. row／卡片來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
     assert all(token in html for token in (
         "function safeHTTPURL", 'url.protocol==="http:"', 'url.protocol==="https:"',
         'lower.startsWith("http://")', 'lower.startsWith("https://")',
@@ -80,7 +86,7 @@ def _check_index() -> None:
         "sig.data_as_of", "!sig.data_as_of&&sig.updated_at",
     )), "缺安全來源顯示或 data_as_of 優先顯示"
 
-    # 3e. 無障礙：狀態更新可被宣告、表格欄位與色點/走勢有文字、裝飾圖不進 accessibility tree
+    # 3f. 無障礙：狀態更新可被宣告、表格欄位與色點/走勢有文字、裝飾圖不進 accessibility tree
     assert 'aria-live="polite"' in html and 'role="status"' in html, "動態狀態缺 aria-live"
     assert 'scope="col"' in html and 'class="sr-only"' in html, "表格缺欄名／隱藏文字"
     assert 'aria-hidden="true"' in html and "走勢：${trendLabel" in html, "色點或走勢仍只靠視覺"
@@ -93,6 +99,9 @@ def _check_index() -> None:
     embedded = json.loads(m.group(1))
     assert embedded["schema_version"] == config.SCHEMA_VERSION
     assert embedded.get("clusters"), "內嵌 fallback 應含 clusters"
+    assert embedded.get("cluster_groups", [])[0]["cluster_ids"] == [
+        "leadframe_osat", "onprem_hybrid",
+    ]
 
     served = json.loads(config.WEB_DATA_JSON.read_text(encoding="utf-8"))
     assert embedded == served, "內嵌 fallback 與 web/data/signals.json 不一致"

@@ -30,18 +30,26 @@
      層級：h1 頁標 > .cname 主題大標(粗大+色點+狀態膠囊) > 卡片名(子標) */
   .cluster{background:#10141c;border:1px solid var(--line);border-radius:14px;
            padding:2px 10px 10px;margin:24px 0}
+  .cluster-pack{margin:24px 0;padding:12px;border:1px solid #29415f;border-radius:16px;
+                background:linear-gradient(180deg,rgba(56,139,253,.07),rgba(56,139,253,.025))}
+  .pack-kicker{font-size:10px;color:#8cb4ff;letter-spacing:1.4px;font-weight:700}
+  .pack-title{font-size:18px;line-height:1.35;margin:2px 0 1px;letter-spacing:.3px}
+  .pack-purpose{color:#c2d2e7;font-size:12.5px;line-height:1.5;margin-bottom:10px}
+  .pack-clusters>.cluster{margin:12px 0 0;background:#0f141d}
   .chead{display:flex;align-items:center;gap:9px;margin:12px 2px 2px;flex-wrap:wrap}
   .chead .dot{width:14px;height:14px}
   .chead .cname{font-weight:800;font-size:16.5px;letter-spacing:.3px}
   .cpill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
   .cvotes{font-size:11.5px;color:var(--muted)}
-  .creason{color:var(--muted);font-size:12px;margin:3px 2px 8px}
+  .cpurpose{color:#b9c4d0;font-size:12px;margin:3px 2px 1px}
+  .creason{color:var(--muted);font-size:11.5px;margin:1px 2px 8px}
   /* 首屏早期預警：卡片直接可見，但不等於計入主燈投票。 */
   .featured-signals{margin:14px 0 2px;padding:1px 10px 1px;border:1px solid #5c471d;
                     border-radius:12px;background:rgba(210,153,34,.055)}
   .featured-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:9px 2px 2px}
   .featured-title{font-size:13.5px;font-weight:750;color:#f0d9a0;margin:0}
   .featured-note{font-size:11px;color:var(--muted)}
+  .featured-purpose{font-size:12px;color:#d7c79f;line-height:1.5;margin:1px 2px 7px}
   /* 補充面板＝區塊內的摺疊托盤，不再是漂浮的一行字 */
   .cluster>details:not(.card){margin:10px 0 2px}
   .cluster>details:not(.card)>summary{border:1px dashed var(--line);border-radius:10px;
@@ -65,6 +73,7 @@
   .strip{display:inline-flex;gap:1px}
   .strip i{width:4px;height:12px;border-radius:1px;display:block}
   .mini{margin-left:auto;flex:0 0 auto}
+  .spurpose{display:block;color:#9fb3c8;font-size:12px;line-height:1.45;margin:4px 18px 0}
   .soneliner{display:block;color:#b9c4d0;font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sbody{padding:2px 12px 12px;border-top:1px dashed var(--line)}
   .banner.alert{background:#3a1214;color:#ffb9b3;border:1px solid #5c1d1d;display:block;font-weight:600}
@@ -121,8 +130,8 @@
 <script id="embedded" type="application/json">
 {
   "schema_version": 1,
-  "generated_at": "2026-08-02T19:52:04+08:00",
-  "generated_at_label": "2026/08/02 19:52 (台北)",
+  "generated_at": "2026-08-09T23:05:27+08:00",
+  "generated_at_label": "2026/08/09 23:05 (台北)",
   "tz": "Asia/Taipei (UTC+8)",
   "next_update_hint": "平日約每 30 分更新一次，假日每日補跑",
   "master_light": "yellow",
@@ -132,7 +141,7 @@
     {
       "id": "ai_breadth",
       "name": "AI 類股廣度",
-      "from": "red",
+      "from": "yellow",
       "to": "green"
     },
     {
@@ -154,15 +163,15 @@
       "to": "green"
     },
     {
-      "id": "raw_materials",
-      "name": "原物料成本（鈀 / 銀）",
+      "id": "mlcc_basket_ma",
+      "name": "被動元件籃子 vs 50MA",
       "from": "red",
-      "to": "green"
+      "to": "yellow"
     },
     {
       "id": "watchlist",
       "name": "觀測名單",
-      "from": "red",
+      "from": "yellow",
       "to": "green"
     },
     {
@@ -172,10 +181,22 @@
       "to": "red"
     }
   ],
+  "cluster_groups": [
+    {
+      "id": "ai_spillover",
+      "name": "AI 榮景外溢驗證",
+      "purpose": "AI 榮景有沒有從輝達、台積電、三大雲等少數巨頭，真正向外擴散。",
+      "cluster_ids": [
+        "leadframe_osat",
+        "onprem_hybrid"
+      ]
+    }
+  ],
   "clusters": [
     {
       "id": "semi_memory_top",
       "name": "半導體 / 記憶體循環見頂觀察",
+      "purpose": "驗證半導體／記憶體榮景是否正從供不應求走向需求降溫或供給過剩。",
       "order": 1,
       "master": {
         "light": "yellow",
@@ -204,7 +225,8 @@
           "featured": false,
           "unit": "% YoY",
           "cadence": "monthly",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:28+08:00",
+          "purpose": "驗證被動元件需求與漲價是否真的反映在龍頭營收。",
           "track": "龍頭國巨(2327)每月營收的年增率(YoY)——被動元件需求風向球，最難作假的硬數據，龍頭營收轉降常領先股價。",
           "shape": "長條一根根往下、由正轉負；關鍵看「連續下滑幾個月」，連降越久越接近反轉。",
           "order": 1,
@@ -265,34 +287,6 @@
           "prev_light": "yellow",
           "changed": true,
           "history": [
-            [
-              "2026-07-04",
-              "green"
-            ],
-            [
-              "2026-07-05",
-              "green"
-            ],
-            [
-              "2026-07-06",
-              "green"
-            ],
-            [
-              "2026-07-07",
-              "green"
-            ],
-            [
-              "2026-07-08",
-              "green"
-            ],
-            [
-              "2026-07-09",
-              "yellow"
-            ],
-            [
-              "2026-07-10",
-              "yellow"
-            ],
             [
               "2026-07-11",
               "yellow"
@@ -383,6 +377,34 @@
             ],
             [
               "2026-08-02",
+              "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "red"
             ]
           ]
@@ -401,7 +423,8 @@
           "featured": false,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證被動元件漲價與需求題材是否仍獲得市場資金認同。",
           "track": "被動四雄（國巨、華新科、禾伸堂、信昌電）等權股價籃對 50 日均線的位置與斜率——代理「漲價新聞還帶不帶得動股價」。",
           "shape": "線圖貼近→跌破 50MA、斜率由正轉平轉負；跌破且均線下彎＝漲價題材對股價失效。",
           "order": 2,
@@ -558,37 +581,9 @@
           },
           "data_as_of": "",
           "sources": [],
-          "prev_light": "yellow",
-          "changed": false,
+          "prev_light": "red",
+          "changed": true,
           "history": [
-            [
-              "2026-07-04",
-              "green"
-            ],
-            [
-              "2026-07-05",
-              "green"
-            ],
-            [
-              "2026-07-06",
-              "green"
-            ],
-            [
-              "2026-07-07",
-              "green"
-            ],
-            [
-              "2026-07-08",
-              "green"
-            ],
-            [
-              "2026-07-09",
-              "green"
-            ],
-            [
-              "2026-07-10",
-              "green"
-            ],
             [
               "2026-07-11",
               "green"
@@ -680,6 +675,34 @@
             [
               "2026-08-02",
               "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "red"
+            ],
+            [
+              "2026-08-05",
+              "red"
+            ],
+            [
+              "2026-08-06",
+              "red"
+            ],
+            [
+              "2026-08-07",
+              "red"
+            ],
+            [
+              "2026-08-08",
+              "red"
+            ],
+            [
+              "2026-08-09",
+              "yellow"
             ]
           ]
         },
@@ -697,7 +720,8 @@
           "featured": false,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證 AI 多頭是否由多數代表股共同支撐，而非只靠少數巨頭撐盤。",
           "track": "AI 代表籃（NVDA、AVGO、TSM、台積電、緯穎、國巨）站上 50 日均線的比例＝廣度；廣度先壞、指數才壞。",
           "shape": "儀表指針往左掉：>60% 廣泛強勢，跌破 60% 開始分歧，跌破 40% 全面轉弱。",
           "order": 3,
@@ -770,37 +794,9 @@
           },
           "data_as_of": "",
           "sources": [],
-          "prev_light": "red",
+          "prev_light": "yellow",
           "changed": true,
           "history": [
-            [
-              "2026-07-04",
-              "green"
-            ],
-            [
-              "2026-07-05",
-              "green"
-            ],
-            [
-              "2026-07-06",
-              "green"
-            ],
-            [
-              "2026-07-07",
-              "green"
-            ],
-            [
-              "2026-07-08",
-              "green"
-            ],
-            [
-              "2026-07-09",
-              "green"
-            ],
-            [
-              "2026-07-10",
-              "green"
-            ],
             [
               "2026-07-11",
               "green"
@@ -891,6 +887,34 @@
             ],
             [
               "2026-08-02",
+              "red"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "green"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -911,7 +935,8 @@
           "featured": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證記憶體族群是否在產能擴張後出現集體轉弱。",
           "track": "記憶體族群（美光(MU)、晟碟(SNDK)、三星、SK海力士、南亞科(2408)、華邦(2344)、威剛(3260)、群聯(8299)）站上均線的家數——南韓大擴產後，看記憶體股是否開始轉弱當佐證。",
           "shape": "表格裡綠點變紅點、迷你走勢翻下；跌破均線的家數越多，循環越接近轉折。",
           "order": 4,
@@ -1233,34 +1258,6 @@
           "changed": false,
           "history": [
             [
-              "2026-07-04",
-              "green"
-            ],
-            [
-              "2026-07-05",
-              "green"
-            ],
-            [
-              "2026-07-06",
-              "green"
-            ],
-            [
-              "2026-07-07",
-              "yellow"
-            ],
-            [
-              "2026-07-08",
-              "yellow"
-            ],
-            [
-              "2026-07-09",
-              "green"
-            ],
-            [
-              "2026-07-10",
-              "green"
-            ],
-            [
               "2026-07-11",
               "green"
             ],
@@ -1351,6 +1348,34 @@
             [
               "2026-08-02",
               "red"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "red"
+            ],
+            [
+              "2026-08-05",
+              "red"
+            ],
+            [
+              "2026-08-06",
+              "red"
+            ],
+            [
+              "2026-08-07",
+              "red"
+            ],
+            [
+              "2026-08-08",
+              "red"
+            ],
+            [
+              "2026-08-09",
+              "red"
             ]
           ]
         },
@@ -1368,7 +1393,8 @@
           "featured": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證被動元件漲價是否仍有金屬成本上升作為支撐。",
           "track": "鈀(PA=F)、銀(SI=F)期貨價——被動元件/半導體的成本推力：金屬價格趨勢向上＝成本推升撐漲價邏輯，趨勢向下＝漲價動能減弱。",
           "shape": "看「站上50MA」欄的點：兩點同綠＝成本推升；同紅＝成本推力轉弱；分歧＝訊號不明。",
           "order": 5,
@@ -1476,37 +1502,9 @@
           },
           "data_as_of": "",
           "sources": [],
-          "prev_light": "red",
-          "changed": true,
+          "prev_light": "green",
+          "changed": false,
           "history": [
-            [
-              "2026-07-04",
-              "red"
-            ],
-            [
-              "2026-07-05",
-              "red"
-            ],
-            [
-              "2026-07-06",
-              "red"
-            ],
-            [
-              "2026-07-07",
-              "red"
-            ],
-            [
-              "2026-07-08",
-              "red"
-            ],
-            [
-              "2026-07-09",
-              "red"
-            ],
-            [
-              "2026-07-10",
-              "red"
-            ],
             [
               "2026-07-11",
               "red"
@@ -1597,6 +1595,34 @@
             ],
             [
               "2026-08-02",
+              "yellow"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "green"
+            ],
+            [
+              "2026-08-08",
+              "green"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -1613,7 +1639,8 @@
           "featured": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:28+08:00",
+          "purpose": "驗證跨主題代表股是否出現同步轉弱，而非單一標的雜訊。",
           "track": "跨主題最想快速體檢的個股（國巨(2327)、華新科(2492)、台積電(2330)、南亞科(2408)、緯穎(6669)、輝達(NVDA)、美光(MU)）——最快的一眼個股體檢。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA，迷你走勢看方向；紅點變多＝名單體質轉弱。",
           "order": 6,
@@ -1896,37 +1923,9 @@
           },
           "data_as_of": "",
           "sources": [],
-          "prev_light": "red",
+          "prev_light": "yellow",
           "changed": true,
           "history": [
-            [
-              "2026-07-04",
-              "green"
-            ],
-            [
-              "2026-07-05",
-              "green"
-            ],
-            [
-              "2026-07-06",
-              "green"
-            ],
-            [
-              "2026-07-07",
-              "green"
-            ],
-            [
-              "2026-07-08",
-              "green"
-            ],
-            [
-              "2026-07-09",
-              "green"
-            ],
-            [
-              "2026-07-10",
-              "green"
-            ],
             [
               "2026-07-11",
               "green"
@@ -2017,6 +2016,34 @@
             ],
             [
               "2026-08-02",
+              "red"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -2035,7 +2062,8 @@
           "featured": true,
           "unit": "%",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證記憶體廠的定價權與營運槓桿是否開始由高峰鬆動。",
           "track": "記憶體業高固定成本下的財報毛利率變化。先用美光 GAAP 合併口徑作為可連續追蹤的代理；它不是整個產業的平均，也不代替其他記憶體廠。",
           "shape": "看最新一季比上一季的 pp 變化：續升＝綠；下降至少 1pp＝黃；單季降至少 5pp、或連兩季各降至少 1pp＝紅。重點是「開始鬆動」，不是毛利率絕對值高不高。",
           "order": 7,
@@ -2085,11 +2113,39 @@
               "source": "demo"
             }
           ],
-          "prev_light": null,
+          "prev_light": "green",
           "changed": false,
           "history": [
             [
               "2026-08-02",
+              "green"
+            ],
+            [
+              "2026-08-03",
+              "green"
+            ],
+            [
+              "2026-08-04",
+              "green"
+            ],
+            [
+              "2026-08-05",
+              "green"
+            ],
+            [
+              "2026-08-06",
+              "green"
+            ],
+            [
+              "2026-08-07",
+              "green"
+            ],
+            [
+              "2026-08-08",
+              "green"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -2110,7 +2166,8 @@
           "featured": true,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證 AI 基礎建設最大買家是否仍願意持續加碼需求。",
           "track": "Alphabet、Microsoft、Meta 在正式法說給出的下一期資本支出方向。大型買家若先踩煞車，通常比供應鏈營收更早顯示需求端轉折。",
           "shape": "每家公司只看最新一筆正式指引：三家皆加碼＝綠；有維持或缺資料＝黃；任一家明說放緩或削減＝紅。這張表不把推測、媒體轉述或缺資料當成公司指引。",
           "order": 8,
@@ -2190,11 +2247,39 @@
               "source": "demo"
             }
           ],
-          "prev_light": null,
+          "prev_light": "green",
           "changed": false,
           "history": [
             [
               "2026-08-02",
+              "green"
+            ],
+            [
+              "2026-08-03",
+              "green"
+            ],
+            [
+              "2026-08-04",
+              "green"
+            ],
+            [
+              "2026-08-05",
+              "green"
+            ],
+            [
+              "2026-08-06",
+              "green"
+            ],
+            [
+              "2026-08-07",
+              "green"
+            ],
+            [
+              "2026-08-08",
+              "green"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -2214,7 +2299,8 @@
           "featured": true,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證庫存是否已悄悄累積，讓敏感的現貨價領先合約價轉弱。",
           "track": "同一 DRAM 品項的現貨價與合約價。現貨是零買市場，通常比合約更敏感；本卡只在現貨先鬆、合約仍撐時亮紅。",
           "shape": "每月補一筆相同品項與幣別的快照。首筆灰＝建立基準；兩者都不跌＝綠；走勢混合＝黃；現貨月跌至少 3%、合約跌幅不超過 1%＝紅。",
           "order": 9,
@@ -2276,7 +2362,7 @@
           "changed": false,
           "history": [
             [
-              "2026-08-02",
+              "2026-08-09",
               "red"
             ]
           ]
@@ -2296,7 +2382,8 @@
           "featured": true,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證中國新增 DRAM 供給是否已從擴產計畫走到實際大量量產。",
           "track": "CXMT 對一般 DRAM 的新增供給，依序區分計畫、施工、量產、延後與設備限制。它追的是「產能何時真的落地」，不是把新聞裡的擴產計畫當成已量產。",
           "shape": "事件表由計畫/施工/小量驗證（黃）走到可溯源的大型量產（紅）；若近期只有延後或設備限制（綠），表示本卡尚未看到供給加速落地。",
           "order": 10,
@@ -2353,11 +2440,39 @@
               "source": "demo"
             }
           ],
-          "prev_light": null,
+          "prev_light": "yellow",
           "changed": false,
           "history": [
             [
               "2026-08-02",
+              "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "yellow"
             ]
           ]
@@ -2367,6 +2482,7 @@
     {
       "id": "leadframe_osat",
       "name": "導線架 / 封測供應鏈觀察",
+      "purpose": "供應鏈外溢：AI／半導體需求有沒有真的傳到傳統封裝上游。",
       "order": 2,
       "master": {
         "light": "green",
@@ -2394,7 +2510,8 @@
           "featured": false,
           "unit": "% YoY",
           "cadence": "monthly",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證 AI／半導體需求外溢是否真的灌進導線架業者營收。",
           "track": "導線架四雄（順德(2351)、長科(6548)、界霖(5285)、一詮(2486)）各自的月營收 YoY 動能——缺貨與漲價最終都要灌進營收；四家並列看「全面延續還是一家獨撐」，單一公司的轉單、基期、副業雜訊（順德含文具、一詮多 LED 支架）騙不了整排。",
           "shape": "每列一家：點＝動能燈（綠 未連降／黃 連降1月／紅 連降≥2月），線＝近12月 YoY 走勢；紅點變多＝產業級轉弱，只有一家紅＝公司個案。",
           "order": 7,
@@ -2611,6 +2728,34 @@
             ],
             [
               "2026-08-02",
+              "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -2629,7 +2774,8 @@
           "featured": false,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證 AI／半導體需求外溢的導線架題材，是否獲得市場資金認同。",
           "track": "導線架四雄（順德(2351)、長科(6548)、界霖(5285)、一詮(2486)）等權股價籃對 50 日均線的位置與斜率——「最缺不一定最漲」，缺貨是基本面，這條線看資金面到底買不買單。",
           "shape": "籃子貼著均線橫盤＝資金還沒回來；跌破且均線下彎＝題材失寵；站穩且向上＝資金開始買單缺貨故事。",
           "order": 8,
@@ -2875,6 +3021,34 @@
             ],
             [
               "2026-08-02",
+              "red"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "red"
+            ],
+            [
+              "2026-08-05",
+              "red"
+            ],
+            [
+              "2026-08-06",
+              "red"
+            ],
+            [
+              "2026-08-07",
+              "red"
+            ],
+            [
+              "2026-08-08",
+              "red"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -2895,7 +3069,8 @@
           "featured": false,
           "unit": "",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證導線架外溢行情是否全面，而非單一公司或單靠銅價推升。",
           "track": "導線架四雄逐檔體檢＋銅期貨(HG=F)——導線架報價隨國際銅價連動：股票列看誰站上均線，銅列看成本推力還在不在。",
           "shape": "一列一檔：綠/紅點＝站上/跌破 50MA；銅列走揚＝成本推升撐漲價、走弱＝漲價動能減弱（銅不計入本卡燈號）。",
           "order": 9,
@@ -3197,6 +3372,34 @@
             ],
             [
               "2026-08-02",
+              "red"
+            ],
+            [
+              "2026-08-03",
+              "red"
+            ],
+            [
+              "2026-08-04",
+              "red"
+            ],
+            [
+              "2026-08-05",
+              "red"
+            ],
+            [
+              "2026-08-06",
+              "red"
+            ],
+            [
+              "2026-08-07",
+              "red"
+            ],
+            [
+              "2026-08-08",
+              "red"
+            ],
+            [
+              "2026-08-09",
               "green"
             ]
           ]
@@ -3206,6 +3409,7 @@
     {
       "id": "onprem_hybrid",
       "name": "地端 / 混合雲 AI 觀察",
+      "purpose": "客戶層外溢：AI 需求有沒有從三大雲下沉到企業自建／混合雲。",
       "order": 3,
       "master": {
         "light": "yellow",
@@ -3234,7 +3438,8 @@
           "featured": false,
           "unit": "%",
           "cadence": "trading_day",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證市場是否正提前押注企業地端／混合雲 AI 需求。",
           "track": "DELL＋HPE 等權股價籃對 50 日均線——賣地端 AI 伺服器的兩家指標商（Dell 股價混 PC 與 neocloud 生意、HPE 較純，溫度計有稀釋）。股價天天跳、常比季報早反映；這是「提前聞味道」的溫度計，單獨有雜訊，要跟訂單卡互相印證。",
           "shape": "籃子先站上且向上＝有人先知道了什麼（等下一季訂單驗證）；訂單好但籃子橫盤＝市場不買帳——與導線架組「兩條線」同一套讀法。",
           "order": 10,
@@ -3469,6 +3674,34 @@
             [
               "2026-08-02",
               "green"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "green"
+            ],
+            [
+              "2026-08-05",
+              "green"
+            ],
+            [
+              "2026-08-06",
+              "green"
+            ],
+            [
+              "2026-08-07",
+              "green"
+            ],
+            [
+              "2026-08-08",
+              "green"
+            ],
+            [
+              "2026-08-09",
+              "green"
             ]
           ]
         },
@@ -3487,7 +3720,8 @@
           "featured": false,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證企業是否真的掏錢採購地端／混合雲 AI 伺服器。",
           "track": "HPE 每季 AI 系統新訂單（官方：backlog 主要來自企業與主權政府）＝「企業掏錢買地端 AI」最可溯源的公開數字；Dell 為對照列（量體大但混 neocloud）。三大雲不公布盒子數字，錢的痕跡在幫它們裝機的伺服器商季報裡。",
           "shape": "看 HPE 列的動能燈：最新披露訂單較上一已知披露期明顯變大（+20%↑）＝拉貨放量；連續財季連縮兩季或單次明顯縮＝反向。缺季比較不稱 QoQ。季更，是確認器。",
           "order": 11,
@@ -3650,6 +3884,34 @@
             [
               "2026-08-02",
               "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
+              "yellow"
             ]
           ]
         }
@@ -3669,7 +3931,8 @@
           "featured": false,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證地端 AI 是否從供應商宣傳走到具名企業採用。",
           "track": "「誰敢把名字借給這個方案」——三大雲盒子的可溯源事件簿：具名企業背書、產品 GA、供應國擴張、反向事件。雲廠自吹不算數，具名站台才算。",
           "shape": "名單加速變長、且出現普通產業（零售/製造）名字＝從管制行業剛需擴散到一般企業；只有雲廠自家 GA/擴國而無客戶具名＝供應側自嗨，亮不了綠；取消案例變多＝反向。",
           "order": 12,
@@ -3854,6 +4117,34 @@
             [
               "2026-08-02",
               "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
+              "yellow"
             ]
           ]
         },
@@ -3870,7 +4161,8 @@
           "featured": false,
           "unit": "",
           "cadence": "manual",
-          "updated_at": "2026-08-02T19:52:04+08:00",
+          "updated_at": "2026-08-09T23:05:27+08:00",
+          "purpose": "驗證企業模型支出是否往開源移動，提供地端／混合雲需求的間接佐證。",
           "track": "Menlo 半年更調查的兩條線：開源占比（風向）＋「占比×模型API總支出」的推算開源額（體量）——分開看才不會把「占比降」誤讀成「開源萎縮」：總量暴增期，占比腰斬的同時絕對額可能照樣成長。",
           "shape": "看兩列的方向組合：占比回升超過 1pp＝風向轉開源（綠）；±1pp 視為持平；占比↓但推算額↑＝開源跑輸大盤但仍在長（黃）；推算額↓＝真萎縮（紅）。",
           "order": 13,
@@ -4055,6 +4347,34 @@
             ],
             [
               "2026-08-02",
+              "yellow"
+            ],
+            [
+              "2026-08-03",
+              "yellow"
+            ],
+            [
+              "2026-08-04",
+              "yellow"
+            ],
+            [
+              "2026-08-05",
+              "yellow"
+            ],
+            [
+              "2026-08-06",
+              "yellow"
+            ],
+            [
+              "2026-08-07",
+              "yellow"
+            ],
+            [
+              "2026-08-08",
+              "yellow"
+            ],
+            [
+              "2026-08-09",
               "yellow"
             ]
           ]
@@ -4265,6 +4585,7 @@ function renderSignal(sig){
   const badge=sig.stale?'<span class="badge">資料較舊</span>':"";
   // 變燈徽章：惡化(嚴重度上升)紅底、好轉綠底——反轉觀測的主角是「變化」
   const chg=sig.changed?`<span class="chg" style="background:${SEV[sig.light]>SEV[sig.prev_light]?COLORS.red:COLORS.green}">${LIGHT_ZH[sig.prev_light]||"?"}→${LIGHT_ZH[sig.light]||"?"}</span>`:"";
+  const purpose=sig.purpose?`<span class="spurpose">${esc(sig.purpose)}</span>`:"";
   const track=sig.track?`<div class="kv"><span class="klabel">追什麼</span>${esc(sig.track)}</div>`:"";
   const shape=sig.shape?`<div class="kv"><span class="klabel">怎麼看</span>${esc(sig.shape)}</div>`:"";
   // meta：月更訊號標明「資料至哪個月」，其餘標更新節奏，避免把抓取時間誤讀成資料新鮮度
@@ -4276,6 +4597,7 @@ function renderSignal(sig){
   return `<details class="card ${sig.light}" data-id="${escAttr(sig.id)}">
     <summary>
       <span class="srow"><span class="sr-only">${LIGHT_ZH[sig.light]||"灰"}燈：</span><span class="sdot" aria-hidden="true" style="background:${COLORS[sig.light]}"></span><span class="sname">${esc(sig.name)}${badge}${chg}</span><span class="hval">${esc(sig.value_label)}</span><span class="chev" aria-hidden="true">▼</span></span>
+      ${purpose}
       <span class="srow2">${stripHTML(sig.history)}<span class="mini">${miniFor(sig)}</span></span>
       <span class="soneliner">${esc(sig.interpretation)}</span>
     </summary>
@@ -4300,7 +4622,8 @@ function renderCluster(c){
     <span class="cname">${esc(c.name)}</span>
     <span class="cpill" style="background:${pc}20;color:${pillFg};border:1px solid ${pc}55">${esc(m.label)}</span>
     <span class="cvotes">${esc(votes)}</span></div>
-    <div class="creason">${esc(m.reason)}</div>`;
+    <div class="cpurpose">${esc(c.purpose||"")}</div>
+    <div class="creason">目前：${esc(m.reason)}</div>`;
   // 今天變燈的卡浮到最上面，其餘依擴充順序
   const bySort=(a,b)=>((b.changed?1:0)-(a.changed?1:0))||((a.order||0)-(b.order||0));
   const sigs=(c.signals||[]).slice().sort(bySort).map(renderSignal).join("");
@@ -4308,9 +4631,10 @@ function renderCluster(c){
   // featured 與 in_master 是兩個獨立概念：首屏可見，不代表能改變主燈。
   const featured=supporting.filter(sig=>sig.featured);
   const featuredHTML=featured.length
-    ? `<section class="featured-signals" aria-label="供需失衡早期預警">
-         <div class="featured-head"><h3 class="featured-title">供需失衡早期預警（${featured.length}）</h3>
+    ? `<section class="featured-signals" aria-label="記憶體供需反轉早期預警">
+         <div class="featured-head"><h3 class="featured-title">記憶體供需反轉早期預警（${featured.length}）</h3>
          <span class="featured-note">佐證用，不計入主燈・缺正式資料不硬判</span></div>
+         <div class="featured-purpose">這四張共同驗證：記憶體榮景是否正從恐慌搶貨走向庫存累積與產能過剩。</div>
          ${featured.map(renderSignal).join("")}
        </section>`
     : "";
@@ -4319,6 +4643,32 @@ function renderCluster(c){
     ? `<details data-id="sup-${escAttr(c.id)}"><summary>補充面板（${rest.length}）· 佐證用，不計入主燈</summary>${rest.map(renderSignal).join("")}</details>`
     : "";
   return `<div class="cluster">${head}${sigs}${featuredHTML}${sup}</div>`;
+}
+
+function renderClusterGroup(group, clustersById){
+  const members=(group.cluster_ids||[]).map(id=>clustersById.get(id)).filter(Boolean);
+  if(!members.length) return "";
+  return `<section class="cluster-pack" aria-label="${escAttr(group.name)}">
+    <div class="pack-kicker">共同觀察</div>
+    <h2 class="pack-title">${esc(group.name)}</h2>
+    <div class="pack-purpose">${esc(group.purpose||"")}</div>
+    <div class="pack-clusters">${members.map(renderCluster).join("")}</div>
+  </section>`;
+}
+
+function renderClusterLayout(clusters, groups){
+  const sorted=clusters.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const byId=new Map(sorted.map(c=>[c.id,c]));
+  const groupByCluster=new Map();
+  (groups||[]).forEach(group=>(group.cluster_ids||[]).forEach(id=>groupByCluster.set(id,group)));
+  const renderedGroups=new Set();
+  return sorted.map(cluster=>{
+    const group=groupByCluster.get(cluster.id);
+    if(!group) return renderCluster(cluster);
+    if(renderedGroups.has(group.id)) return "";
+    renderedGroups.add(group.id);
+    return renderClusterGroup(group,byId);
+  }).join("");
 }
 
 let lastRenderedJSON="";
@@ -4351,7 +4701,7 @@ function render(d, live){
     }
 
     document.getElementById("root").innerHTML=
-      (d.clusters||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(renderCluster).join("");
+      renderClusterLayout(d.clusters||[],d.cluster_groups||[]);
 
     keepOpen.forEach(id=>{
       const el=document.querySelector(`details[data-id="${CSS.escape(id)}"]`);

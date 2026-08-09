@@ -65,8 +65,9 @@ class SignalSpec:
     compute: Callable[[dict], SignalResult]    # 純函式 inputs -> SignalResult
     interpretations: Mapping[Light, str]       # 四個燈號各一句白話（回答：狀態含義）
     cadence: Cadence                           # 更新節奏
-    track: str                                 # 回答①：白話「在盯什麼、為什麼重要」（卡片名稱下方顯示）
-    shape: str                                 # 回答②：白話「動起來長什麼樣」（卡片圖表下方顯示）
+    purpose: str                               # 固定副標：這張卡想驗證什麼（收合時也可見）
+    track: str                                 # 回答②：白話「實際盯什麼、為什麼重要」（展開後顯示）
+    shape: str                                 # 回答③：白話「動起來長什麼樣」（卡片圖表下方顯示）
     order: int                                 # 同 cluster 內顯示順序 = 擴充順序（先加的在前）
     in_master: bool = True                     # 是否計入所屬 cluster 的主燈投票
     featured: bool = False                     # 首屏獨立顯示；可與 in_master=False 並存

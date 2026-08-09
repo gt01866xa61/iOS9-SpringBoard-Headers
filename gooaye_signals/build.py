@@ -13,7 +13,7 @@ import sys
 from datetime import datetime
 
 import config
-from core.clusters import CLUSTERS, master_light
+from core.clusters import CLUSTER_GROUPS, CLUSTERS, master_light
 from core.spec import LIGHT_SEVERITY, SignalResult, SignalSpec
 from fetchers import SOURCE_REGISTRY
 from fetchers.cache import DayCache
@@ -45,8 +45,8 @@ def _run_one(spec: SignalSpec, cache: DayCache) -> dict:
         "tags": list(spec.tags), "in_master": spec.in_master, "featured": spec.featured,
         "unit": spec.unit,
         "cadence": spec.cadence, "updated_at": now,
-        # 三個必答問題（①追什麼 ②怎麼看 ③各燈含義）＋擴充順序——spec 層 metadata，永遠新鮮
-        "track": spec.track, "shape": spec.shape, "order": spec.order,
+        # 四個必答問題（①驗證目的 ②追什麼 ③怎麼看 ④各燈含義）＋擴充順序——永遠新鮮
+        "purpose": spec.purpose, "track": spec.track, "shape": spec.shape, "order": spec.order,
         "interpretations": dict(spec.interpretations),
     }
 
@@ -227,7 +227,7 @@ def build_payload() -> tuple[dict, list[dict], dict, bool]:
         if LIGHT_SEVERITY[ml] > LIGHT_SEVERITY[top]:
             top = ml
         clusters_out.append({
-            "id": cspec.id, "name": cspec.name, "order": cspec.order,
+            "id": cspec.id, "name": cspec.name, "purpose": cspec.purpose, "order": cspec.order,
             "master": {"light": ml, "label": cspec.master_label[ml],
                        "reason": reason, "votes": votes},
             "signals": [c for c in group if c["in_master"]],
@@ -254,6 +254,11 @@ def build_payload() -> tuple[dict, list[dict], dict, bool]:
         "master_prev": master_prev,
         "master_reason": top_reason,
         "changes": changes,
+        "cluster_groups": [
+            {"id": group.id, "name": group.name, "purpose": group.purpose,
+             "cluster_ids": list(group.cluster_ids)}
+            for group in CLUSTER_GROUPS
+        ],
         "clusters": clusters_out,
         "errors": errors,
     }

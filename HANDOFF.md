@@ -1,6 +1,6 @@
 # HANDOFF.md — 股癌訊號燈 多 agent 交接文件
 
-最後更新：2026-08-02（新增記憶體循環四條早期預警與維護契約）。
+最後更新：2026-08-09（新增每卡驗證目的副標，並把兩個 AI 外溢主題做 UI 分組）。
 任何 agent（Codex、Claude、其他）接手前先讀完本檔。本檔是活文件——交接資訊變動時直接改這份。
 
 ---
@@ -24,8 +24,9 @@
    的內容，寧可不顯示。手動維護的數據也一樣——每個數據點必附出處（src 欄位）。
 3. **分工鐵律**：使用者口述訊號、agent 實作——交付到「訊號忠實呈現（追什麼／怎麼看
    ／各燈含義）」為止。**不提供投資判斷、不附下單建議、不加投資免責叮嚀**。
-4. 每個訊號必答三問：①追什麼 ②變化長什麼樣 ③各燈分別什麼意思——這三個是
-   SignalSpec 的一等公民欄位（track / shape / interpretations）。
+4. 每個訊號必答四問：①驗證什麼 ②追什麼 ③變化長什麼樣 ④各燈分別什麼意思——
+   都是 SignalSpec 的一等公民欄位（purpose / track / shape / interpretations）。`purpose`
+   必須是一句固定可見的副標，不能只把目的藏在展開內容。
 
 ## 2. 目前進度（2026-07-18）
 
@@ -37,6 +38,9 @@
 | `semi_memory_top`（order 1）| 半導體/記憶體循環見頂 | 國巨月營收YoY、被動元件籃vs50MA、AI廣度 | 記憶體強弱表、鈀/銀、觀測名單、毛利率／CSP CapEx／現貨合約價差／CXMT量產 |
 | `leadframe_osat`（order 2）| 導線架/封測供應鏈（EP678）| 四雄營收動能表、四雄籃vs50MA | 四雄+銅體檢表 |
 | `onprem_hybrid`（order 3）| 地端/混合雲 AI（Satya 反向資訊悖論討論串）| DELL+HPE籃、HPE訂單動能（手動季更）| 事件簿、Menlo開源風向×體量 |
+
+前端把 `leadframe_osat` 與 `onprem_hybrid` 共同包在「AI 榮景外溢驗證」區塊：前者驗證
+供應鏈外溢，後者驗證客戶層外溢。**只合併 UI，不合併兩個 cluster 的主燈投票。**
 
 **今日燈況（07-18，來源 data/history.json）**：總燈黃。cluster1 黃但**內含 AI 廣度紅**
 （紅1黃2綠0，三主題中最接近轉紅＝主升段尾聲警示）；cluster2 黃（上週綠，基本面資金面
@@ -61,6 +65,8 @@
 - **前端**：單檔 `web/index.html`，5 種 widget 泛型分派（light_card/bar_chart/gauge/
   sparkline/table），零函式庫零 CDN。新增用既有 widget 的訊號**不用碰前端**。
   內嵌 fallback 由 `web/build_embed.py` 重新產生。
+- **說明層級**：每張卡收合時固定顯示 `purpose`；展開後才顯示較長的 `track`／`shape`／
+  `interpretations`。`CLUSTER_GROUPS` 只控制共同 UI 外框，不改 cluster 或總燈計算。
 - **韌性**：per-binding/per-signal 隔離、部分資料可降級續算、last-good+stale、原子寫、整輪保底；
   時區鎖死 fixed UTC+8（禁 IANA/ZoneInfo）。
 - **資料狀態**：卡片分開標示 `ok`（本輪完整無錯）、`usable`（仍可判讀）、`degraded`
