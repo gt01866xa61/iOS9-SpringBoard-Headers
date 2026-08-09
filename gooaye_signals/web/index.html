@@ -12,44 +12,44 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
-       font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+       font:22.5px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
        -webkit-font-smoothing:antialiased}
-  .wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
-  h1{font-size:20px;font-weight:800;margin:2px 0 2px;letter-spacing:.5px}
-  .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
-  .banner{border-radius:8px;padding:8px 10px;font-size:13px;margin:10px 0;display:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:24px 21px 60px}
+  h1{font-size:30px;font-weight:800;margin:2px 0 2px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:18px;margin-bottom:14px}
+  .banner{border-radius:8px;padding:8px 10px;font-size:19.5px;margin:10px 0;display:none}
   .banner.sample{background:#1c2333;color:#c9d1d9;border:1px solid var(--line);display:block}
   .banner.stale{background:#3a2d12;color:#f0d9a0;border:1px solid #5c471d;display:block}
   .master{display:flex;align-items:center;gap:10px;background:var(--card);
           border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
-  .master .dot{width:18px;height:18px;flex:0 0 auto}
-  .master b{font-size:17px}
-  .master .rr{color:var(--muted);font-size:12px;margin-top:2px}
-  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .master .dot{width:27px;height:27px;flex:0 0 auto}
+  .master b{font-size:25.5px}
+  .master .rr{color:var(--muted);font-size:18px;margin-top:2px}
+  .dot{width:18px;height:18px;border-radius:50%;display:inline-block}
   /* 主題區塊＝有自己底色與邊框的「段落容器」——區塊界線一眼可見；
      層級：h1 頁標 > .cname 主題大標(粗大+色點+狀態膠囊) > 卡片名(子標) */
   .cluster{background:#10141c;border:1px solid var(--line);border-radius:14px;
            padding:2px 10px 10px;margin:24px 0}
   .cluster-pack{margin:24px 0;padding:12px;border:1px solid #29415f;border-radius:16px;
                 background:linear-gradient(180deg,rgba(56,139,253,.07),rgba(56,139,253,.025))}
-  .pack-kicker{font-size:10px;color:#8cb4ff;letter-spacing:1.4px;font-weight:700}
-  .pack-title{font-size:18px;line-height:1.35;margin:2px 0 1px;letter-spacing:.3px}
-  .pack-purpose{color:#c2d2e7;font-size:12.5px;line-height:1.5;margin-bottom:10px}
+  .pack-kicker{font-size:15px;color:#8cb4ff;letter-spacing:1.4px;font-weight:700}
+  .pack-title{font-size:27px;line-height:1.35;margin:2px 0 1px;letter-spacing:.3px}
+  .pack-purpose{color:#c2d2e7;font-size:24px;line-height:1.45;margin-bottom:10px}
   .pack-clusters>.cluster{margin:12px 0 0;background:#0f141d}
   .chead{display:flex;align-items:center;gap:9px;margin:12px 2px 2px;flex-wrap:wrap}
-  .chead .dot{width:14px;height:14px}
-  .chead .cname{font-weight:800;font-size:16.5px;letter-spacing:.3px}
-  .cpill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
-  .cvotes{font-size:11.5px;color:var(--muted)}
-  .cpurpose{color:#b9c4d0;font-size:12px;margin:3px 2px 1px}
-  .creason{color:var(--muted);font-size:11.5px;margin:1px 2px 8px}
+  .chead .dot{width:21px;height:21px}
+  .chead .cname{font-weight:800;font-size:24.75px;letter-spacing:.3px}
+  .cpill{font-size:17.25px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .cvotes{font-size:17.25px;color:var(--muted)}
+  .cpurpose{color:#c8d2dd;font-size:22.5px;line-height:1.45;margin:4px 2px 2px}
+  .creason{color:var(--muted);font-size:17.25px;margin:1px 2px 8px}
   /* 首屏早期預警：卡片直接可見，但不等於計入主燈投票。 */
   .featured-signals{margin:14px 0 2px;padding:1px 10px 1px;border:1px solid #5c471d;
                     border-radius:12px;background:rgba(210,153,34,.055)}
   .featured-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:9px 2px 2px}
-  .featured-title{font-size:13.5px;font-weight:750;color:#f0d9a0;margin:0}
-  .featured-note{font-size:11px;color:var(--muted)}
-  .featured-purpose{font-size:12px;color:#d7c79f;line-height:1.5;margin:1px 2px 7px}
+  .featured-title{font-size:20.25px;font-weight:750;color:#f0d9a0;margin:0}
+  .featured-note{font-size:16.5px;color:var(--muted)}
+  .featured-purpose{font-size:18px;color:#d7c79f;line-height:1.5;margin:1px 2px 7px}
   /* 補充面板＝區塊內的摺疊托盤，不再是漂浮的一行字 */
   .cluster>details:not(.card){margin:10px 0 2px}
   .cluster>details:not(.card)>summary{border:1px dashed var(--line);border-radius:10px;
@@ -64,52 +64,68 @@
   details.card>summary{list-style:none;cursor:pointer;padding:10px 12px;display:block}
   details.card>summary::-webkit-details-marker{display:none}
   .srow{display:flex;align-items:baseline;gap:8px;min-width:0}
-  .sdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;align-self:center}
+  .sdot{width:15px;height:15px;border-radius:50%;flex:0 0 auto;align-self:center}
   .sname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-  .chg{font-size:11px;color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:600}
-  .chev{color:var(--muted);font-size:9px;flex:0 0 auto;transition:transform .15s}
+  .chg{font-size:16.5px;color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:600}
+  .chev{color:var(--muted);font-size:13.5px;flex:0 0 auto;transition:transform .15s}
   details[open]>summary .chev{transform:rotate(180deg)}
   .srow2{display:flex;align-items:center;gap:10px;margin-top:7px}
   .strip{display:inline-flex;gap:1px}
-  .strip i{width:4px;height:12px;border-radius:1px;display:block}
+  .strip i{width:6px;height:18px;border-radius:1px;display:block}
   .mini{margin-left:auto;flex:0 0 auto}
-  .spurpose{display:block;color:#9fb3c8;font-size:12px;line-height:1.45;margin:4px 18px 0}
-  .soneliner{display:block;color:#b9c4d0;font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .spurpose{display:block;color:#aebfd1;font-size:18px;line-height:1.45;margin:4px 18px 0}
+  .soneliner{display:block;color:#b9c4d0;font-size:18px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sbody{padding:2px 12px 12px;border-top:1px dashed var(--line)}
   .banner.alert{background:#3a1214;color:#ffb9b3;border:1px solid #5c1d1d;display:block;font-weight:600}
   .banner.quiet{background:transparent;border:1px dashed var(--line);color:var(--muted);display:block}
   .hrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
   .hname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .hval{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;flex:0 0 auto}
-  .badge{font-size:11px;background:var(--yellow);color:#000;border-radius:6px;padding:1px 6px;margin-left:6px}
+  .badge{font-size:16.5px;background:var(--yellow);color:#000;border-radius:6px;padding:1px 6px;margin-left:6px}
   .viz{margin:8px 0 4px}
   .viz svg{display:block}
-  .interp{color:#c9d1d9;font-size:13px;margin-top:6px}
-  .kv{font-size:12.5px;color:#b9c4d0;margin-top:7px;line-height:1.5}
-  .klabel{display:inline-block;font-size:10px;color:var(--muted);border:1px solid var(--line);
+  .interp{color:#c9d1d9;font-size:19.5px;margin-top:6px}
+  .kv{font-size:18.75px;color:#b9c4d0;margin-top:7px;line-height:1.5}
+  .klabel{display:inline-block;font-size:15px;color:var(--muted);border:1px solid var(--line);
           border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px;letter-spacing:1px}
   .legend{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px;
           display:flex;flex-direction:column;gap:4px}
-  .lg{display:flex;gap:7px;align-items:flex-start;font-size:12px;color:var(--muted)}
+  .lg{display:flex;gap:7px;align-items:flex-start;font-size:18px;color:var(--muted)}
   .lg .rdot{margin-top:4px;flex:0 0 auto}
   .lg.cur{opacity:1;color:var(--fg)}
-  .nowtag{font-size:10px;background:var(--line);border-radius:4px;padding:0 4px;margin-right:5px;white-space:nowrap}
-  .meta{color:var(--muted);font-size:11px;margin-top:8px}
+  .nowtag{font-size:15px;background:var(--line);border-radius:4px;padding:0 4px;margin-right:5px;white-space:nowrap}
+  .meta{color:var(--muted);font-size:16.5px;margin-top:8px}
   details{margin:6px 0 2px}
-  summary{color:var(--muted);font-size:13px;cursor:pointer;padding:6px 2px}
-  table.qt{width:100%;border-collapse:collapse;font-size:12px}
+  summary{color:var(--muted);font-size:19.5px;cursor:pointer;padding:6px 2px}
+  table.qt{width:100%;border-collapse:collapse;font-size:18px}
   table.qt th{color:var(--muted);font-weight:500;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
   table.qt th:first-child{text-align:left}
   table.qt td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
   table.qt td:first-child{text-align:left}
-  table.qt .asof{color:var(--muted);font-size:10px;line-height:1.3;white-space:nowrap}
-  table.qt .source{color:var(--muted);font-size:10px;line-height:1.3;margin-top:2px}
+  table.qt .asof{color:var(--muted);font-size:15px;line-height:1.3;white-space:nowrap}
+  table.qt .source{color:var(--muted);font-size:15px;line-height:1.3;margin-top:2px}
   table.qt .source a{color:#8cb4ff;text-underline-offset:2px}
-  .rdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .rdot{width:13.5px;height:13.5px;border-radius:50%;display:inline-block}
   .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
            overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-  footer{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
+  footer{color:var(--muted);font-size:16.5px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
   .err{color:#f0a1a1}
+  @media (max-width:600px){
+    .wrap{padding:18px 14px 48px}
+    .master{align-items:flex-start}
+    .master .dot{margin-top:5px}
+    .cluster{padding-left:8px;padding-right:8px}
+    details.card>summary{padding:12px 10px}
+    .srow{display:grid;grid-template-columns:15px minmax(0,1fr) auto;column-gap:8px;row-gap:3px;align-items:start}
+    .sdot{grid-column:1;grid-row:1;margin-top:8px}
+    .sname{grid-column:2;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip}
+    .chev{grid-column:3;grid-row:1;margin-top:8px}
+    .hval{grid-column:2/4;grid-row:2;justify-self:end;white-space:normal;text-align:right}
+    .spurpose{margin-left:23px;margin-right:2px}
+    .srow2{margin-left:23px}
+    .soneliner{white-space:normal;margin-left:23px}
+    .sbody{overflow-x:auto}
+  }
 </style>
 </head>
 <body>
@@ -4452,7 +4468,7 @@ function renderUnknown(_wd, sig){ return `<div class="interp">尚未支援的 wi
 
 function barSVG(series, labels, wd){
   if(!series.length) return "";
-  const W=320,H=120,pad=20;
+  const W=320,H=132,pad=24;
   const max=Math.max(...series,0), min=Math.min(...series,0), range=(max-min)||1;
   const bw=(W-2*pad)/series.length;
   const y0=H-pad-((0-min)/range)*(H-2*pad);
@@ -4469,13 +4485,13 @@ function barSVG(series, labels, wd){
   const idxs=[0,Math.floor(series.length/2),series.length-1];
   const anc=(i)=> i===0?"start" : i===series.length-1?"end" : "middle";
   const lx=(i)=> i===0?pad : i===series.length-1?(W-pad) : (pad+i*bw+bw/2);
-  const lbls=idxs.map(i=>labels[i]?`<text x="${lx(i).toFixed(1)}" y="${H-4}" fill="#8b949e" font-size="9" text-anchor="${anc(i)}">${esc(labels[i])}</text>`:"").join("");
+  const lbls=idxs.map(i=>labels[i]?`<text x="${lx(i).toFixed(1)}" y="${H-5}" fill="#8b949e" font-size="13.5" text-anchor="${anc(i)}">${esc(labels[i])}</text>`:"").join("");
   return `<div class="viz"><svg aria-hidden="true" focusable="false" viewBox="0 0 ${W} ${H}" width="100%">${zero}${bars}${lbls}</svg></div>`;
 }
 
 function gaugeSVG(pct, wd){
   if(pct==null) return "";
-  const W=320,H=68,pad=12,bw=W-2*pad,y=30;
+  const W=320,H=84,pad=12,bw=W-2*pad,y=40;
   const bands=wd.bands||[{to:100,light:"green"}];
   let segs="",prev=0;
   bands.forEach(b=>{
@@ -4485,14 +4501,14 @@ function gaugeSVG(pct, wd){
   });
   const mx=pad+bw*Math.max(0,Math.min(100,pct))/100;
   const marker=`<line x1="${mx.toFixed(1)}" y1="${y-8}" x2="${mx.toFixed(1)}" y2="${y+18}" stroke="#e6edf3" stroke-width="2"/>`;
-  const ticks=[40,60].map(t=>`<text x="${(pad+bw*t/100).toFixed(1)}" y="${H-4}" fill="#8b949e" font-size="9" text-anchor="middle">${t}</text>`).join("");
-  const cap=wd.caption?`<text x="${W/2}" y="14" fill="#8b949e" font-size="11" text-anchor="middle">${esc(wd.caption)}</text>`:"";
+  const ticks=[40,60].map(t=>`<text x="${(pad+bw*t/100).toFixed(1)}" y="${H-5}" fill="#8b949e" font-size="13.5" text-anchor="middle">${t}</text>`).join("");
+  const cap=wd.caption?`<text x="${W/2}" y="19" fill="#8b949e" font-size="16.5" text-anchor="middle">${esc(wd.caption)}</text>`:"";
   return `<div class="viz"><svg aria-hidden="true" focusable="false" viewBox="0 0 ${W} ${H}" width="100%">${cap}${segs}${marker}${ticks}</svg></div>`;
 }
 
 function sparkSVG(series, wd){
   if(!series || series.length<2) return "";
-  const W=320,H=64,pad=6;
+  const W=320,H=78,pad=8;
   // 若後端有給 ma_series（如 50MA），與主線共用同一座標刻度，畫成灰虛線
   const ma=(wd.ma_series && wd.ma_series.length===series.length)?wd.ma_series:null;
   const all=ma?series.concat(ma):series;
@@ -4501,7 +4517,7 @@ function sparkSVG(series, wd){
   const pt=(v,i)=>`${(pad+i*step).toFixed(1)},${(H-pad-((v-min)/range)*(H-2*pad)).toFixed(1)}`;
   const col=series[series.length-1]>=series[0]?"#2ea043":"#da3633";
   const maLine=ma?`<polyline points="${ma.map(pt).join(" ")}" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>`:"";
-  const cap=wd.caption?`<text x="6" y="12" fill="#8b949e" font-size="10.5">${esc(wd.caption)}</text>`:"";
+  const cap=wd.caption?`<text x="8" y="18" fill="#8b949e" font-size="15.75">${esc(wd.caption)}</text>`:"";
   return `<div class="viz"><svg aria-hidden="true" focusable="false" viewBox="0 0 ${W} ${H}" width="100%">${maLine}<polyline points="${series.map(pt).join(" ")}" fill="none" stroke="${col}" stroke-width="2"/>${cap}</svg></div>`;
 }
 
@@ -4557,6 +4573,7 @@ function legendHTML(sig){
 
 const CADENCE_LABEL={monthly:"月更(上月數據約每月10日公布)",trading_day:"每交易日更新",daily:"每日更新",manual:"手動更新"};
 const LIGHT_ZH={green:"綠",yellow:"黃",red:"紅",gray:"灰"};
+const OVERVIEW_LABEL={green:"結構健康",yellow:"留意轉弱或分歧",red:"反轉警示",gray:"資料不足"};
 const SEV={gray:-1,green:0,yellow:1,red:2};
 
 // 燈號歷史帶：固定 30 格、一天一格（左舊右新）；未累積的日子先鋪暗格，燈史逐日填滿
@@ -4684,9 +4701,16 @@ function render(d, live){
     const activeId=activeHost?activeHost.dataset.id:"";
 
     const ml=d.master_light||"gray";
+    const highest=(d.clusters||[]).filter(c=>(c.master||{}).light===ml);
+    const highestNote=highest.length===1
+      ? `最高警示主題：${highest[0].name}（${highest[0].master.label||LIGHT_ZH[ml]}）`
+      : highest.length>1
+        ? `${highest.length} 個主題同為目前最高警示`
+        : "尚無可判讀主題";
     document.getElementById("master").innerHTML=
       `<span class="sr-only">${LIGHT_ZH[ml]||"灰"}燈：</span><span class="dot" aria-hidden="true" style="background:${COLORS[ml]}"></span>
-       <div><b>總燈號：${esc(d.master_reason||ml)}</b>
+       <div><b>全站總覽：${LIGHT_ZH[ml]||"灰"}燈・${OVERVIEW_LABEL[ml]||""}</b>
+       <div class="rr">${esc(highestNote)}</div>
        <div class="rr">${d.generated_at_label?("更新於 "+esc(d.generated_at_label)):""}</div></div>`;
 
     // 第 3 層：今日變化置頂——有變燈大聲喊，沒變一行帶過（看完這行就能關掉）

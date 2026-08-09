@@ -74,10 +74,26 @@ def _check_index() -> None:
         "renderClusterGroup", "renderClusterLayout", "d.cluster_groups||[]",
     )), "缺每卡驗證目的或 AI 外溢共同區塊"
 
-    # 3d. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
+    # 3d. 可讀性：整體字級約放大 1.5 倍；主題驗證目的只比主標題小一階。
+    assert all(token in html for token in (
+        "font:22.5px/1.55", "font-size:30px", "font-size:18px",
+        'font-size="13.5"', "全站總覽：", "OVERVIEW_LABEL",
+        "個主題同為目前最高警示", "@media (max-width:600px)",
+        "grid-template-columns:15px minmax(0,1fr) auto",
+        ".soneliner{white-space:normal",
+    )), "缺 1.5 倍字級或新版總覽判讀"
+    title_size = re.search(r"\.chead \.cname\{[^}]*font-size:([0-9.]+)px", html)
+    purpose_size = re.search(r"\.cpurpose\{[^}]*font-size:([0-9.]+)px", html)
+    assert title_size and purpose_size, "找不到主題標題／驗證目的字級"
+    title_px, purpose_px = float(title_size.group(1)), float(purpose_size.group(1))
+    assert title_px > purpose_px >= title_px * 0.85, (
+        "主題驗證目的應只比主標題小一階", title_px, purpose_px)
+    assert "總燈號：${esc(d.master_reason||ml)}" not in html, "舊總燈文案仍會只點名第一個同燈主題"
+
+    # 3e. 表格列的「資料至」標示：休市市場的凍結報價要自我說明，不像壞掉
     assert "maxAsof" in html and "資料至" in html, "缺表格列資料至（asof）標示"
 
-    # 3e. row／卡片來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
+    # 3f. row／卡片來源與 signal 真實資料日期：純文字來源不當 href，僅 http(s) source_url 可連
     assert all(token in html for token in (
         "function safeHTTPURL", 'url.protocol==="http:"', 'url.protocol==="https:"',
         'lower.startsWith("http://")', 'lower.startsWith("https://")',
@@ -86,7 +102,7 @@ def _check_index() -> None:
         "sig.data_as_of", "!sig.data_as_of&&sig.updated_at",
     )), "缺安全來源顯示或 data_as_of 優先顯示"
 
-    # 3f. 無障礙：狀態更新可被宣告、表格欄位與色點/走勢有文字、裝飾圖不進 accessibility tree
+    # 3g. 無障礙：狀態更新可被宣告、表格欄位與色點/走勢有文字、裝飾圖不進 accessibility tree
     assert 'aria-live="polite"' in html and 'role="status"' in html, "動態狀態缺 aria-live"
     assert 'scope="col"' in html and 'class="sr-only"' in html, "表格缺欄名／隱藏文字"
     assert 'aria-hidden="true"' in html and "走勢：${trendLabel" in html, "色點或走勢仍只靠視覺"
