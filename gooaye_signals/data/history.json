@@ -543,7 +543,7 @@
       ],
       [
         "2026-10-27",
-        "green"
+        "yellow"
       ]
     ],
     "raw_materials": [
@@ -1635,7 +1635,7 @@
       ],
       [
         "2026-10-27",
-        "yellow"
+        "red"
       ]
     ],
     "menlo_opensource": [
